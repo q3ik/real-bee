@@ -1,0 +1,319 @@
+/* Touch Target Size Fixes - QA-183, Issue #610 */
+/* WCAG 2.1 AA Compliance - Success Criterion 2.5.5 Target Size (Level AAA using AA minimum) */
+
+/**
+ * CRITICAL: These rules use !important to ensure WCAG compliance
+ * Touch targets MUST be minimum 44x44px per WCAG 2.1 AA guidelines
+ * Reference: https://www.w3.org/WAI/WCAG21/Understanding/target-size.html
+ * 
+ * !important justification:
+ * - WCAG compliance is non-negotiable for accessibility
+ * - Utility classes (Tailwind) may override without !important
+ * - Touch target size is a legal requirement in many jurisdictions
+ * - User safety and experience depend on consistent touch target sizes
+ */
+
+@layer components {
+  /**
+   * Primary touch target enforcement
+   * Applies to all interactive elements unless explicitly exempted
+   * 
+   * !important used here because:
+   * - WCAG 2.1 AA compliance requires minimum 44x44px
+   * - Tailwind utility classes would otherwise override
+   * - Accessibility cannot be compromised by component styles
+   */
+  button:not(.touch-target-exempt),
+  [role="button"]:not(.touch-target-exempt),
+  [type="button"]:not(.touch-target-exempt),
+  [type="submit"]:not(.touch-target-exempt),
+  [type="reset"]:not(.touch-target-exempt),
+  a[role="button"]:not(.touch-target-exempt),
+  input[type="checkbox"]:not(.touch-target-exempt),
+  input[type="radio"]:not(.touch-target-exempt) {
+    /* !important: WCAG compliance - cannot be overridden by utility classes */
+    min-width: 44px !important;
+    min-height: 44px !important;
+    
+    /* !important: Ensure box-sizing doesn't cause dimensions to shrink below minimum */
+    box-sizing: border-box !important;
+  }
+
+  /**
+   * Ensure adequate padding for text content
+   * These don't use !important to allow component override if needed
+   */
+  button:not(.icon-only):not(.touch-target-exempt),
+  [role="button"]:not(.icon-only):not(.touch-target-exempt) {
+    padding-left: 1rem;   /* px-4 in Tailwind */
+    padding-right: 1rem;
+    padding-top: 0.5rem;  /* py-2 in Tailwind */
+    padding-bottom: 0.5rem;
+  }
+
+  /**
+   * Icon-only buttons need centering and explicit dimensions
+   * 
+   * !important used here because:
+   * - Icon buttons are particularly prone to being too small
+   * - Flex layout must be enforced for proper centering
+   * - Component styles often conflict with proper sizing
+   */
+  button.icon-only:not(.touch-target-exempt),
+  [role="button"].icon-only:not(.touch-target-exempt) {
+    /* !important: WCAG compliance for icon-only interactive elements */
+    min-width: 44px !important;
+    min-height: 44px !important;
+    /* !important: Flex layout required for proper icon centering */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+  }
+
+  /**
+   * Links that should be tappable also need adequate size
+   * 
+   * !important used here because:
+   * - Link buttons must meet same WCAG requirements as buttons
+   * - Often styled with utility classes that would override
+   */
+  a:not(.touch-target-exempt) {
+    /* Only enforce on interactive links, not inline text links */
+    &[role="button"],
+    &.button,
+    &.btn {
+      /* !important: WCAG compliance for link-styled buttons */
+      min-width: 44px !important;
+      min-height: 44px !important;
+      box-sizing: border-box !important;
+    }
+  }
+
+  /**
+   * Mobile-specific touch target enhancement
+   * Increase to 48px on touch devices for better UX
+   * 
+   * !important used here because:
+   * - Enhanced size critical on actual touch devices
+   * - Overrides desktop sizes for mobile contexts
+   * - Prevents layout breaks on touch-first devices
+   */
+  @media (hover: none) and (pointer: coarse) {
+    button:not(.touch-target-exempt),
+    [role="button"]:not(.touch-target-exempt),
+    [type="button"]:not(.touch-target-exempt),
+    [type="submit"]:not(.touch-target-exempt),
+    [type="reset"]:not(.touch-target-exempt),
+    a[role="button"]:not(.touch-target-exempt) {
+      /* !important: Enhanced mobile touch targets override desktop sizes */
+      min-width: 48px !important;
+      min-height: 48px !important;
+    }
+  }
+
+  /**
+   * Viewport Overflow Prevention - Issue #612
+   * Ensure all direct children of #root respect viewport width
+   * 
+   * No !important needed here - proper CSS specificity via @layer
+   */
+  #root > * {
+    max-width: 100vw;
+    overflow-x: hidden;
+    box-sizing: border-box;
+  }
+
+  /**
+   * Game container specific constraints
+   * Prevent game screens from exceeding viewport
+   */
+  [data-testid="game-container"],
+  .game-screen,
+  main {
+    width: 100%;
+    max-width: 100vw;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+
+  /**
+   * Prevent buttons from causing overflow
+   * Buttons should wrap or shrink to fit viewport
+   */
+  button {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /**
+   * Responsive images and media
+   * Prevent media from exceeding container width
+   */
+  img,
+  svg,
+  video,
+  canvas,
+  iframe {
+    max-width: 100%;
+    height: auto;
+    box-sizing: border-box;
+  }
+
+  /**
+   * Input and form element constraints
+   */
+  input,
+  textarea,
+  select {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+/* Mobile Viewport Constraints - Issue #612 */
+@layer base {
+  /**
+   * Scoped box-sizing for viewport safety
+   * 
+   * IMPORTANT: Changed from universal (*) selector to opt-in approach
+   * to avoid breaking components that rely on content-box behavior.
+   * 
+   * Apply .viewport-safe class or data-viewport-safe attribute to containers
+   * that need box-sizing: border-box enforcement.
+   * 
+   * Migration note: If regressions occur, components can:
+   * 1. Explicitly set box-sizing: content-box
+   * 2. Use .content-box-override class
+   * 3. Remove viewport-safe from parent containers
+   */
+  [data-viewport-safe],
+  [data-viewport-safe] *,
+  .viewport-safe,
+  .viewport-safe * {
+    box-sizing: border-box;
+  }
+  
+  /* Override for specific components that need content-box */
+  .content-box-override {
+    box-sizing: content-box;
+  }
+
+  /**
+   * Prevent horizontal overflow on mobile devices
+   * Comprehensive viewport constraints
+   */
+  html {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+    /* Use border-box for root elements */
+    box-sizing: border-box;
+  }
+
+  body {
+    width: 100%;
+    min-width: 320px; /* Minimum supported viewport */
+    max-width: 100vw;
+    overflow-x: hidden;
+    position: relative;
+    box-sizing: border-box;
+  }
+
+  /**
+   * Ensure all containers respect viewport width
+   * 
+   * IMPORTANT: Removed 'contain' property to avoid dimension calculation issues.
+   * The contain property can break components that rely on offsetParent or
+   * similar DOM APIs for positioning calculations.
+   * 
+   * If performance issues arise from layout recalculations, consider adding
+   * contain on a per-component basis rather than globally.
+   */
+  #root {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+    box-sizing: border-box;
+    /* contain: layout style paint; - REMOVED to prevent dimension issues */
+  }
+
+  /**
+   * Prevent layout shift from scrollbars
+   * 
+   * !important used in mobile context because:
+   * - Critical catch-all for components that escape viewport
+   * - Last line of defense against horizontal overflow
+   * - Only applied on mobile where overflow is most problematic
+   * - Can be explicitly overridden with .allow-overflow class
+   */
+  @media (max-width: 768px) {
+    * {
+      overscroll-behavior-x: none;
+    }
+
+    /* !important: Critical mobile viewport enforcement - prevents horizontal scroll */
+    body > *,
+    #root > * {
+      max-width: 100vw !important;
+    }
+
+    /* !important: Explicit override for rare cases needing overflow */
+    .allow-overflow {
+      max-width: unset !important;
+    }
+  }
+}
+
+/* Pointer Event Management - Fix #2 */
+@layer utilities {
+  /**
+   * Utility classes for managing pointer events
+   * Useful when overlays need to block/allow interaction
+   */
+  .allow-pointer-events {
+    pointer-events: auto;
+  }
+
+  .block-pointer-events {
+    pointer-events: none;
+  }
+
+  /**
+   * Ensure interactive children of blocked parents still work
+   * This allows modals/overlays to block background while keeping buttons active
+   */
+  .block-pointer-events > button,
+  .block-pointer-events > [role="button"],
+  .block-pointer-events > a {
+    pointer-events: auto;
+  }
+  
+  /**
+   * Utility class for explicit viewport safety
+   * Apply to containers that should have box-sizing: border-box
+   */
+  .viewport-safe {
+    box-sizing: border-box;
+  }
+}
+
+/**
+ * Development-only validation (removed in production builds)
+ * Helps identify touch target violations during development
+ * 
+ * !important used here because:
+ * - Development warnings must be visible
+ * - Component styles should not hide validation indicators
+ * - Only present in development, removed in production
+ */
+@media (min-width: 1px) {
+  /* This will be stripped by build tools in production */
+  [data-dev-touch-target-warning] {
+    /* !important: Development warnings must be visible for debugging */
+    outline: 2px dashed red !important;
+    outline-offset: 2px !important;
+  }
+}

@@ -1,0 +1,47 @@
+name: Build Artifact
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: 'Branch, tag, or SHA to check out (defaults to github.sha — the triggered commit)'
+        required: false
+        type: string
+    outputs:
+      artifact-name:
+        description: Build artifact name
+        value: ${{ jobs.build.outputs.artifact-name }}
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      artifact-name: ${{ steps.meta.outputs.artifact_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: '20'
+
+      - name: Build app
+        run: npm run build
+        env:
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+
+      - name: Set artifact metadata
+        id: meta
+        run: echo "artifact_name=web-dist" >> "$GITHUB_OUTPUT"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: dist
+          if-no-files-found: error
+          retention-days: 7

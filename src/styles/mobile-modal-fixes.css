@@ -1,0 +1,879 @@
+/*
+ * Mobile Modal Fixes for DEV-103, DEV-104 and DEV-105
+ * 
+ * This stylesheet addresses critical mobile UX issues:
+ * - DEV-103: Settings dialog traps users on mobile with no scrolling
+ * - DEV-104: Feedback modal submit button unreachable on mobile
+ * - DEV-105: Settings panel traps users with no exit mechanism
+ *
+ * Key solutions:
+ * 1. Dynamic viewport height (dvh) instead of vh for mobile browser chrome
+ * 2. Proper overflow handling for scrolling
+ * 3. Touch-optimized close buttons (44x44px minimum)
+ * 4. Safe area support for iOS notch
+ * 5. Body scroll locking when modals open
+ */
+
+/* =============================================================================
+   CSS Variables for Consistency
+   ============================================================================= */
+
+:root {
+  --modal-z-index: 9998;
+  --modal-content-z-index: 9999;
+  --modal-close-z-index: 10000;
+  /* Stores the page scroll offset before body.modal-open is applied.
+     Set via JS (window.scrollY) so iOS position:fixed doesn't jump to top. */
+  --modal-open-scroll-y: 0;
+}
+
+/* =============================================================================
+   Radix UI Dialog Mobile Fixes - DEV-103
+   ============================================================================= */
+
+/**
+ * Mobile-specific overrides for Radix UI Dialog (Settings Dialog)
+ * Critical fixes for DEV-103: Enable scrolling and prevent user trap
+ */
+@media (max-width: 640px) {
+  /* Dialog content - enable scrolling */
+  .mobile-dialog-content {
+    /* Use dynamic viewport height to account for mobile browser chrome */
+    max-height: calc(90dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+    max-height: calc(90vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+    
+    /* Enable vertical scrolling with momentum on iOS */
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    
+    /* Ensure padding doesn't interfere with scroll */
+    box-sizing: border-box !important;
+    
+    /* Add margin for safe areas on iOS */
+    margin-top: max(env(safe-area-inset-top, 20px), 20px) !important;
+    margin-bottom: max(env(safe-area-inset-bottom, 20px), 20px) !important;
+  }
+
+  /* Ensure close button stays accessible and has proper touch target */
+  .mobile-dialog-content button[type="button"] {
+    /* Minimum iOS touch target size */
+    min-width: 44px;
+    min-height: 44px;
+    
+    /* Ensure it's above scrollable content */
+    position: sticky;
+    z-index: var(--modal-close-z-index);
+  }
+
+  /* Inner content wrapper for proper spacing with sticky close button */
+  .mobile-dialog-content > div:first-of-type {
+    padding-right: 48px; /* Space for close button */
+  }
+}
+
+/* Landscape mode adjustments for dialogs */
+@media (max-height: 500px) and (orientation: landscape) {
+  .mobile-dialog-content {
+    max-height: 85dvh !important;
+    max-height: 85vh !important;
+  }
+}
+
+/* =============================================================================
+   Base Modal System
+   ============================================================================= */
+
+/**
+ * Modal overlay - covers entire viewport
+ * Uses dvh (dynamic viewport height) to account for mobile browser chrome
+ */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh; /* Dynamic viewport height - accounts for mobile chrome */
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: var(--modal-z-index);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0)
+    env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
+  animation: fadeIn 0.2s ease-out;
+}
+
+/**
+ * Base modal container
+ * Key fixes:
+ * - max-height uses min() to work with both vh and dvh
+ * - overflow-y: auto enables scrolling
+ * - -webkit-overflow-scrolling: touch for smooth iOS scrolling
+ */
+.modal-container {
+  position: relative;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  width: 90vw;
+  max-width: 500px;
+  max-height: min(90vh, 90dvh); /* Use smaller of static or dynamic viewport */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* Smooth momentum scrolling on iOS */
+  z-index: var(--modal-content-z-index);
+  animation: slideUp 0.3s ease-out;
+  
+  /* Ensure content doesn't get cut off by iOS safe areas */
+  margin: max(env(safe-area-inset-top, 20px), 20px)
+    max(env(safe-area-inset-right, 20px), 20px)
+    max(env(safe-area-inset-bottom, 20px), 20px)
+    max(env(safe-area-inset-left, 20px), 20px);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .modal-container {
+    background: #1a1a1a;
+    color: #ffffff;
+  }
+
+  .modal-overlay {
+    background-color: rgba(0, 0, 0, 0.8);
+  }
+}
+
+/* =============================================================================
+   Close Button - Critical for DEV-103 and DEV-105
+   ============================================================================= */
+
+/**
+ * Close button positioning and sizing
+ * IMPORTANT: 44x44px minimum for iOS touch targets
+ */
+.modal-close-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px; /* iOS minimum touch target */
+  min-height: 44px;
+  border: none;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--modal-close-z-index);
+  transition: all 0.2s ease;
+  padding: 0;
+  /* Ensure it's always above content */
+  margin: 0;
+}
+
+.modal-close-button:hover {
+  background: rgba(0, 0, 0, 0.1);
+  transform: scale(1.05);
+}
+
+.modal-close-button:active {
+  transform: scale(0.95);
+}
+
+/* X icon for close button */
+.modal-close-button::before,
+.modal-close-button::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 2px;
+  background: #666;
+  border-radius: 1px;
+}
+
+.modal-close-button::before {
+  transform: rotate(45deg);
+}
+
+.modal-close-button::after {
+  transform: rotate(-45deg);
+}
+
+@media (prefers-color-scheme: dark) {
+  .modal-close-button {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .modal-close-button:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .modal-close-button::before,
+  .modal-close-button::after {
+    background: #ccc;
+  }
+}
+
+/* =============================================================================
+   Feedback Modal Specific Styles - DEV-104
+   ============================================================================= */
+
+/**
+ * .feedback-panel mirrors .settings-panel: a flex-column container with a
+ * bounded max-height.  The outer .modal-container overflow-y:auto is suppressed
+ * so that ONLY .feedback-content (the inner div) scrolls.  This is the reliable
+ * cross-browser / iOS Safari fix for the submit button being unreachable.
+ */
+.feedback-panel {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: min(90vh, 90dvh);
+  /* Suppress the outer .modal-container overflow-y:auto to prevent double
+     scroll containers that block touch-scroll on iOS. */
+  overflow: hidden;
+}
+
+/**
+ * Sticky header — title + close button always visible at the top of the panel.
+ */
+.feedback-header {
+  position: sticky;
+  top: 0;
+  background: white;
+  padding: 24px 64px 16px 24px; /* Right padding leaves room for close button */
+  border-bottom: 1px solid #f0f0f0;
+  z-index: 10;
+}
+
+/**
+ * Scrollable content area — the only element that scrolls inside the panel.
+ * min-height: 0 is required to let a flex child shrink below its content size.
+ */
+.feedback-content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 24px;
+  min-height: 0;
+}
+
+/**
+ * The form inside .feedback-panel must itself be a flex column so that
+ * .feedback-content (flex:1) and .feedback-actions fill the panel correctly.
+ */
+.feedback-panel .feedback-form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.feedback-modal {
+  padding: 24px;
+  padding-top: 48px; /* Space for close button — legacy/fallback only */
+}
+
+.feedback-modal-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+  color: #1a1a1a;
+}
+
+.feedback-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.feedback-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.feedback-form-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.feedback-form-input,
+.feedback-form-select,
+.feedback-form-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px; /* Prevents iOS zoom on focus */
+  font-family: inherit;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.feedback-form-input:focus,
+.feedback-form-select:focus,
+.feedback-form-textarea:focus {
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+}
+
+.feedback-form-textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/**
+ * Action buttons footer — Critical for DEV-104.
+ * When .feedback-panel is the container, this div is a flex child that sits
+ * BELOW .feedback-content, making it always visible without scrolling.
+ * position:sticky is kept as a fallback for older browsers.
+ */
+.feedback-actions {
+  position: sticky;
+  bottom: 0;
+  background: white;
+  padding: 16px 24px;
+  display: flex;
+  gap: 12px;
+  border-top: 1px solid #f0f0f0;
+  z-index: 10;
+}
+
+.feedback-button {
+  flex: 1;
+  padding: 14px 20px;
+  min-height: 48px; /* Touch-friendly height */
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.feedback-button-primary {
+  background: #4CAF50;
+  color: white;
+}
+
+.feedback-button-primary:hover:not(:disabled) {
+  background: #45a049;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.feedback-button-primary:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.feedback-button-secondary {
+  background: #f5f5f5;
+  color: #333;
+}
+
+.feedback-button-secondary:hover {
+  background: #e0e0e0;
+}
+
+/* Email fallback link - DEV-104 requirement */
+.feedback-email-fallback {
+  text-align: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+  font-size: 14px;
+  color: #666;
+}
+
+.feedback-email-link {
+  color: #4CAF50;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.feedback-email-link:hover {
+  text-decoration: underline;
+}
+
+/* Error message styling */
+.feedback-error {
+  background: #ffebee;
+  color: #c62828;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  border-left: 4px solid #c62828;
+}
+
+/* Success message styling */
+.feedback-success {
+  background: #e8f5e9;
+  color: #2e7d32;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  border-left: 4px solid #2e7d32;
+}
+
+/* =============================================================================
+   Settings Panel Specific Styles - DEV-105
+   ============================================================================= */
+
+.settings-panel {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: min(90vh, 90dvh);
+  /* Prevent the outer .modal-container overflow-y:auto from creating a second
+     scroll container that fights the inner .settings-content scroller on iOS. */
+  overflow: hidden;
+}
+
+/**
+ * Sticky header - stays visible during scroll
+ * Critical for always-visible close button (DEV-105)
+ */
+.settings-header {
+  position: sticky;
+  top: 0;
+  background: white;
+  padding: 24px 24px 16px 24px;
+  border-bottom: 1px solid #f0f0f0;
+  z-index: 10;
+}
+
+.settings-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+  padding-right: 44px; /* Space for close button */
+  color: #1a1a1a;
+}
+
+.settings-content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 24px;
+  /* min-height: 0 is required so a flex child can shrink below its content
+     size.  Without this, .settings-content will not scroll on iOS when the
+     panel content is taller than the available space. */
+  min-height: 0;
+}
+
+.settings-section {
+  margin-bottom: 32px;
+}
+
+.settings-section:last-child {
+  margin-bottom: 0;
+}
+
+.settings-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: #1a1a1a;
+}
+
+.settings-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f5f5f5;
+  min-height: 48px; /* Touch-friendly */
+}
+
+.settings-option:last-child {
+  border-bottom: none;
+}
+
+.settings-option-label {
+  font-size: 16px;
+  color: #333;
+  flex: 1;
+}
+
+.settings-option-description {
+  font-size: 14px;
+  color: #666;
+  margin-top: 4px;
+}
+
+/* Toggle switch */
+.settings-toggle {
+  position: relative;
+  width: 51px;
+  height: 31px;
+  min-width: 51px;
+  min-height: 31px;
+  background: #ccc;
+  border-radius: 31px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border: none;
+  padding: 0;
+}
+
+.settings-toggle[aria-checked='true'] {
+  background: #4CAF50;
+}
+
+.settings-toggle::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 25px;
+  height: 25px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.settings-toggle[aria-checked='true']::after {
+  transform: translateX(20px);
+}
+
+/* Radio buttons for difficulty */
+.settings-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings-radio-option {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 48px;
+}
+
+.settings-radio-option:hover {
+  border-color: #4CAF50;
+  background: #f5f5f5;
+}
+
+.settings-radio-option input[type='radio'] {
+  width: 20px;
+  height: 20px;
+  margin-right: 12px;
+  cursor: pointer;
+}
+
+.settings-radio-option input[type='radio']:checked {
+  accent-color: #4CAF50;
+}
+
+/**
+ * Sticky footer with action buttons - Critical for DEV-105
+ * Always accessible for saving or canceling changes
+ */
+.settings-actions {
+  position: sticky;
+  bottom: 0;
+  background: white;
+  padding: 16px 24px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  gap: 12px;
+  z-index: 10;
+}
+
+.settings-button {
+  flex: 1;
+  padding: 14px 20px;
+  min-height: 48px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.settings-button-primary {
+  background: #4CAF50;
+  color: white;
+}
+
+.settings-button-primary:hover:not(:disabled) {
+  background: #45a049;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.settings-button-primary:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.settings-button-secondary {
+  background: #f5f5f5;
+  color: #333;
+}
+
+.settings-button-secondary:hover {
+  background: #e0e0e0;
+}
+
+/* =============================================================================
+   Body Scroll Lock - Prevents background scrolling when a modal is open
+   ============================================================================= */
+
+/**
+ * Base scroll lock: overflow:hidden is sufficient on desktop browsers
+ * (Chrome, Firefox, Edge) to prevent background scrolling without
+ * disrupting the layout or scroll position.
+ *
+ * width:100% prevents a layout shift when the scrollbar disappears.
+ */
+body.modal-open {
+  overflow: hidden;
+  width: 100%;
+}
+
+/**
+ * iOS Safari requires position:fixed to fully suppress rubber-band /
+ * momentum scrolling behind a modal.  overflow:hidden alone is not
+ * enough on iOS.  We gate this behind @supports (-webkit-touch-callout)
+ * which matches only iOS Safari, keeping desktop Chrome/Firefox unaffected.
+ *
+ * top: var(--modal-open-scroll-y) preserves the visual scroll position so
+ * the page does not visually jump when the class is applied.  The JS that
+ * adds this class must first capture window.scrollY into the CSS variable,
+ * and restore window.scrollTo() when the class is removed.
+ */
+@supports (-webkit-touch-callout: none) {
+  body.modal-open {
+    position: fixed;
+    top: var(--modal-open-scroll-y, 0);
+    left: 0;
+    right: 0;
+  }
+}
+
+/* =============================================================================
+   Animations
+   ============================================================================= */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =============================================================================
+   Dark Mode
+   ============================================================================= */
+
+@media (prefers-color-scheme: dark) {
+  .feedback-modal-title,
+  .settings-title,
+  .settings-section-title {
+    color: #ffffff;
+  }
+
+  .feedback-form-label,
+  .settings-option-label {
+    color: #e0e0e0;
+  }
+
+  .feedback-form-input,
+  .feedback-form-select,
+  .feedback-form-textarea {
+    background: #2a2a2a;
+    border-color: #444;
+    color: #ffffff;
+  }
+
+  .settings-header,
+  .settings-actions,
+  .feedback-header,
+  .feedback-actions {
+    background: #1a1a1a;
+    border-color: #333;
+  }
+
+  .settings-option {
+    border-color: #333;
+  }
+
+  .settings-option-description,
+  .feedback-email-fallback {
+    color: #999;
+  }
+
+  .settings-radio-option {
+    border-color: #444;
+    background: #2a2a2a;
+  }
+
+  .settings-radio-option:hover {
+    border-color: #4CAF50;
+    background: #333;
+  }
+
+  .feedback-button-secondary,
+  .settings-button-secondary {
+    background: #2a2a2a;
+    color: #e0e0e0;
+  }
+
+  .feedback-button-secondary:hover,
+  .settings-button-secondary:hover {
+    background: #333;
+  }
+}
+
+/* =============================================================================
+   Mobile Optimizations
+   ============================================================================= */
+
+@media (max-width: 640px) {
+  .modal-container {
+    width: 95vw;
+    margin: 10px;
+    max-height: calc(100dvh - 20px);
+  }
+
+  .feedback-modal,
+  .feedback-content,
+  .settings-content {
+    padding: 20px;
+  }
+
+  .settings-header,
+  .feedback-header {
+    padding: 20px 64px 12px 20px;
+  }
+
+  .feedback-actions {
+    padding: 12px 20px;
+  }
+
+  .feedback-modal-title,
+  .settings-title {
+    font-size: 20px;
+  }
+
+  .settings-section-title {
+    font-size: 16px;
+  }
+
+  /* Larger touch targets on mobile */
+  .feedback-button,
+  .settings-button {
+    min-height: 52px;
+    font-size: 17px;
+  }
+
+  .modal-close-button {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
+  }
+}
+
+/* =============================================================================
+   Landscape Mode Adjustments
+   ============================================================================= */
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .modal-container {
+    max-height: 90vh;
+    max-height: 90dvh;
+  }
+
+  .settings-header,
+  .feedback-header {
+    padding: 12px 64px 10px 24px;
+  }
+
+  .feedback-modal {
+    padding: 16px 24px;
+    padding-top: 48px;
+  }
+
+  .settings-title,
+  .feedback-modal-title {
+    font-size: 18px;
+  }
+}
+
+/* =============================================================================
+   Accessibility
+   ============================================================================= */
+
+/* Focus visible for keyboard navigation */
+.modal-close-button:focus-visible,
+.feedback-button:focus-visible,
+.settings-button:focus-visible,
+.settings-toggle:focus-visible {
+  outline: 3px solid #4CAF50;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .modal-container {
+    border: 2px solid currentColor;
+  }
+
+  .modal-close-button {
+    border: 1px solid currentColor;
+  }
+
+  .feedback-form-input:focus,
+  .feedback-form-select:focus,
+  .feedback-form-textarea:focus {
+    outline: 3px solid currentColor;
+  }
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay,
+  .modal-container,
+  .modal-close-button,
+  .feedback-button,
+  .settings-button,
+  .settings-toggle::after {
+    animation: none;
+    transition: none;
+  }
+}

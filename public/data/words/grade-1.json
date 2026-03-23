@@ -1,0 +1,27 @@
+{
+  "grade": 1,
+  "language": "en-US",
+  "version": "1.0.0",
+  "lastUpdated": "2026-03-23T17:03:57.090Z",
+  "wordCount": 15,
+  "words": [
+    {
+      "word": "apple",
+      "definition": "A round fruit with red, green, or yellow skin and crisp flesh.",
+      "example": "I ate a juicy apple for lunch.",
+      "phonetic": "AP-ple",
+      "syllables": "ap-ple",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "banana",
+      "definition": "A long curved fruit with yellow skin and soft flesh.",
+      "example": "The monkey peeled the banana.",
+      "phonetic": "BA-na-na",
+      "syllables": "ba-na-na",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "happy",

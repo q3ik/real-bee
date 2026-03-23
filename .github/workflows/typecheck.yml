@@ -1,0 +1,40 @@
+name: TypeScript Type Check
+
+on:
+  workflow_call:  # Called by sanity-check.yml; no direct PR/push triggers to avoid duplicate runs
+  workflow_dispatch:
+
+concurrency:
+  group: typecheck-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: '20'
+
+      - name: Run TypeScript type checking
+        run: npm run typecheck
+
+      - name: Type check summary
+        if: success()
+        run: |
+          echo "✅ TypeScript type checking passed successfully"
+          echo "All .ts, .tsx files are type-safe according to tsconfig.json"
+
+      - name: Type check failed
+        if: failure()
+        run: |
+          echo "❌ TypeScript type checking failed"
+          echo "Please fix type errors before merging"
+          echo "Run 'npm run typecheck' locally to see detailed errors"
+          exit 1

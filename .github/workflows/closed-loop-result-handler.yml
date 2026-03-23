@@ -1,0 +1,249 @@
+name: '✅ Closed-Loop Result Handler'
+
+# Triggers when a commit is pushed to a non-main branch.
+# Specifically acts on commits with the [ai-fix] prefix written by
+# the closed-loop-orchestrator, checking whether all CI checks have
+# passed and squash-merging the PR automatically if they have.
+#
+# Spending guard: This workflow only runs ~30s of script logic — no runners
+# are kept alive waiting. The 30-second poll delay is inside a github-script
+# step, not a sleeping runner job.
+
+on:
+  push:
+    branches-ignore:
+      - main
+      - master
+
+concurrency:
+  group: 'closed-loop-result-${{ github.ref }}'
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: read
+
+jobs:
+
+  handle:
+    name: '✅ Check & Auto-Merge'
+    # Only run on ai-fix commits produced by the orchestrator
+    if: startsWith(github.event.head_commit.message, '[ai-fix]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 'Find associated open PR'
+        id: find_pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = context.ref.replace('refs/heads/', '');
+            const { owner, repo } = context.repo;
+
+            const { data: prs } = await github.rest.pulls.list({
+              owner,
+              repo,
+              head: `${owner}:${branch}`,
+              state: 'open',
+            });
+
+            if (!prs.length) {
+              core.info('No open PR found for this branch.');
+              core.setOutput('found', 'false');
+              return;
+            }
+
+            const pr = prs[0];
+            core.setOutput('found', 'true');
+            core.setOutput('pr_number', String(pr.number));
+            core.setOutput('pr_head_sha', pr.head.sha);
+            core.setOutput('pr_title', pr.title);
+            core.info(`Found PR #${pr.number}: ${pr.title}`);
+
+      - name: 'Wait for checks to settle, then evaluate'
+        id: evaluate
+        if: steps.find_pr.outputs.found == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = parseInt('${{ steps.find_pr.outputs.pr_number }}', 10);
+            const headSha = '${{ steps.find_pr.outputs.pr_head_sha }}';
+            const { owner, repo } = context.repo;
+
+            // Wait 45s for checks to register after the push
+            await new Promise(resolve => setTimeout(resolve, 45000));
+
+            // Poll up to 8 minutes (16 × 30s) for checks to complete
+            const MAX_POLLS = 16;
+            const POLL_INTERVAL_MS = 30000;
+            const SKIP_CHECK_NAMES = [
+              'Closed-Loop Result Handler',
+              'closed-loop-result',
+            ];
+
+            let allGreen = false;
+            for (let i = 0; i < MAX_POLLS; i++) {
+              const { data: checkData } = await github.rest.checks.listForRef({
+                owner, repo, ref: headSha, per_page: 100,
+              });
+
+              const relevant = checkData.check_runs.filter(
+                r => !SKIP_CHECK_NAMES.some(skip => r.name.includes(skip))
+              );
+
+              const pending = relevant.filter(
+                r => r.status !== 'completed'
+              );
+              const failed = relevant.filter(
+                r => r.status === 'completed' && r.conclusion !== 'success' && r.conclusion !== 'skipped' && r.conclusion !== 'neutral'
+              );
+
+              core.info(`Poll ${i + 1}/${MAX_POLLS}: ${relevant.length} checks, ${pending.length} pending, ${failed.length} failed`);
+
+              if (pending.length > 0) {
+                if (i < MAX_POLLS - 1) {
+                  await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
+                  continue;
+                }
+                core.info('Timed out waiting for checks — skipping auto-merge.');
+                core.setOutput('should_merge', 'false');
+                return;
+              }
+
+              if (failed.length > 0) {
+                core.info(`Checks still failing: ${failed.map(r => r.name).join(', ')}`);
+                core.setOutput('should_merge', 'false');
+                return;
+              }
+
+              // All relevant checks are green
+              allGreen = true;
+              break;
+            }
+
+            // Also verify no open `changes_requested` reviews remain
+            const reviews = await github.paginate(github.rest.pulls.listReviews, {
+              owner, repo, pull_number: prNumber,
+            });
+
+            // For each reviewer, only the latest review counts
+            const latestByReviewer = new Map();
+            for (const r of reviews) {
+              if (r.state !== 'COMMENTED') {
+                latestByReviewer.set(r.user.login, r.state);
+              }
+            }
+
+            const hasChangesRequested = [...latestByReviewer.values()].some(
+              s => s === 'CHANGES_REQUESTED'
+            );
+
+            if (hasChangesRequested) {
+              core.info('One or more reviewers still have CHANGES_REQUESTED — skipping auto-merge.');
+              core.setOutput('should_merge', 'false');
+              return;
+            }
+
+            if (allGreen) {
+              core.info('All checks green and no outstanding review requests — ready to merge.');
+              core.setOutput('should_merge', 'true');
+            } else {
+              core.setOutput('should_merge', 'false');
+            }
+
+      - name: 'Auto-merge via squash'
+        if: steps.find_pr.outputs.found == 'true' && steps.evaluate.outputs.should_merge == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = parseInt('${{ steps.find_pr.outputs.pr_number }}', 10);
+            const prTitle = '${{ steps.find_pr.outputs.pr_title }}';
+            const { owner, repo } = context.repo;
+
+            try {
+              await github.rest.pulls.merge({
+                owner,
+                repo,
+                pull_number: prNumber,
+                merge_method: 'squash',
+                commit_title: prTitle,
+                commit_message: 'Auto-merged by closed-loop pipeline after all checks passed.',
+              });
+
+              core.info(`PR #${prNumber} merged successfully.`);
+
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: prNumber,
+                body: [
+                  '## 🎉 Closed-Loop Pipeline — Auto-Merged',
+                  '',
+                  'All CI checks passed and no outstanding review requests remain.',
+                  '',
+                  'This PR was automatically squash-merged by the closed-loop pipeline.',
+                ].join('\n'),
+              });
+
+            } catch (err) {
+              // Merge may fail if branch protection requires human approval, etc.
+              // That's intentional — just log it and leave the PR open.
+              core.warning(`Auto-merge failed (may need human approval): ${err.message}`);
+
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: prNumber,
+                body: [
+                  '## ✅ Closed-Loop Pipeline — Ready to Merge',
+                  '',
+                  'All CI checks passed and no outstanding review requests remain.',
+                  '',
+                  `Auto-merge was attempted but could not complete: \`${err.message}\``,
+                  '',
+                  '**Action required:** Merge this PR manually.',
+                ].join('\n'),
+              });
+            }
+
+      - name: 'Post "still failing" comment if checks are red after fix'
+        if: steps.find_pr.outputs.found == 'true' && steps.evaluate.outputs.should_merge == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = parseInt('${{ steps.find_pr.outputs.pr_number }}', 10);
+            const { owner, repo } = context.repo;
+
+            // Get current cycle from labels to include in message
+            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
+              owner, repo, issue_number: prNumber,
+            });
+            const cycleLabel = labels.find(l => l.name.startsWith('ai-fix-cycle-'));
+            const currentCycle = cycleLabel ? cycleLabel.name.replace('ai-fix-cycle-', '') : '?';
+            const maxCycles = 2;
+
+            if (parseInt(currentCycle, 10) >= maxCycles) {
+              // The next orchestrator run will handle escalation — don't double-comment
+              return;
+            }
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: prNumber,
+              body: [
+                `## 🔄 Closed-Loop Pipeline — Cycle ${currentCycle} Complete`,
+                '',
+                'The Gemini fix agent committed changes, but checks are still not fully green.',
+                '',
+                `The pipeline will attempt another fix cycle (${parseInt(currentCycle, 10) + 1}/${maxCycles}) when CI completes.`,
+              ].join('\n'),
+            });

@@ -1,0 +1,472 @@
+name: '🔄 Closed-Loop Orchestrator'
+
+# Triggers when:
+#   1. A PR review is submitted (reviews requesting changes, or from Qodo/Copilot)
+#   2. The CI workflow completes with a failure on a PR branch
+#
+# What it does:
+#   - Reads review comments and failed CI job summaries
+#   - Runs the Gemini CLI fix agent (via google-github-actions/run-gemini-cli)
+#   - Commits fixes directly to the PR branch
+#   - Enforces a hard cap of 2 automated fix cycles per PR (guarded by labels)
+#   - Escalates to human review after cycle 2 by applying `needs-human-review`
+
+on:
+  pull_request_review:
+    types: [submitted]
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
+
+# One orchestrator run per branch at a time — cancel any queued run if a newer one arrives
+concurrency:
+  group: 'closed-loop-orchestrator-${{ github.event.pull_request.head.ref || github.event.workflow_run.head_branch }}'
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: read
+  id-token: write
+
+jobs:
+
+  # ─────────────────────────────────────────────────────────────────
+  # GATE: Run only when there is something actionable to fix
+  # ─────────────────────────────────────────────────────────────────
+  gate:
+    name: '🚦 Gate Check'
+    runs-on: ubuntu-latest
+    outputs:
+      should_fix: ${{ steps.gate.outputs.should_fix }}
+      pr_number: ${{ steps.gate.outputs.pr_number }}
+      pr_branch: ${{ steps.gate.outputs.pr_branch }}
+      pr_head_sha: ${{ steps.gate.outputs.pr_head_sha }}
+      current_cycle: ${{ steps.gate.outputs.current_cycle }}
+      next_cycle: ${{ steps.gate.outputs.next_cycle }}
+      trigger_type: ${{ steps.gate.outputs.trigger_type }}
+
+    steps:
+      - name: 'Evaluate gate conditions'
+        id: gate
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const MAX_CYCLES = 2;
+            const BOT_ACTORS = [
+              'github-actions[bot]',
+              'copilot[bot]',
+              'gemini-fix-bot',
+              'claude[bot]',
+            ];
+
+            // ── Determine trigger type and extract PR context ──────────────
+            let triggerType = 'unknown';
+            let prNumber = null;
+            let prBranch = null;
+            let prHeadSha = null;
+
+            if (context.eventName === 'pull_request_review') {
+              triggerType = 'review';
+              const review = context.payload.review;
+              const pr = context.payload.pull_request;
+
+              // Skip if:
+              //  - Review is just an approval (no changes requested)
+              //  - Review was submitted by a bot
+              //  - PR is from a fork (security)
+              //  - PR is a draft
+              if (review.state === 'approved') {
+                core.info('Review is an approval — no fixes needed.');
+                core.setOutput('should_fix', 'false');
+                return;
+              }
+              if (pr.draft) {
+                core.info('PR is a draft — skipping.');
+                core.setOutput('should_fix', 'false');
+                return;
+              }
+              if (pr.head.repo.fork) {
+                core.info('PR is from a fork — skipping for security.');
+                core.setOutput('should_fix', 'false');
+                return;
+              }
+              if (BOT_ACTORS.includes(review.user.login)) {
+                core.info(`Review from bot (${review.user.login}) — skipping.`);
+                core.setOutput('should_fix', 'false');
+                return;
+              }
+
+              prNumber = pr.number;
+              prBranch = pr.head.ref;
+              prHeadSha = pr.head.sha;
+
+            } else if (context.eventName === 'workflow_run') {
+              triggerType = 'ci_failure';
+              const run = context.payload.workflow_run;
+
+              // Only act on CI failures from non-fork PRs
+              if (run.conclusion !== 'failure') {
+                core.info('CI did not fail — nothing to fix.');
+                core.setOutput('should_fix', 'false');
+                return;
+              }
+              if (run.event !== 'pull_request') {
+                core.info('Not a PR-triggered run — skipping.');
+                core.setOutput('should_fix', 'false');
+                return;
+              }
+
+              const prs = run.pull_requests;
+              if (!prs || prs.length === 0) {
+                core.info('No PR associated with this run — skipping.');
+                core.setOutput('should_fix', 'false');
+                return;
+              }
+
+              prNumber = prs[0].number;
+              prBranch = run.head_branch;
+              prHeadSha = run.head_sha;
+
+              // If the failing branch is itself an ai-fix branch, skip
+              if (prBranch.startsWith('claude-auto-fix-ci-')) {
+                core.info('Branch is an ai-fix branch — skipping to avoid loops.');
+                core.setOutput('should_fix', 'false');
+                return;
+              }
+            }
+
+            if (!prNumber) {
+              core.info('Could not determine PR number — skipping.');
+              core.setOutput('should_fix', 'false');
+              return;
+            }
+
+            // ── Read the full PR to check labels and author ────────────────
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+
+            // Never auto-fix if the PR itself was authored by a bot
+            if (BOT_ACTORS.includes(pr.data.user.login)) {
+              core.info(`PR was opened by bot (${pr.data.user.login}) — skipping.`);
+              core.setOutput('should_fix', 'false');
+              return;
+            }
+
+            // Check if already escalated to human
+            const labels = pr.data.labels.map(l => l.name);
+            if (labels.includes('needs-human-review')) {
+              core.info('PR has `needs-human-review` label — no further automation.');
+              core.setOutput('should_fix', 'false');
+              return;
+            }
+
+            // ── Determine current cycle count ─────────────────────────────
+            const cycleLabel = labels.find(l => l.startsWith('ai-fix-cycle-'));
+            const currentCycle = cycleLabel
+              ? parseInt(cycleLabel.replace('ai-fix-cycle-', ''), 10)
+              : 0;
+            const nextCycle = currentCycle + 1;
+
+            if (nextCycle > MAX_CYCLES) {
+              core.warning(`Cycle limit (${MAX_CYCLES}) reached — escalating to human.`);
+
+              // Add escalation label
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                labels: ['needs-human-review'],
+              });
+
+              // Post escalation comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: [
+                  '## 🛑 Automated Fix Limit Reached',
+                  '',
+                  `The closed-loop pipeline has completed **${MAX_CYCLES} automated fix cycles** and issues remain unresolved.`,
+                  '',
+                  '**Action required:** A human engineer needs to review and address the remaining feedback manually.',
+                  '',
+                  '> The `needs-human-review` label has been applied to prevent further automated fix attempts.',
+                  '',
+                  `Trigger: \`${triggerType}\` | Last cycle: ${currentCycle}`,
+                ].join('\n'),
+              });
+
+              core.setOutput('should_fix', 'false');
+              return;
+            }
+
+            core.info(`Gate passed. Trigger: ${triggerType} | Cycle: ${currentCycle} → ${nextCycle}`);
+            core.setOutput('should_fix', 'true');
+            core.setOutput('pr_number', String(prNumber));
+            core.setOutput('pr_branch', prBranch);
+            core.setOutput('pr_head_sha', prHeadSha);
+            core.setOutput('current_cycle', String(currentCycle));
+            core.setOutput('next_cycle', String(nextCycle));
+            core.setOutput('trigger_type', triggerType);
+
+  # ─────────────────────────────────────────────────────────────────
+  # FIX: Collect issues and run Gemini fix agent
+  # ─────────────────────────────────────────────────────────────────
+  fix:
+    name: '🧙 Gemini Fix Agent'
+    needs: gate
+    if: needs.gate.outputs.should_fix == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    env:
+      PR_NUMBER: ${{ needs.gate.outputs.pr_number }}
+      PR_BRANCH: ${{ needs.gate.outputs.pr_branch }}
+      NEXT_CYCLE: ${{ needs.gate.outputs.next_cycle }}
+      TRIGGER_TYPE: ${{ needs.gate.outputs.trigger_type }}
+
+    steps:
+      - name: 'Checkout PR branch'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.gate.outputs.pr_branch }}
+          fetch-depth: 0
+          # Uses GITHUB_TOKEN — Gemini's commits will require
+          # "Approve and run workflows" on first bot push.
+          # Add a PAT_TOKEN secret to bypass this gate if desired.
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: 'Setup Node.js'
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: '20'
+
+      - name: 'Collect review comments and CI failures'
+        id: collect
+        uses: actions/github-script@v7
+        env:
+          TRIGGER_TYPE: ${{ needs.gate.outputs.trigger_type }}
+          CI_RUN_ID: ${{ github.event.workflow_run.id }}
+        with:
+          script: |
+            const prNumber = parseInt(process.env.PR_NUMBER, 10);
+            const triggerType = process.env.TRIGGER_TYPE;
+            const { owner, repo } = context.repo;
+            let issueLines = [];
+
+            // ── Review comments ────────────────────────────────────────────
+            if (triggerType === 'review') {
+              const reviews = await github.paginate(github.rest.pulls.listReviews, {
+                owner, repo, pull_number: prNumber,
+              });
+
+              for (const review of reviews) {
+                if (review.state !== 'CHANGES_REQUESTED') continue;
+                if (review.body) {
+                  issueLines.push(`### Review by @${review.user.login}`);
+                  issueLines.push(review.body);
+                }
+              }
+
+              // Inline review comments
+              const comments = await github.paginate(github.rest.pulls.listReviewComments, {
+                owner, repo, pull_number: prNumber,
+              });
+
+              for (const c of comments) {
+                issueLines.push(`### Inline comment on \`${c.path}\` (line ${c.original_line || c.line || '?'}):`);
+                issueLines.push(c.body);
+              }
+            }
+
+            // ── CI failure logs ────────────────────────────────────────────
+            if (triggerType === 'ci_failure') {
+              const runId = parseInt(process.env.CI_RUN_ID, 10);
+              if (runId) {
+                const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+                  owner, repo, run_id: runId,
+                });
+
+                for (const job of jobs.filter(j => j.conclusion === 'failure')) {
+                  issueLines.push(`### Failed CI job: ${job.name}`);
+                  issueLines.push(`URL: ${job.html_url}`);
+
+                  try {
+                    const logs = await github.rest.actions.downloadJobLogsForWorkflowRun({
+                      owner, repo, job_id: job.id,
+                    });
+                    // Truncate to last 4000 chars to stay within env var limits
+                    const logText = String(logs.data);
+                    issueLines.push('```');
+                    issueLines.push(logText.slice(-4000));
+                    issueLines.push('```');
+                  } catch (e) {
+                    issueLines.push(`(Could not download logs: ${e.message})`);
+                  }
+                }
+              }
+            }
+
+            const summary = issueLines.join('\n');
+            // Write to a file to avoid env var size limits
+            require('fs').writeFileSync('/tmp/fix-issues.txt', summary);
+            core.setOutput('has_issues', issueLines.length > 0 ? 'true' : 'false');
+            core.info(`Collected ${issueLines.length} issue lines.`);
+
+      - name: 'Run Gemini CLI fix agent'
+        id: run_gemini
+        if: steps.collect.outputs.has_issues == 'true'
+        uses: google-github-actions/run-gemini-cli@v0
+        env:
+          PR_NUMBER: ${{ env.PR_NUMBER }}
+          PR_BRANCH: ${{ env.PR_BRANCH }}
+          NEXT_CYCLE: ${{ env.NEXT_CYCLE }}
+          TRIGGER_TYPE: ${{ env.TRIGGER_TYPE }}
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+        with:
+          gemini_api_key: '${{ secrets.GEMINI_API_KEY }}'
+          gemini_cli_version: '${{ vars.GEMINI_CLI_VERSION }}'
+          gemini_debug: '${{ fromJSON(vars.GEMINI_DEBUG || vars.ACTIONS_STEP_DEBUG || false) }}'
+          gemini_model: '${{ vars.GEMINI_MODEL }}'
+          google_api_key: '${{ secrets.GOOGLE_API_KEY }}'
+          use_gemini_code_assist: '${{ vars.GOOGLE_GENAI_USE_GCA }}'
+          use_vertex_ai: '${{ vars.GOOGLE_GENAI_USE_VERTEXAI }}'
+          upload_artifacts: '${{ vars.UPLOAD_ARTIFACTS }}'
+          workflow_name: 'closed-loop-orchestrator'
+          settings: |-
+            {
+              "model": {
+                "maxSessionTurns": 40
+              },
+              "telemetry": {
+                "enabled": true,
+                "target": "local",
+                "outfile": ".gemini/telemetry.log"
+              },
+              "mcpServers": {
+                "github": {
+                  "command": "docker",
+                  "args": [
+                    "run",
+                    "-i",
+                    "--rm",
+                    "-e",
+                    "GITHUB_PERSONAL_ACCESS_TOKEN",
+                    "ghcr.io/github/github-mcp-server:v0.27.0"
+                  ],
+                  "includeTools": [
+                    "add_issue_comment",
+                    "pull_request_read",
+                    "get_file_contents",
+                    "list_commits",
+                    "get_commit",
+                    "search_code",
+                    "push_files",
+                    "create_or_update_file"
+                  ],
+                  "env": {
+                    "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+                  }
+                }
+              },
+              "tools": {
+                "core": [
+                  "run_shell_command(npm)",
+                  "run_shell_command(git)",
+                  "run_shell_command(cat)",
+                  "run_shell_command(ls)",
+                  "run_shell_command(grep)",
+                  "run_shell_command(head)",
+                  "run_shell_command(tail)",
+                  "run_shell_command(echo)"
+                ]
+              }
+            }
+          prompt: '/closed-loop-fix'
+
+      - name: 'Commit and push fixes'
+        id: commit
+        run: |
+          git config user.name "gemini-fix-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Only proceed if Gemini made changes
+          if git diff --quiet && git diff --staged --quiet; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "No file changes detected — nothing to commit."
+            exit 0
+          fi
+
+          git add -A
+          COMMIT_MSG="[ai-fix] cycle-${NEXT_CYCLE}: address ${TRIGGER_TYPE} issues [skip ci-failure-suggest]"
+          git commit -m "$COMMIT_MSG"
+          git push origin "${PR_BRANCH}"
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          echo "Pushed fix commit for cycle ${NEXT_CYCLE}."
+
+      - name: 'Update cycle label'
+        if: steps.commit.outputs.has_changes == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = parseInt(process.env.PR_NUMBER, 10);
+            const nextCycle = parseInt(process.env.NEXT_CYCLE, 10);
+            const { owner, repo } = context.repo;
+
+            // Remove old ai-fix-cycle-* labels
+            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
+              owner, repo, issue_number: prNumber,
+            });
+            for (const label of labels.filter(l => l.name.startsWith('ai-fix-cycle-'))) {
+              await github.rest.issues.removeLabel({
+                owner, repo, issue_number: prNumber, name: label.name,
+              });
+            }
+
+            // Add the new cycle label (create it if it doesn't exist yet)
+            const labelName = `ai-fix-cycle-${nextCycle}`;
+            try {
+              await github.rest.issues.getLabel({ owner, repo, name: labelName });
+            } catch {
+              await github.rest.issues.createLabel({
+                owner,
+                repo,
+                name: labelName,
+                color: nextCycle === 1 ? 'fbca04' : 'e4e669',
+                description: `Automated fix cycle ${nextCycle}`,
+              });
+            }
+            await github.rest.issues.addLabels({
+              owner, repo, issue_number: prNumber, labels: [labelName],
+            });
+
+      - name: 'Post status comment when no changes were made'
+        if: steps.collect.outputs.has_issues == 'true' && steps.commit.outputs.has_changes == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = parseInt(process.env.PR_NUMBER, 10);
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: [
+                '## 🤖 Gemini Fix Agent — No Changes',
+                '',
+                `Cycle **${process.env.NEXT_CYCLE}** ran but produced no file changes.`,
+                '',
+                'This usually means the flagged issues require architectural decisions or context that the agent cannot resolve automatically.',
+                '',
+                '**Recommended:** Review the issues manually and address them directly.',
+              ].join('\n'),
+            });

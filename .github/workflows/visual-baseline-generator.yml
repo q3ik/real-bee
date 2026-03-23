@@ -1,0 +1,64 @@
+name: Generate Visual Regression Baselines
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref to generate baselines for'
+        required: false
+        default: 'main'
+        type: string
+concurrency:
+  group: generate-baselines-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  generate-baselines:
+    name: Generate and Commit Baselines
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || 'main' }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Setup Node
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: '20'
+      - name: Build app
+        env:
+          VITE_TEST_MODE: 'true'
+        run: npm run build
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Generate baseline screenshots
+        env:
+          CI_USE_DIST: 'true'
+        run: npm run test:e2e:visual:update || true
+      - name: Commit baseline screenshots
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add tests/e2e/visual-regression.spec.js-snapshots/
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            git commit -m "chore: add baseline screenshots [skip ci]"
+            git push
+          fi
+      - name: Upload snapshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: baseline-screenshots
+          path: tests/e2e/visual-regression.spec.js-snapshots/
+          retention-days: 30
+          if-no-files-found: warn
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: baseline-generation-report
+          path: playwright-report/
+          retention-days: 7

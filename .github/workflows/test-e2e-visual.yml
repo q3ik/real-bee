@@ -1,0 +1,129 @@
+name: Visual Regression Tests
+
+on:
+  # Called by the main CI pipeline
+  workflow_call:
+  # Manual trigger — also used to update baselines
+  workflow_dispatch:
+    inputs:
+      update_snapshots:
+        description: 'Update baseline screenshots and commit them'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: visual-regression-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  visual-regression:
+    name: Visual Regression (chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write   # needed to commit updated snapshots when update_snapshots=true
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Use a PAT so that pushing snapshot commits triggers CI
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # Check out the actual branch head (not the PR merge ref) so that
+          # the "Commit updated baselines" step can push back to the branch.
+          ref: ${{ github.head_ref || github.ref }}
+
+      - name: Setup Node
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: '20'
+
+      - name: Download build artifact
+        id: download-artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: dist/
+        continue-on-error: true
+
+      - name: Build if artifact not available
+        if: steps.download-artifact.outcome == 'failure'
+        env:
+          VITE_TEST_MODE: 'true'
+        run: npm run build
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      # ── Normal run: compare against committed baselines ──────────────────────
+      # --update-snapshots=missing creates a new baseline the first time a snapshot
+      # doesn't exist, but Playwright still exits 1 in that case. We capture the
+      # exit code and check whether any *actual* failures occurred beyond new-baseline
+      # creation. If the only failures are "snapshot written for the first time",
+      # we proceed (the new file will be committed and pushed in the next step).
+      - name: Run visual regression tests
+        if: ${{ !inputs.update_snapshots }}
+        id: playwright-run
+        env:
+          CI_USE_DIST: 'true'
+        run: |
+          set +e
+          npx playwright test visual-regression --project=chromium --update-snapshots=missing
+          PLAYWRIGHT_EXIT=$?
+          set -e
+          if [ $PLAYWRIGHT_EXIT -ne 0 ]; then
+            DIFF_COUNT=$(find test-results -name '*-diff.png' 2>/dev/null | wc -l)
+            NEW_SNAPSHOT_COUNT=$(git status --porcelain | grep -E '\.snap$|__snapshots__/|tests/e2e/.*/.*\.png$' | wc -l || true)
+
+            if [ "$DIFF_COUNT" -eq 0 ] && [ "$NEW_SNAPSHOT_COUNT" -gt 0 ]; then
+              echo "Playwright failed but wrote new baselines (no diffs). Treating as success."
+              exit 0
+            fi
+
+            echo "Playwright failed. Diffs: $DIFF_COUNT, New snapshots: $NEW_SNAPSHOT_COUNT"
+            exit 1
+          fi
+
+      # ── Baseline update: force-regenerate ALL snapshots ──────────────────────
+      - name: Update baseline screenshots
+        if: ${{ inputs.update_snapshots }}
+        env:
+          CI_USE_DIST: 'true'
+        run: npm run test:e2e:visual:update
+
+      # ── Commit any new or updated baselines back to the branch ───────────────
+      # Runs after both the normal run (missing baselines written) and the
+      # explicit update run (all baselines regenerated). The git diff guard
+      # makes this a no-op when nothing changed.
+      - name: Commit updated baselines
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add tests/e2e/visual-regression.spec.js-snapshots/
+          if git diff --cached --quiet; then
+            echo "No snapshot changes to commit."
+          else
+            git commit -m "chore: update visual regression baseline screenshots [skip ci]"
+            git push
+          fi
+
+      # ── Always upload artifacts for review ───────────────────────────────────
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-report
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Upload screenshot diffs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-diffs
+          path: |
+            tests/e2e/visual-regression.spec.js-snapshots/
+            test-results/
+          retention-days: 14
+          if-no-files-found: ignore

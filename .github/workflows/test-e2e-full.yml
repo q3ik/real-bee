@@ -1,0 +1,93 @@
+name: E2E Tests - Full Cross-Browser
+
+on:
+  workflow_dispatch:
+    inputs:
+      shards:
+        description: 'Number of shards per browser (higher = faster, more cost)'
+        required: false
+        default: '2'
+        type: choice
+        options:
+          - '1'
+          - '2'
+          - '3'
+      browsers:
+        description: 'Browsers to test (comma-separated: chromium,firefox,webkit)'
+        required: false
+        default: 'chromium,firefox,webkit'
+        type: string
+
+concurrency:
+  group: test-e2e-full-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e-cross-browser:
+    name: E2E - ${{ matrix.browser }} (Shard ${{ matrix.shard }}/${{ inputs.shards || 2 }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+        shard: [1, 2]
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: '20'
+
+      - name: Download build artifact
+        id: download-artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: dist/
+        continue-on-error: true
+
+      - name: Build if artifact not found
+        if: steps.download-artifact.outcome == 'failure'
+        run: |
+          npm run build
+          echo "Built locally since artifact wasn't available"
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Run Playwright tests on ${{ matrix.browser }}
+        run: npx playwright test --project=${{ matrix.browser }} --shard=${{ matrix.shard }}/${{ inputs.shards || 2 }}
+        env:
+          CI_USE_DIST: 'true'
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.browser }}-shard-${{ matrix.shard }}
+          path: playwright-report/
+          retention-days: 7
+
+  summary:
+    name: Test Summary
+    if: always()
+    needs: [e2e-cross-browser]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate summary
+        run: |
+          {
+            echo "## Full Cross-Browser E2E Test Results"
+            echo ""
+            echo "| Browser | Status |"
+            echo "| --- | --- |"
+            echo "| Chromium | ${{ needs.e2e-cross-browser.result }} |"
+            echo "| Firefox | ${{ needs.e2e-cross-browser.result }} |"
+            echo "| WebKit | ${{ needs.e2e-cross-browser.result }} |"
+            echo ""
+            echo "**Shards per browser:** ${{ inputs.shards || 2 }}"
+            echo "**Total test jobs:** $(( 3 * ${{ inputs.shards || 2 }} ))"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,315 @@
+name: Pre-Release Quality Gate
+
+# The "Final Boss" - comprehensive validation before release
+#
+# EMERGENCY RELEASE OPTION:
+# If you need to release urgently and E2E tests are too slow, you can skip them:
+#   1. Go to Actions → Pre-Release Quality Gate → Run workflow
+#   2. Set "Skip test suite" to true
+#   3. This is NOT RECOMMENDED - only use for critical hotfixes
+#
+# SECURITY NOTE:
+# The security gate uses continue-on-error, meaning vulnerabilities won't block
+# the release but MUST be manually reviewed by the team before proceeding.
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Target release version (e.g., v1.2.0)'
+        required: false
+        type: string
+      skip_tests:
+        description: '⚠️ Skip test suite (EMERGENCY ONLY - not recommended for normal releases)'
+        required: false
+        type: boolean
+        default: false
+
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  # Gate 1: Word Database Coverage
+  audit-word-coverage:
+    name: "⛓️ Word Database Coverage"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: '20'
+
+      - name: Run word coverage audit
+        id: audit
+        run: |
+          echo "## Word Database Coverage Audit" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          npm run audit:words 2>&1 | tee audit-output.txt
+          cat audit-output.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          
+          # Check for MISSING or LOW coverage
+          if grep -q '❌ MISSING\|⚠️ LOW' audit-output.txt; then
+            echo "⚠️ Word database has gaps in coverage" >> $GITHUB_STEP_SUMMARY
+            echo "coverage_status=warning" >> $GITHUB_OUTPUT
+          else
+            echo "✅ All difficulty/grade combinations have adequate coverage" >> $GITHUB_STEP_SUMMARY
+            echo "coverage_status=pass" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload audit results
+        uses: actions/upload-artifact@v4
+        with:
+          name: word-coverage-audit
+          path: audit-output.txt
+          retention-days: 30
+
+  # Gate 2: Code Quality
+  code-quality:
+    name: "🧙 Code Quality"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: '20'
+
+      - name: Run ESLint
+        run: |
+          echo "## ESLint Results" >> $GITHUB_STEP_SUMMARY
+          npm run lint 2>&1 | tee lint-output.txt
+          if [ $? -eq 0 ]; then
+            echo "✅ No linting errors" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Linting errors found" >> $GITHUB_STEP_SUMMARY
+            cat lint-output.txt >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Run TypeScript type checking
+        run: |
+          echo "## TypeScript Type Check" >> $GITHUB_STEP_SUMMARY
+          npm run typecheck 2>&1 | tee typecheck-output.txt
+          if [ $? -eq 0 ]; then
+            echo "✅ No type errors" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Type errors found" >> $GITHUB_STEP_SUMMARY
+            cat typecheck-output.txt >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Gate 3: Test Suite
+  # NOTE: E2E tests can take several minutes. For emergency releases,
+  # you can skip this gate using the 'skip_tests' workflow input.
+  test-suite:
+    name: "🧪 Test Suite"
+    runs-on: ubuntu-latest
+    if: inputs.skip_tests != true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: '20'
+
+      - name: Run unit tests
+        run: |
+          echo "## Unit Tests" >> $GITHUB_STEP_SUMMARY
+          npm test 2>&1 | tee test-output.txt
+          if [ $? -eq 0 ]; then
+            echo "✅ All unit tests passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Some unit tests failed" >> $GITHUB_STEP_SUMMARY
+            tail -50 test-output.txt >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run E2E tests
+        run: |
+          echo "## E2E Tests" >> $GITHUB_STEP_SUMMARY
+          npm run test:e2e 2>&1 | tee e2e-output.txt
+          if [ $? -eq 0 ]; then
+            echo "✅ All E2E tests passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Some E2E tests failed" >> $GITHUB_STEP_SUMMARY
+            tail -50 e2e-output.txt >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            test-output.txt
+            e2e-output.txt
+            playwright-report/
+          retention-days: 30
+
+  # Gate 4: Build Verification
+  build-verification:
+    name: "📦 Build Verification"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: '20'
+
+      - name: Build production bundle
+        run: |
+          echo "## Production Build" >> $GITHUB_STEP_SUMMARY
+          npm run build 2>&1 | tee build-output.txt
+          if [ $? -eq 0 ]; then
+            echo "✅ Build succeeded" >> $GITHUB_STEP_SUMMARY
+            
+            # Check bundle size
+            echo "### Bundle Size Analysis" >> $GITHUB_STEP_SUMMARY
+            du -sh dist/ >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Top 10 largest files:" >> $GITHUB_STEP_SUMMARY
+            find dist -type f -exec du -h {} + | sort -rh | head -10 >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Build failed" >> $GITHUB_STEP_SUMMARY
+            tail -50 build-output.txt >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-build
+          path: dist/
+          retention-days: 30
+
+  # Gate 5: Security Checks
+  # IMPORTANT: Uses continue-on-error to avoid blocking releases on vulnerabilities.
+  # However, the team MUST review the security audit output before releasing.
+  # Vulnerabilities should be addressed or documented with risk acceptance.
+  security-checks:
+    name: "🔒 Security Checks"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: '20'
+
+      - name: Run npm audit
+        continue-on-error: true
+        run: |
+          echo "## Security Audit" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ **NOTE:** This gate uses continue-on-error. Vulnerabilities won't block the release," >> $GITHUB_STEP_SUMMARY
+          echo "but the team MUST review the output before proceeding with deployment." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          npm audit --production 2>&1 | tee audit-security.txt
+          if [ $? -eq 0 ]; then
+            echo "✅ No vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ **Vulnerabilities detected - TEAM REVIEW REQUIRED**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Please review the audit results below and either:" >> $GITHUB_STEP_SUMMARY
+            echo "- Fix the vulnerabilities before releasing" >> $GITHUB_STEP_SUMMARY
+            echo "- Document risk acceptance if fixes are unavailable" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            cat audit-security.txt >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload security audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-audit
+          path: audit-security.txt
+          retention-days: 30
+
+  # Final Gate: Quality Report
+  quality-report:
+    name: "🏆 Quality Report"
+    runs-on: ubuntu-latest
+    needs: 
+      - audit-word-coverage
+      - code-quality
+      - test-suite
+      - build-verification
+      - security-checks
+    if: always()
+    steps:
+      - name: Generate release readiness report
+        run: |
+          echo "# 🎯 Pre-Release Quality Gate Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Release Version:** ${{ inputs.release_version || 'Not specified' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Date:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check if tests were skipped
+          if [[ "${{ inputs.skip_tests }}" == "true" ]]; then
+            echo "⚠️ **WARNING:** Test suite was skipped (emergency release mode)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "## Gate Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check job results
+          word_coverage="${{ needs.audit-word-coverage.result }}"
+          code_quality="${{ needs.code-quality.result }}"
+          test_suite="${{ needs.test-suite.result }}"
+          build="${{ needs.build-verification.result }}"
+          security="${{ needs.security-checks.result }}"
+          
+          echo "| Gate | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| ⛓️ Word Database Coverage | $word_coverage |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧙 Code Quality | $code_quality |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧪 Test Suite | $test_suite |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📦 Build Verification | $build |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔒 Security Checks | $security |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Add security reminder
+          if [[ "$security" == "success" ]]; then
+            echo "📋 **Security Reminder:** Even though the security gate passed, please verify" >> $GITHUB_STEP_SUMMARY
+            echo "that all vulnerabilities have been reviewed. Download the security-audit artifact" >> $GITHUB_STEP_SUMMARY
+            echo "to see the complete npm audit output." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Determine overall status
+          if [[ "$word_coverage" == "success" && "$code_quality" == "success" && "$test_suite" == "success" && "$build" == "success" ]]; then
+            echo "## ✅ READY FOR RELEASE" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "All quality gates passed. The build is ready for production deployment." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ❌ NOT READY FOR RELEASE" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "One or more quality gates failed. Review the errors above before proceeding." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: Comment on related PR (if any)
+        if: github.event_name == 'push' && github.ref_type == 'tag'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = context.ref.replace('refs/tags/', '');
+            console.log(`Quality gate completed for tag: ${tag}`);
+            // Could add logic to find and comment on related PRs

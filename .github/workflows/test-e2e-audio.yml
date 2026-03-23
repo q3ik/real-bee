@@ -1,0 +1,119 @@
+name: E2E Audio Tests
+
+on:
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'src/lib/audioSessionManager.js'
+      - 'src/hooks/useSpeechSynthesis.js'
+      - 'src/hooks/useVoiceRecognition.js'
+      - 'src/pages/Home.jsx'
+      - 'tests/e2e/audio-routing.spec.ts'
+      - '.github/workflows/test-e2e-audio.yml'
+  
+  workflow_dispatch:
+
+concurrency:
+  group: test-e2e-audio-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audio-e2e:
+    name: Audio E2E - ${{ matrix.project }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [chromium, webkit, "Mobile Safari"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: '20'
+
+      - name: Install Playwright browsers
+        run: |
+          if [ "${{ matrix.project }}" = "chromium" ]; then
+            npx playwright install --with-deps chromium
+          elif [ "${{ matrix.project }}" = "webkit" ]; then
+            npx playwright install --with-deps webkit
+          elif [ "${{ matrix.project }}" = "Mobile Safari" ]; then
+            npx playwright install --with-deps webkit
+          else
+            npx playwright install --with-deps chromium
+          fi
+
+      - name: Download build artifact
+        id: download-artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: dist/
+        continue-on-error: true
+
+      - name: Build if artifact not available
+        if: steps.download-artifact.outcome == 'failure'
+        env:
+          VITE_TEST_MODE: 'true'
+        run: npm run build
+
+      - name: Run audio routing tests (Chromium)
+        if: ${{ matrix.project == 'chromium' }}
+        env:
+          CI_USE_DIST: 'true'
+          TEST_AUDIO: 'true'
+          PLAYWRIGHT_CHROMIUM_SANDBOX: 'false'
+        run: npx playwright test tests/e2e/audio-routing.spec.ts --project="${{ matrix.project }}"
+
+      - name: Run audio routing tests (non-Chromium)
+        if: ${{ matrix.project != 'chromium' }}
+        env:
+          CI_USE_DIST: 'true'
+          TEST_AUDIO: 'true'
+        run: npx playwright test tests/e2e/audio-routing.spec.ts --project="${{ matrix.project }}"
+
+      - name: Upload test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: audio-e2e-report-${{ matrix.project }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+      - name: Comment on PR (on failure)
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const project = '${{ matrix.project }}';
+            const body = `## ❌ Audio E2E Test Failed (${project})
+            
+            The audio routing E2E tests failed on ${project}. This could indicate:
+            
+            - AudioContext initialization issues
+            - Changes affecting audio session management
+            - Regressions in voice recognition or TTS integration
+            - Browser compatibility issues (Safari/WebKit has different audio handling)
+            
+            **Files affected**:
+            - \`src/lib/audioSessionManager.js\`
+            - \`src/hooks/useSpeechSynthesis.js\`
+            - \`src/hooks/useVoiceRecognition.js\`
+            
+            Please review the test results and ensure audio routing works correctly.
+            
+            See [Audio Routing Documentation](https://github.com/${{ github.repository }}/blob/main/docs/AUDIO_ROUTING.md) for details on browser limitations.
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });

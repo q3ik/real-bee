@@ -1,0 +1,88 @@
+name: Sanity Check
+
+on:
+  workflow_call:  # Called by ci.yml and nightly.yml; no direct PR trigger to avoid duplicate runs
+    inputs:
+      ref:
+        description: 'Branch, tag, or SHA to check out (defaults to github.sha — the triggered commit)'
+        required: false
+        type: string
+  workflow_dispatch:
+
+concurrency:
+  group: sanity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sanity:
+    name: Quick Sanity Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: '20'
+
+      - name: Verify package.json integrity
+        run: |
+          echo "Checking package.json is valid JSON..."
+          node -e "require('./package.json')"
+          echo "✓ package.json is valid"
+
+      - name: Check for missing dependencies
+        run: |
+          echo "Verifying all imports have corresponding dependencies..."
+          # This will fail if any imports can't be resolved
+          npm ls --depth=0 || exit 1
+          echo "✓ All dependencies resolved"
+
+      - name: Verify critical files exist
+        run: |
+          echo "Checking critical configuration files..."
+          test -f package.json && echo "✓ package.json"
+          test -f vite.config.js && echo "✓ vite.config.js"
+          test -f vitest.config.js && echo "✓ vitest.config.js"
+          test -f jsconfig.json && echo "✓ jsconfig.json"
+          test -d src && echo "✓ src/ directory"
+          test -d functions && echo "✓ functions/ directory"
+          echo "✓ All critical files present"
+
+      - name: Check JavaScript syntax
+        run: |
+          echo "Checking for syntax errors in source files..."
+          # Only check .js files - JSX files are validated by ESLint and build process
+          find src -name "*.js" -type f | while read file; do
+            node --check "$file" || exit 1
+          done
+          find functions -name "*.js" -type f | while read file; do
+            node --check "$file" || exit 1
+          done
+          echo "✓ No syntax errors found in .js files"
+          echo "ℹ JSX files are validated by ESLint and the build process"
+
+      - name: Sanity check summary
+        if: success()
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ All sanity checks passed!"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Package integrity: ✓"
+          echo "Dependencies: ✓"
+          echo "File structure: ✓"
+          echo "Syntax: ✓"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "CI will now run full lint and tests."
+
+  typecheck:
+    # Runs in parallel with the sanity job above — both must pass before ci.yml
+    # proceeds to quality/build. Typecheck is intentionally in the sanity gate
+    # so type errors fail fast, before lint or unit tests run.
+    name: Type Check
+    permissions: {}
+    uses: ./.github/workflows/typecheck.yml

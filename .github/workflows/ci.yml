@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, master]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+  
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sanity:
+    name: Sanity Check
+    uses: ./.github/workflows/sanity-check.yml
+
+  quality:
+    name: Lint + Unit tests
+    runs-on: ubuntu-latest
+    needs: sanity
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: '20'
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+  build:
+    name: Build
+    needs: sanity
+    permissions: {}
+    uses: ./.github/workflows/build.yml
+
+  e2e:
+    name: Playwright E2E
+    needs: [quality, build]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/test-e2e.yml
+
+  # Fix #687: Run visual regression tests as a separate CI job so screenshot
+  # failures are isolated and their artifacts are easy to find.
+  visual-regression:
+    name: Visual Regression
+    needs: [quality, build]
+    # Prevent forked PRs from gaining contents:write access to the base repo.
+    # On a fork, the GITHUB_TOKEN only has read scope anyway, so this guard
+    # avoids a misleading permissions escalation and keeps least-privilege.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
+    permissions:
+      contents: write   # test-e2e-visual.yml job requests write to commit updated snapshots
+    uses: ./.github/workflows/test-e2e-visual.yml

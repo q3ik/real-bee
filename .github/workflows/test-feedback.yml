@@ -1,0 +1,33 @@
+name: Feedback System Tests
+
+on:
+  pull_request:
+    paths:
+      # Direct feedback implementation files
+      - 'src/api/feedback.ts'
+      - 'src/pages/AdminFeedback.tsx'
+      - 'src/components/admin/**'
+
+      # Shared infrastructure that feedback depends on
+      - 'src/lib/supabase.ts'
+      - 'src/api/client.ts'
+
+      # Test infrastructure that affects feedback tests
+      - 'src/test/setup.tsx'
+      - 'vitest.config.ts'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: '20'
+
+      - name: Run feedback-focused tests with coverage
+        run: npm test -- --coverage src/api/__tests__/feedback.integration.test.ts src/pages/__tests__/AdminFeedback.test.tsx

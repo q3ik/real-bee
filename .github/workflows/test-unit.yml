@@ -1,0 +1,53 @@
+name: Unit Tests
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+concurrency:
+  group: test-unit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-unit:
+    name: Run unit test suites
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: '20'
+
+      - name: Run hook tests
+        run: npm test -- src/hooks/
+
+      - name: Run utility tests
+        run: npm test -- src/utils/
+
+      - name: Run context and API tests
+        run: npm test -- src/contexts/ src/api/
+
+      - name: Run game-engine tests
+        run: npm test -- src/game-engine/
+
+      - name: Run coverage report for game-engine modules
+        run: npm run test:coverage -- src/game-engine/ src/utils/normalization.test.js
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: test-results/
+          retention-days: 5
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 5

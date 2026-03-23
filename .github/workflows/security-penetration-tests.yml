@@ -1,0 +1,196 @@
+name: Security Penetration Tests
+
+# Required Secrets for Full Test Coverage:
+# - SLACK_BOT_TOKEN: Bot token for Slack API access (tests will skip Slack verification if not set)
+# - SLACK_FEEDBACK_CHANNEL_ID: Channel ID where feedback is posted (tests will skip Slack verification if not set)
+#
+# Note: Tests will run successfully without these secrets, but Slack delivery verification will be skipped.
+
+on:
+  pull_request:
+    paths:
+      - 'functions/api/feedback.js'
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * 1' # Weekly Monday 2 AM UTC
+
+jobs:
+  penetration-tests:
+    runs-on: ubuntu-latest
+    
+    env:
+      FEEDBACK_API_URL: https://buzzy-game.pages.dev/api/feedback
+      TEST_ORIGIN: https://buzzy-game.pages.dev
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: '20'
+      
+      - name: Run security penetration tests
+        id: security-tests
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_FEEDBACK_CHANNEL_ID: ${{ secrets.SLACK_FEEDBACK_CHANNEL_ID }}
+        run: |
+          # Ensure test-results directory exists even if tests fail early
+          mkdir -p test-results
+          
+          # Run tests and capture exit code
+          npm run test:security
+          TEST_EXIT_CODE=$?
+          
+          # If tests failed and no summary was created, create an error summary
+          if [ $TEST_EXIT_CODE -ne 0 ] && [ ! -f test-results/security-summary.json ]; then
+            echo '{"error": "Test execution failed before completion", "exitCode": '$TEST_EXIT_CODE'}' > test-results/security-summary.json
+          fi
+          
+          exit $TEST_EXIT_CODE
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-test-results
+          path: test-results/
+      
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            const summaryPath = 'test-results/security-summary.json';
+            const resultsDir = 'test-results';
+            
+            // Check if test-results directory exists
+            if (!fs.existsSync(resultsDir)) {
+              const errorComment = `## 🔒 Security Penetration Test Results
+              
+              ❌ **Test execution failed catastrophically**
+              
+              The test-results directory was not created, indicating a critical failure before test initialization:
+              - Test runner failed to start
+              - Dependency installation failed
+              - Severe syntax error preventing test file parsing
+              
+              Please check the workflow logs for details.`;
+              
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: errorComment
+              });
+              
+              core.setFailed('Test results directory not found');
+              return;
+            }
+            
+            // Check if the summary file exists
+            if (!fs.existsSync(summaryPath)) {
+              const errorComment = `## 🔒 Security Penetration Test Results
+              
+              ❌ **Test execution failed**
+              
+              The security test suite did not complete successfully. The summary file was not generated, which typically indicates:
+              - Syntax error in test files preventing execution
+              - Test framework failed to initialize
+              - Test execution was interrupted before afterAll hook
+              - Early crash in test setup
+              
+              Please check the workflow logs and uploaded artifacts for details.`;
+              
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: errorComment
+              });
+              
+              core.setFailed('Security summary file not found');
+              return;
+            }
+            
+            // Read and parse the summary file
+            let results;
+            try {
+              const fileContent = fs.readFileSync(summaryPath, 'utf8');
+              results = JSON.parse(fileContent);
+            } catch (error) {
+              const parseErrorComment = `## 🔒 Security Penetration Test Results
+              
+              ❌ **Failed to parse test results**
+              
+              Error: ${error.message}
+              
+              The summary file exists but could not be parsed. This may indicate:
+              - Corrupted JSON output
+              - Incomplete file write
+              - Test execution interrupted during summary generation
+              
+              Please check the workflow logs for details.`;
+              
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: parseErrorComment
+              });
+              
+              core.setFailed('Failed to parse security summary');
+              return;
+            }
+            
+            // Check if this is an error summary
+            if (results.error) {
+              const errorComment = `## 🔒 Security Penetration Test Results
+              
+              ❌ **Test execution failed**
+              
+              ${results.error}
+              Exit code: ${results.exitCode || 'unknown'}
+              
+              Please check the workflow logs for details.`;
+              
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: errorComment
+              });
+              
+              core.setFailed('Security tests failed');
+              return;
+            }
+            
+            // Generate normal results comment
+            const comment = `## 🔒 Security Penetration Test Results
+            
+            | Test Category | Status | Details |
+            |--------------|--------|---------|
+            | Input Validation | ${results.inputValidation.passed ? '✅ PASS' : '❌ FAIL'} | ${results.inputValidation.tests} tests |
+            | CORS Protection | ${results.cors.passed ? '✅ PASS' : '❌ FAIL'} | ${results.cors.tests} tests |
+            | Injection Prevention | ${results.injection.passed ? '✅ PASS' : '❌ FAIL'} | ${results.injection.tests} tests |
+            | Error Handling | ${results.errorHandling.passed ? '✅ PASS' : '❌ FAIL'} | ${results.errorHandling.tests} tests |
+            | Slack Delivery | ${results.slackDelivery.passed ? '✅ PASS' : '❌ FAIL'} | ${results.slackDelivery.tests} tests |
+            
+            **Overall:** ${results.allPassed ? '✅ All security tests passed' : '❌ Security issues detected'}
+            `;
+            
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+            
+            // Fail the workflow if security issues were detected
+            if (!results.allPassed) {
+              core.setFailed('Security tests detected issues');
+            }

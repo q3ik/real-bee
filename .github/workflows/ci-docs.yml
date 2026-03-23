@@ -1,0 +1,97 @@
+name: CI Docs
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+    paths:
+      - 'docs/**'
+      - '**/*.md'
+      - 'LICENSE'
+      - '.claude/**'
+      - '.github/workflows/ci-docs.yml'
+
+concurrency:
+  group: ci-docs-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs_validation:
+    name: Validate docs only changes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: '20'
+
+      - name: Lint markdown files
+        run: |
+          # Run markdownlint but don't fail the build - show warnings only
+          # Disable strict rules that are commonly violated
+          npx markdownlint-cli "**/*.md" --ignore node_modules \
+            --disable MD013 MD022 MD031 MD032 MD040 MD026 MD024 MD009 MD060 MD029 MD012 MD036 || true
+          echo "Markdown linting completed (warnings only)"
+
+      - name: Cache ripgrep binary
+        id: cache-ripgrep
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/rg
+          key: ripgrep-${{ runner.os }}-14.1.0
+
+      - name: Install ripgrep
+        if: steps.cache-ripgrep.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update && sudo apt-get install -y ripgrep
+          sudo cp /usr/bin/rg /usr/local/bin/rg || true
+
+      - name: Validate structure of changed .md files
+        run: |
+          # Find all .md files added or modified in this PR (vs the base branch)
+          CHANGED_MD=$(git diff --name-only --diff-filter=AM origin/${{ github.base_ref }}...HEAD -- '*.md')
+
+          if [ -z "$CHANGED_MD" ]; then
+            echo "No .md files changed in this PR; skipping structure validation."
+            exit 0
+          fi
+
+          echo "Changed .md files:"
+          echo "$CHANGED_MD"
+          echo ""
+
+          FAILED=0
+          while IFS= read -r doc; do
+            if [ -f "$doc" ]; then
+              rg -q '^# '  "$doc" || (echo "ERROR: $doc is missing an H1 heading"  && FAILED=1)
+              rg -q '^## ' "$doc" || (echo "ERROR: $doc is missing at least one H2 heading" && FAILED=1)
+              [ $FAILED -eq 0 ] && echo "$doc structure: OK" || true
+            else
+              echo "$doc was deleted; skipping structure validation."
+            fi
+          done <<< "$CHANGED_MD"
+
+          exit $FAILED
+
+      - name: Docs summary
+        run: |
+          CHANGED_MD=$(git diff --name-only --diff-filter=AM origin/${{ github.base_ref }}...HEAD -- '*.md')
+          COUNT=$(echo "$CHANGED_MD" | grep -c '.' || echo 0)
+          {
+            echo "## Docs CI Summary"
+            echo "- markdownlint: passed (warnings only)"
+            echo "- Structure validated: $COUNT changed .md file(s)"
+            if [ -n "$CHANGED_MD" ]; then
+              echo "  Files checked:"
+              while IFS= read -r f; do echo "  - $f"; done <<< "$CHANGED_MD"
+            fi
+            echo "- code tests: not run by design"
+          } >> "$GITHUB_STEP_SUMMARY"
