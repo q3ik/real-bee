@@ -1,0 +1,7 @@
+{
+  "name": "Real Bee",
+  "description": "An interactive, voice-powered spelling bee game for K-8 students with adaptive difficulty and offline support.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

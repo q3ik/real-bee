@@ -1,0 +1,85 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: users
+    // Document ID: userId (Firebase Auth UID)
+    // Fields:
+    //   - uid: string (required)
+    //   - score: number (required)
+    //   - streak: number (required)
+    //   - bestStreak: number (optional)
+    //   - masteredCount: number (required)
+    //   - gradeLevel: string (optional)
+    //   - difficulty: string (optional)
+    //   - lastPlayed: string (optional, ISO 8601)
+    //
+    // Collection: sessions
+    // Document ID: sessionId
+    // Fields:
+    //   - uid: string (required)
+    //   - startTime: string (required, ISO 8601)
+    //   - endTime: string (optional, ISO 8601)
+    //   - wordsSpelled: number (optional)
+    //   - correctCount: number (optional)
+    //   - difficultyEvolution: list (optional)
+    //
+    // Collection: feedback
+    // Document ID: feedbackId
+    // Fields:
+    //   - uid: string (optional)
+    //   - message: string (required)
+    //   - diagnosticState: map (optional)
+    //   - timestamp: string (required, ISO 8601)
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "jayakubik@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string && 
+        dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create, update: if isOwner(userId) && 
+        hasOnlyAllowedFields(['uid', 'score', 'streak', 'bestStreak', 'masteredCount', 'gradeLevel', 'difficulty', 'lastPlayed', 'role']) &&
+        (request.resource.data.role == 'user' || (resource != null && request.resource.data.role == resource.data.role) || isAdmin());
+    }
+
+    match /sessions/{sessionId} {
+      allow read: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+    }
+
+    match /feedback/{feedbackId} {
+      allow create: if true; // Allow guest feedback
+      allow read: if isAdmin();
+    }
+  }
+}
