@@ -16,7 +16,9 @@
     "test:coverage": "vitest --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:debug": "playwright test --debug"
+    "test:e2e:debug": "playwright test --debug",
+    "dev:functions": "wrangler pages dev --port 8788 --proxy 5173",
+    "dev:full": "concurrently -n vite,wrangler -c cyan,magenta \"npm run dev\" \"npm run dev:functions\""
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
@@ -38,6 +40,8 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.31.0",
+    "@cloudflare/workers-types": "^4.20260405.1",
     "@playwright/test": "^1.58.2",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
@@ -55,6 +59,7 @@
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
-    "vitest": "^4.0.18"
+    "vitest": "^4.0.18",
+    "wrangler": "^4.80.0"
   }
 }

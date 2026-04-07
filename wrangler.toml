@@ -1,0 +1,17 @@
+name = "real-bee"
+pages_build_output_dir = "dist"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# D1 database — fill in database_id after running: wrangler d1 create real-bee-db
+[[d1_databases]]
+database_id = "FILL_IN_AFTER_wrangler_d1_create"
+binding = "DB"
+database_name = "real-bee-db"
+
+[vars]
+# Comma-separated allowed origins for CORS. Empty = use defaults.
+ALLOWED_ORIGINS = ""
+
+# Secrets (never in wrangler.toml — set via `wrangler secret put`):
+#   GEMINI_API_KEY
