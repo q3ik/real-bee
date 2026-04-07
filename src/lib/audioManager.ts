@@ -1,5 +1,3 @@
-import { GoogleGenAI, Modality } from "@google/genai";
-
 class AudioManager {
   private audioContext: AudioContext | null = null;
   private isMuted: boolean = false;
@@ -30,16 +28,16 @@ class AudioManager {
     if (this.isMuted) return Promise.resolve();
     this.initAudioContext();
 
-    if (this.voiceQuality === 'natural' && process.env.GEMINI_API_KEY) {
+    if (this.voiceQuality === 'natural') {
       try {
-        await this.speakGemini(text);
+        await this.speakViaWorker(text);
         return;
       } catch (error: any) {
         const errorMsg = error?.message || String(error);
-        // Handle quota errors or general Gemini failures by falling back
+        // Handle quota errors or general TTS failures by falling back
         if (
-          errorMsg.includes('429') || 
-          errorMsg.includes('RESOURCE_EXHAUSTED') || 
+          errorMsg.includes('429') ||
+          errorMsg.includes('RESOURCE_EXHAUSTED') ||
           errorMsg.includes('quota') ||
           errorMsg.includes('exceeded quota')
         ) {
@@ -53,22 +51,19 @@ class AudioManager {
     return this.speakWebSpeech(text);
   }
 
-  private async speakGemini(text: string): Promise<void> {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-preview-tts",
-      contents: [{ parts: [{ text: `Say clearly: ${text}` }] }],
-      config: {
-        responseModalities: [Modality.AUDIO],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: 'Kore' },
-          },
-        },
-      },
+  private async speakViaWorker(text: string): Promise<void> {
+    const response = await fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ word: text }),
     });
 
-    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+    if (!response.ok) {
+      throw new Error(`TTS worker responded with ${response.status}`);
+    }
+
+    const { audio: base64Audio } = await response.json() as { audio: string; mimeType: string };
+
     if (base64Audio) {
       const audioData = Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0));
       const int16Buffer = new Int16Array(audioData.buffer);
@@ -76,10 +71,10 @@ class AudioManager {
       for (let i = 0; i < int16Buffer.length; i++) {
         float32Buffer[i] = int16Buffer[i] / 32768;
       }
-      
+
       const audioBuffer = this.audioContext!.createBuffer(1, float32Buffer.length, 24000);
       audioBuffer.getChannelData(0).set(float32Buffer);
-      
+
       return new Promise((resolve) => {
         const source = this.audioContext!.createBufferSource();
         source.buffer = audioBuffer;
