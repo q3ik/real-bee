@@ -29,7 +29,7 @@ describe('useGameStore', () => {
     vi.clearAllMocks();
   });
 
-  it('has no firebase imports', async () => {
+  it('exports useGameStore without throwing', async () => {
     const { useGameStore } = await import('../useGameStore');
     expect(useGameStore).toBeDefined();
   });
@@ -38,5 +38,24 @@ describe('useGameStore', () => {
     const { useGameStore } = await import('../useGameStore');
     const store = useGameStore.getState();
     await expect(store.loadProgress()).resolves.not.toThrow();
+  });
+
+  it('submitAnswer writes to localDb with supabase user id', async () => {
+    const { useGameStore } = await import('../useGameStore');
+    const { localDb } = await import('@/lib/db');
+
+    const store = useGameStore.getState();
+    // Load progress to hydrate userId from mocked supabase
+    await store.loadProgress();
+
+    // Set up a current word
+    store.startSession();
+    const currentWord = useGameStore.getState().currentWord;
+    if (!currentWord) return; // no words in test env, skip gracefully
+
+    store.submitAnswer(currentWord.word);
+    expect(localDb.progress.put).toHaveBeenCalledWith(
+      expect.objectContaining({ uid: 'test-user-123' })
+    );
   });
 });

@@ -35,7 +35,7 @@ export default function Onboarding({ onStart }: OnboardingProps) {
     { label: 'All', value: 0 },
   ];
 
-  const difficulties = [
+  const difficulties: Array<{ label: string; value: 'easy' | 'medium' | 'hard' | 'all'; color: string }> = [
     { label: 'Easy', value: 'easy', color: 'bg-green-500' },
     { label: 'Medium', value: 'medium', color: 'bg-yellow-500' },
     { label: 'Hard', value: 'hard', color: 'bg-red-500' },
@@ -108,7 +108,7 @@ export default function Onboarding({ onStart }: OnboardingProps) {
               {difficulties.map((d) => (
                 <button
                   key={d.value}
-                  onClick={() => setDifficulty(d.value as any)}
+                  onClick={() => setDifficulty(d.value)}
                   className={`p-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all border-2 ${difficulty === d.value ? `border-orange-500 bg-orange-50 text-orange-600 shadow-sm` : 'border-transparent bg-gray-50 text-gray-400 hover:bg-gray-100'}`}
                 >
                   <div className={`w-2 h-2 rounded-full ${d.color}`} />
