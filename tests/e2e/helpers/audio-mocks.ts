@@ -85,6 +85,7 @@ export const mockSpeechSynthesis = async (page: Page, options: MockSpeechOptions
         onresume: ((event: { type: string; utterance: MockSpeechSynthesisUtterance }) => void) | null;
         onboundary: null;
         onmark: null;
+        private _listeners: Map<string, EventListenerOrEventListenerObject[]> = new Map();
 
         constructor(text: string) {
           this.text = text;
@@ -100,6 +101,37 @@ export const mockSpeechSynthesis = async (page: Page, options: MockSpeechOptions
           this.onresume = null;
           this.onboundary = null;
           this.onmark = null;
+        }
+
+        addEventListener(type: string, listener: EventListenerOrEventListenerObject): void {
+          if (!this._listeners.has(type)) {
+            this._listeners.set(type, []);
+          }
+          this._listeners.get(type)!.push(listener);
+        }
+
+        removeEventListener(type: string, listener: EventListenerOrEventListenerObject): void {
+          const listeners = this._listeners.get(type);
+          if (listeners) {
+            const index = listeners.indexOf(listener);
+            if (index > -1) {
+              listeners.splice(index, 1);
+            }
+          }
+        }
+
+        dispatchEvent(event: Event): boolean {
+          const listeners = this._listeners.get(event.type);
+          if (listeners) {
+            listeners.forEach(listener => {
+              if (typeof listener === 'function') {
+                listener.call(this, event);
+              } else {
+                listener.handleEvent(event);
+              }
+            });
+          }
+          return true;
         }
       }
 
