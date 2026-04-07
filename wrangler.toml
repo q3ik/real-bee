@@ -3,11 +3,12 @@ pages_build_output_dir = "dist"
 compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
 
-# D1 database — fill in database_id after running: wrangler d1 create real-bee-db
+# D1 database: real-bee-db (created 2026-04-07)
 [[d1_databases]]
-database_id = "FILL_IN_AFTER_wrangler_d1_create"
+database_id = "69da4111-a983-41e9-a471-c8eb069e3a66"
 binding = "DB"
 database_name = "real-bee-db"
+migrations_dir = "migrations/d1"
 
 [vars]
 # Comma-separated allowed origins for CORS. Empty = use defaults.
