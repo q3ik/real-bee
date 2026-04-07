@@ -44,7 +44,14 @@ export default defineConfig({
         '**/__tests__/**',
       ],
       // Enforce global coverage thresholds
-      thresholds: COVERAGE_THRESHOLD,
+      thresholds: {
+        global: {
+          branches: COVERAGE_THRESHOLD,
+          functions: COVERAGE_THRESHOLD,
+          lines: COVERAGE_THRESHOLD,
+          statements: COVERAGE_THRESHOLD,
+        },
+      },
     },
     // Fix #668: Increase timeouts for CI stability
     testTimeout: isCI ? 15000 : 10000,

@@ -31,4 +31,5 @@ interface Window {
   __lastSpokenText: string;
   /** Exposed only when VITE_TEST_MODE=true (see offline-sync.spec.ts) */
   __testHelpers__: TestHelpers | undefined;
+  webkitAudioContext: typeof AudioContext | undefined;
 }
