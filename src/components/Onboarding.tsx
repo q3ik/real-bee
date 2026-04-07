@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { GraduationCap, Zap, Play, Sparkles, LogIn, User } from 'lucide-react';
+import { GraduationCap, Zap, Play, Sparkles, LogIn, User as UserIcon } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useGameStore } from '../hooks/useGameStore';
-import { auth } from '../firebase';
-import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'firebase/auth';
+import { supabase } from '../lib/supabase';
+import type { User } from '@supabase/supabase-js';
 
 interface OnboardingProps {
   onStart: () => void;
@@ -11,22 +11,19 @@ interface OnboardingProps {
 
 export default function Onboarding({ onStart }: OnboardingProps) {
   const { gradeLevel, setGradeLevel, difficulty, setDifficulty } = useGameStore();
-  const [user, setUser] = useState(auth.currentUser);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
-    return () => unsubscribe();
+    const { data: { subscription } } = supabase?.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    }) ?? { data: { subscription: { unsubscribe: () => {} } } };
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleGoogleSignIn = async () => {
     try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-    } catch (error: any) {
-      if (error.code === 'auth/popup-closed-by-user') {
-        // User cancelled, no need to log as error
-        return;
-      }
+      await supabase?.auth.signInWithOAuth({ provider: 'google' });
+    } catch (error: unknown) {
       console.error("Google Sign-In failed:", error);
     }
   };
@@ -55,8 +52,8 @@ export default function Onboarding({ onStart }: OnboardingProps) {
         <div className="flex justify-end mb-4">
           {user ? (
             <div className="flex items-center gap-2 bg-orange-50 px-3 py-1 rounded-full">
-              <User className="w-4 h-4 text-orange-500" />
-              <span className="text-xs font-bold text-orange-700">{user.displayName || 'Speller'}</span>
+              <UserIcon className="w-4 h-4 text-orange-500" />
+              <span className="text-xs font-bold text-orange-700">{user.user_metadata?.full_name || user.email || 'Speller'}</span>
             </div>
           ) : (
             <button 

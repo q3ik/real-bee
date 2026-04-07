@@ -1,8 +1,7 @@
 import { create } from 'zustand';
 import { type Word, getWordsForConfig } from '../lib/wordList';
 import { localDb } from '../lib/db';
-import { auth, db } from '../firebase';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { supabase } from '../lib/supabase';
 
 interface GameState {
   score: number;
@@ -20,8 +19,8 @@ interface GameState {
   sessionWords: Word[];
   sessionIndex: number;
   difficultyEvolution: number[];
-  
-  // Actions
+  userId: string | null;
+
   setGradeLevel: (grade: number) => void;
   setDifficulty: (diff: 'easy' | 'medium' | 'hard' | 'all') => void;
   startSession: () => void;
@@ -51,6 +50,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   sessionWords: [],
   sessionIndex: 0,
   difficultyEvolution: [],
+  userId: null,
 
   setGradeLevel: (grade) => set({ gradeLevel: grade }),
   setDifficulty: (diff) => set({ difficulty: diff }),
@@ -59,39 +59,38 @@ export const useGameStore = create<GameState>((set, get) => ({
     const { gradeLevel, difficulty } = get();
     const words = getWordsForConfig(gradeLevel, difficulty);
     const shuffled = [...words].sort(() => Math.random() - 0.5);
-    set({ 
-      sessionWords: shuffled, 
-      sessionIndex: 0, 
+    set({
+      sessionWords: shuffled,
+      sessionIndex: 0,
       currentWord: shuffled[0],
-      difficultyEvolution: []
+      difficultyEvolution: [],
     });
   },
 
   submitAnswer: (answer) => {
-    const { currentWord, streak, score, bestStreak, masteredCount, difficultyEvolution } = get();
+    const { currentWord, streak, score, bestStreak, masteredCount, difficultyEvolution, userId } = get();
     if (!currentWord) return false;
 
-    const isCorrect = answer.toLowerCase().replace(/\s/g, '') === currentWord.word.toLowerCase();
-    
+    const isCorrect =
+      answer.toLowerCase().replace(/\s/g, '') === currentWord.word.toLowerCase();
+
     if (isCorrect) {
       const newStreak = streak + 1;
       const newScore = score + 10 * newStreak;
       const newBest = Math.max(bestStreak, newStreak);
       const newMastered = masteredCount + 1;
-      
-      set({ 
-        score: newScore, 
-        streak: newStreak, 
+
+      set({
+        score: newScore,
+        streak: newStreak,
         bestStreak: newBest,
         masteredCount: newMastered,
-        difficultyEvolution: [...difficultyEvolution, 1] // 1 for correct
+        difficultyEvolution: [...difficultyEvolution, 1],
       });
-      
-      // Save to local DB
-      const user = auth.currentUser;
-      if (user) {
+
+      if (userId) {
         localDb.progress.put({
-          uid: user.uid,
+          uid: userId,
           score: newScore,
           streak: newStreak,
           bestStreak: newBest,
@@ -99,13 +98,13 @@ export const useGameStore = create<GameState>((set, get) => ({
           gradeLevel: get().gradeLevel.toString(),
           difficulty: get().difficulty,
           lastPlayed: new Date().toISOString(),
-          synced: false
+          synced: false,
         });
       }
     } else {
-      set({ 
+      set({
         streak: 0,
-        difficultyEvolution: [...difficultyEvolution, -1] // -1 for incorrect
+        difficultyEvolution: [...difficultyEvolution, -1],
       });
     }
 
@@ -118,7 +117,6 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (nextIndex < sessionWords.length) {
       set({ sessionIndex: nextIndex, currentWord: sessionWords[nextIndex] });
     } else {
-      // End session logic
       set({ currentWord: null });
     }
   },
@@ -130,36 +128,24 @@ export const useGameStore = create<GameState>((set, get) => ({
   setListeningTimeout: (t) => set({ listeningTimeout: t }),
 
   loadProgress: async () => {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    // Try Firestore first
-    try {
-      const docRef = doc(db, 'users', user.uid);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        set({
-          score: data.score || 0,
-          streak: data.streak || 0,
-          bestStreak: data.bestStreak || 0,
-          masteredCount: data.masteredCount || 0
-        });
-        return;
+    if (supabase) {
+      const { data } = await supabase.auth.getUser();
+      if (data.user) {
+        set({ userId: data.user.id });
       }
-    } catch (e) {
-      console.error("Firestore load failed:", e);
     }
 
-    // Fallback to local DB
-    const local = await localDb.progress.where('uid').equals(user.uid).first();
+    const uid = get().userId;
+    if (!uid) return;
+
+    const local = await localDb.progress.where('uid').equals(uid).first();
     if (local) {
       set({
         score: local.score,
         streak: local.streak,
         bestStreak: local.bestStreak,
-        masteredCount: local.masteredCount
+        masteredCount: local.masteredCount,
       });
     }
-  }
+  },
 }));

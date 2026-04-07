@@ -4,8 +4,7 @@ import Onboarding from './components/Onboarding';
 import GameBoard from './components/GameBoard';
 import MetricsBar from './components/MetricsBar';
 import Settings from './components/Settings';
-import { auth } from './firebase';
-import { onAuthStateChanged, signInAnonymously } from 'firebase/auth';
+import { supabase } from './lib/supabase';
 
 export default function App() {
   const [view, setView] = useState<'onboarding' | 'game'>('onboarding');
@@ -13,12 +12,12 @@ export default function App() {
   const { startSession, loadProgress } = useGameStore();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
+    const { data: { subscription } } = supabase?.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
         loadProgress();
       }
-    });
-    return () => unsubscribe();
+    }) ?? { data: { subscription: { unsubscribe: () => {} } } };
+    return () => subscription.unsubscribe();
   }, [loadProgress]);
 
   const handleStart = () => {
