@@ -41,8 +41,17 @@ jobs:
         run: npm test
 
       - name: Security audit
-        run: npm audit --production
-        continue-on-error: true
+        # Fail CI on high or critical vulnerabilities.
+        # Remove --audit-level=high to enforce all severity levels.
+        run: npm audit --production --audit-level=high
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results/
+          if-no-files-found: ignore
 
   build:
     name: Build
