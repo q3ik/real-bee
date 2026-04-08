@@ -5,7 +5,7 @@ import { supabase } from "../lib/supabase";
 import type { GamePhase } from "./useGameState.types";
 
 // ---------------------------------------------------------------------------
-// Types (ported from buzzy-game useGameState.types, adapted for real-bee)
+// Types
 // ---------------------------------------------------------------------------
 
 export type GameDifficulty = "easy" | "medium" | "hard" | "all";
@@ -195,12 +195,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   startNewRound: () => {
-    const {
-      gradeLevel,
-      difficulty,
-      sessionWords,
-      sessionIndex,
-    } = get();
+    const { gradeLevel, difficulty, sessionWords, sessionIndex } = get();
 
     if (!get().sessionStartTime) {
       set({ sessionStartTime: Date.now(), sessionBestStreak: 0 });
@@ -275,17 +270,27 @@ export const useGameStore = create<GameState>((set, get) => ({
       return offlineUid;
     })();
 
-    void localDb.progress.put({
-      uid: effectiveUid,
-      score: newScore,
-      streak: newStreak,
-      bestStreak: newBestStreak,
-      masteredCount: newMastered,
-      gradeLevel: gradeLevel.toString(),
-      difficulty,
-      lastPlayed: new Date().toISOString(),
-      synced: false,
-    });
+    // Non-blocking Dexie write — fire-and-forget but with a rejection handler
+    // so that storage failures (quota exceeded, private browsing, blocked DB)
+    // surface as a warning rather than an unhandled promise rejection.
+    void localDb.progress
+      .put({
+        uid: effectiveUid,
+        score: newScore,
+        streak: newStreak,
+        bestStreak: newBestStreak,
+        masteredCount: newMastered,
+        gradeLevel: gradeLevel.toString(),
+        difficulty,
+        lastPlayed: new Date().toISOString(),
+        synced: false,
+      })
+      .catch((err: unknown) => {
+        console.warn(
+          '[useGameStore] submitAnswer: failed to persist progress to IndexedDB',
+          err,
+        );
+      });
 
     set({
       score: newScore,
@@ -446,10 +451,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       { label: "Rounds", value: roundsPlayed },
       { label: "Accuracy", value: `${sessionAccuracy}%` },
       { label: "Best streak", value: sessionBestStreak },
-      {
-        label: "Score",
-        value: score,
-      },
+      { label: "Score", value: score },
       {
         label: "Time played",
         value: sessionDurationMinutes > 0 ? `${sessionDurationMinutes}m` : "—",
