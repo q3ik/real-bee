@@ -2,8 +2,7 @@ name: CI
 
 on:
   pull_request:
-    # TODO: Change to "trunk"
-    branches: [main, master]
+    branches: [trunk]
     paths-ignore:
       - "**/*.md"
       - "docs/**"
@@ -45,6 +44,9 @@ jobs:
         # Remove --audit-level=high to enforce all severity levels.
         run: npm audit --production --audit-level=high
 
+      - name: Check for unused dependencies
+        run: npm run depcheck
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -59,22 +61,20 @@ jobs:
     permissions: {}
     uses: ./.github/workflows/build.yml
 
-  # e2e:
-  #   name: Playwright E2E
-  #   needs: [quality, build]
-  #   permissions:
-  #     contents: read
-  #   uses: ./.github/workflows/test-e2e.yml
+  e2e:
+    name: Playwright E2E
+    needs: [quality, build]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/test-e2e.yml
 
-  # # Fix #687: Run visual regression tests as a separate CI job so screenshot
-  # # failures are isolated and their artifacts are easy to find.
-  # visual-regression:
-  #   name: Visual Regression
-  #   needs: [quality, build]
-  #   # Prevent forked PRs from gaining contents:write access to the base repo.
-  #   # On a fork, the GITHUB_TOKEN only has read scope anyway, so this guard
-  #   # avoids a misleading permissions escalation and keeps least-privilege.
-  #   if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
-  #   permissions:
-  #     contents: write   # test-e2e-visual.yml job requests write to commit updated snapshots
-  #   uses: ./.github/workflows/test-e2e-visual.yml
+  # Fix #687: Run visual regression tests as a separate CI job so screenshot
+  # failures are isolated and their artifacts are easy to find.
+  visual-regression:
+    name: Visual Regression
+    needs: [quality, build]
+    # Prevent forked PRs from gaining contents:write access to the base repo.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
+    permissions:
+      contents: write
+    uses: ./.github/workflows/test-e2e-visual.yml
