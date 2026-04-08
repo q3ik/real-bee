@@ -33,7 +33,7 @@ export function useSpeechSynthesis({
   // scheduled by an older speak() call is not invoked after a newer one starts
   // or after the component unmounts.
   const currentPlaybackRef = useRef<symbol | null>(null);
-  const [ttsSupported, setTtsSupported] = useState(isTTSSupported);
+  const [ttsSupported, setTtsSupported] = useState(() => isTTSSupported());
 
   useEffect(() => {
     isMountedRef.current = true;
