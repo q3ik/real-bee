@@ -52,17 +52,22 @@ class AudioManager {
   }
 
   private async speakViaWorker(text: string): Promise<void> {
-    const response = await fetch('/api/tts', {
+    const response = await fetch('/api/gemini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ word: text }),
+      body: JSON.stringify({ action: 'tts', word: text }),
     });
 
     if (!response.ok) {
       throw new Error(`TTS worker responded with ${response.status}`);
     }
 
-    const { audio: base64Audio } = await response.json() as { audio: string; mimeType: string };
+    const { audio: base64Audio, mimeType, sampleRate = 24000 } =
+      await response.json() as { audio: string; mimeType: string; sampleRate?: number };
+
+    if (mimeType !== 'audio/pcm') {
+      throw new Error(`Unexpected TTS audio format: ${mimeType}`);
+    }
 
     if (base64Audio) {
       const audioData = Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0));
@@ -72,7 +77,7 @@ class AudioManager {
         float32Buffer[i] = int16Buffer[i] / 32768;
       }
 
-      const audioBuffer = this.audioContext!.createBuffer(1, float32Buffer.length, 24000);
+      const audioBuffer = this.audioContext!.createBuffer(1, float32Buffer.length, sampleRate);
       audioBuffer.getChannelData(0).set(float32Buffer);
 
       return new Promise((resolve) => {

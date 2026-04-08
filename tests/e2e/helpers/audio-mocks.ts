@@ -298,7 +298,7 @@ export const mockSpeechSynthesis = async (page: Page, options: MockSpeechOptions
       });
 
       // Replace SpeechSynthesisUtterance
-      window.SpeechSynthesisUtterance = MockSpeechSynthesisUtterance;
+      window.SpeechSynthesisUtterance = MockSpeechSynthesisUtterance as unknown as typeof SpeechSynthesisUtterance;
 
       console.log('[Mock TTS] Initialized');
     },

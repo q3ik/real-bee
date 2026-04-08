@@ -2,10 +2,10 @@ import { create } from "zustand";
 import { type Word, getWordsForConfig } from "../lib/wordList";
 import { localDb } from "../lib/db";
 import { supabase } from "../lib/supabase";
-import type { GamePhase } from "../hooks/useGameKeyboardShortcuts.types";
+import type { GamePhase } from "./useGameState.types";
 
 // ---------------------------------------------------------------------------
-// Types (ported from buzzy-game useGameState.types, adapted for real-bee)
+// Types
 // ---------------------------------------------------------------------------
 
 export type GameDifficulty = "easy" | "medium" | "hard" | "all";
@@ -48,17 +48,24 @@ function generateFeedback(
   return `Not quite. The word was ${targetWord}.`;
 }
 
-function mapGradeLevelToString(gradeLevel: number): string {
-  if (gradeLevel === 0) return "all";
-  if (gradeLevel === 1) return "K-2";
-  if (gradeLevel === 3) return "3-5";
-  if (gradeLevel === 6) return "6-8";
-  return "all";
-}
-
 // ---------------------------------------------------------------------------
 // Zustand Store
 // ---------------------------------------------------------------------------
+
+const OFFLINE_UID_KEY = 'real-bee-offline-uid';
+
+/** Returns a stable offline user ID, generating and persisting one on first call. */
+function getOrCreateOfflineUid(): string {
+  try {
+    const existing = localStorage.getItem(OFFLINE_UID_KEY);
+    if (existing) return existing;
+    const uid = `offline-${crypto.randomUUID()}`;
+    localStorage.setItem(OFFLINE_UID_KEY, uid);
+    return uid;
+  } catch {
+    return 'offline-fallback';
+  }
+}
 
 interface GameState {
   // --- FSM phase ---
@@ -191,24 +198,20 @@ export const useGameStore = create<GameState>((set, get) => ({
     const {
       gradeLevel,
       difficulty,
-      recentPerformance,
       sessionWords,
       sessionIndex,
     } = get();
 
-    // Start session timer on first round
     if (!get().sessionStartTime) {
       set({ sessionStartTime: Date.now(), sessionBestStreak: 0 });
     }
 
-    // Get words — reuse session words if we already have them, or fetch new ones
     let pool = sessionWords;
     if (pool.length === 0 || sessionIndex >= pool.length) {
       pool = getWordsForConfig(gradeLevel, difficulty);
       pool = [...pool].sort(() => Math.random() - 0.5);
     }
 
-    // Filter out used words
     const availableWords = pool.filter((w: Word) => !usedWordsSet.has(w.word));
 
     if (availableWords.length === 0) {
@@ -246,7 +249,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       userId,
       gradeLevel,
       difficulty,
-      isMuted: muted,
+      difficultyEvolution,
     } = get();
     if (!currentWord || phase !== "playing") return false;
 
@@ -264,12 +267,21 @@ export const useGameStore = create<GameState>((set, get) => ({
     const newRounds = roundsPlayed + 1;
 
     const feedback = generateFeedback(isCorrect, newStreak, currentWord.word);
-
     const evolutionEntry = isCorrect ? 1 : -1;
 
-    if (isCorrect && userId) {
-      void localDb.progress.put({
-        uid: userId,
+    // Resolve the uid to write progress under (prefer authenticated, fall back to offline)
+    const effectiveUid = userId ?? (() => {
+      const offlineUid = getOrCreateOfflineUid();
+      set({ userId: offlineUid });
+      return offlineUid;
+    })();
+
+    // Non-blocking Dexie write — fire-and-forget but with a rejection handler
+    // so that storage failures (quota exceeded, private browsing, blocked DB)
+    // surface as a warning rather than an unhandled promise rejection.
+    void localDb.progress
+      .put({
+        uid: effectiveUid,
         score: newScore,
         streak: newStreak,
         bestStreak: newBestStreak,
@@ -278,8 +290,13 @@ export const useGameStore = create<GameState>((set, get) => ({
         difficulty,
         lastPlayed: new Date().toISOString(),
         synced: false,
+      })
+      .catch((err: unknown) => {
+        console.warn(
+          '[useGameStore] submitAnswer: failed to persist progress to IndexedDB',
+          err,
+        );
       });
-    }
 
     set({
       score: newScore,
@@ -288,7 +305,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       masteredCount: newMastered,
       roundsPlayed: newRounds,
       correctAnswers: newCorrect,
-      difficultyEvolution: [...get().difficultyEvolution, evolutionEntry],
+      difficultyEvolution: [...difficultyEvolution, evolutionEntry],
       recentPerformance: [...get().recentPerformance, isCorrect].slice(-10),
       sessionBestStreak: Math.max(get().sessionBestStreak, newStreak),
       phase: "round_end",
@@ -315,7 +332,6 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     set({
       roundsPlayed: roundsPlayed + 1,
-      // -1 represents a timeout penalty in difficulty evolution tracking (same as an incorrect answer)
       difficultyEvolution: [...get().difficultyEvolution, -1],
       recentPerformance: [...get().recentPerformance, false].slice(-10),
       phase: "round_end",
@@ -395,6 +411,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   setAutoSubmit: (autoSubmit) => set({ autoSubmit }),
 
   loadProgress: async () => {
+    // Resolve auth: prefer Supabase session, fall back to stable offline UID.
     if (supabase) {
       const { data } = await supabase.auth.getUser();
       if (data.user) {
@@ -402,10 +419,14 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
     }
 
-    const uid = get().userId;
-    if (!uid) return;
+    if (!get().userId) {
+      set({ userId: getOrCreateOfflineUid() });
+    }
 
-    const local = await localDb.progress.where("uid").equals(uid).first();
+    const uid = get().userId!;
+    // uid is the primary key — get() is an O(1) lookup and always returns
+    // the single canonical row (no stale duplicates possible).
+    const local = await localDb.progress.get(uid);
     if (local) {
       set({
         score: local.score,
@@ -415,7 +436,6 @@ export const useGameStore = create<GameState>((set, get) => ({
       });
     }
 
-    // Sync mastered words from Dexie if available
     masteredWordsSet.clear();
   },
 
@@ -427,29 +447,20 @@ export const useGameStore = create<GameState>((set, get) => ({
       sessionStartTime,
       sessionBestStreak,
     } = get();
-    const baselineRounds = 0;
-    const baselineCorrect = 0;
-    const baselineScore = 0;
 
-    const sessionRounds = Math.max(roundsPlayed - baselineRounds, 0);
-    const sessionCorrect = Math.max(correctAnswers - baselineCorrect, 0);
-    const sessionScore = score - baselineScore;
     const sessionAccuracy =
-      sessionRounds > 0
-        ? Math.round((sessionCorrect / sessionRounds) * 100)
+      roundsPlayed > 0
+        ? Math.round((correctAnswers / roundsPlayed) * 100)
         : 0;
     const sessionDurationMinutes = sessionStartTime
       ? Math.max(1, Math.round((Date.now() - sessionStartTime) / 60000))
       : 0;
 
     return [
-      { label: "Rounds", value: sessionRounds },
+      { label: "Rounds", value: roundsPlayed },
       { label: "Accuracy", value: `${sessionAccuracy}%` },
       { label: "Best streak", value: sessionBestStreak },
-      {
-        label: "Score change",
-        value: sessionScore >= 0 ? `+${sessionScore}` : `${sessionScore}`,
-      },
+      { label: "Score", value: score },
       {
         label: "Time played",
         value: sessionDurationMinutes > 0 ? `${sessionDurationMinutes}m` : "—",
