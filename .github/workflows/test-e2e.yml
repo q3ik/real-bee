@@ -1,0 +1,99 @@
+name: E2E Tests
+
+on:
+  workflow_call:
+    inputs:
+      project:
+        description: 'Playwright project to run (e.g. "Mobile Chrome", "chromium")'
+        required: false
+        default: 'Mobile Chrome'
+        type: string
+      shards:
+        description: 'Number of shards for parallel execution (cost-sensitive: default 1)'
+        required: false
+        default: 1
+        type: number
+  workflow_dispatch:
+    inputs:
+      project:
+        description: 'Playwright project to run'
+        required: false
+        default: 'Mobile Chrome'
+        type: choice
+        options:
+          - 'Mobile Chrome'
+          - 'chromium'
+          - 'firefox'
+          - 'webkit'
+      shards:
+        description: 'Number of shards for parallel execution'
+        required: false
+        default: '1'
+        type: choice
+        options:
+          - '1'
+          - '2'
+          - '3'
+
+concurrency:
+  group: test-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e-tests:
+    name: E2E Tests (${{ inputs.project || 'Mobile Chrome' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: '20'
+
+      - name: Download build artifact
+        id: download-artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: dist/
+        continue-on-error: true
+
+      - name: Build if artifact not available
+        if: steps.download-artifact.outcome == 'failure'
+        env:
+          VITE_TEST_MODE: 'true'
+        run: npm run build
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright tests
+        env:
+          CI_USE_DIST: 'true'
+        run: npx playwright test --project="${{ inputs.project || 'Mobile Chrome' }}"
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 5
+
+      # Fix #687: Upload screenshot diffs when tests fail so visual regressions
+      # can be reviewed directly in CI artifacts without a local re-run.
+      - name: Upload screenshot diffs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-diffs-${{ inputs.project || 'Mobile-Chrome' }}
+          path: |
+            test-results/
+            tests/e2e/visual-regression.spec.js-snapshots/
+          retention-days: 14
+          if-no-files-found: ignore
