@@ -100,14 +100,12 @@ class AudioManager {
 
   private speakWebSpeech(text: string): Promise<void> {
     return new Promise((resolve) => {
-      if (
-        typeof window === 'undefined' ||
-        typeof window.speechSynthesis === 'undefined' ||
-        typeof (window as any).SpeechSynthesisUtterance === 'undefined'
-      ) {
-        const missingSpeechSynthesis = typeof window.speechSynthesis === 'undefined';
-        const missingUtterance =
-          typeof (window as any).SpeechSynthesisUtterance === 'undefined';
+      const hasWindow = typeof window !== 'undefined';
+      const missingSpeechSynthesis =
+        !hasWindow || typeof window.speechSynthesis === 'undefined';
+      const missingUtterance =
+        !hasWindow || typeof (window as any).SpeechSynthesisUtterance === 'undefined';
+      if (missingSpeechSynthesis || missingUtterance) {
         const details = missingSpeechSynthesis && missingUtterance
           ? 'speechSynthesis and SpeechSynthesisUtterance are unavailable.'
           : missingSpeechSynthesis
