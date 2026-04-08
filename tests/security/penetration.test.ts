@@ -3,6 +3,9 @@ import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 
+// MSW server lifecycle (listen/close) is managed by the global setup file
+// src/test/setup.tsx — do NOT call server.listen() or server.close() here.
+
 // Mock Slack WebClient to avoid "package not installed" errors
 // We define the mock directly instead of importing @slack/web-api
 const mockSlackClient = {

@@ -74,7 +74,7 @@ export const handlers = [
   // ============================================================================
   
   // GET /api/user - Get current user
-  http.get('*/api/user', () => {
+  http.get(/\/api\/user$/, () => {
     return HttpResponse.json(
       { success: true, user: mockUser },
       { status: 200 }
@@ -82,7 +82,7 @@ export const handlers = [
   }),
 
   // POST /api/user - Create user
-  http.post('*/api/user', async ({ request }) => {
+  http.post(/\/api\/user$/, async ({ request }) => {
     const body = await request.json() as Record<string, unknown>;
     
     return HttpResponse.json(
@@ -100,7 +100,7 @@ export const handlers = [
   }),
 
   // PATCH /api/user - Update user
-  http.patch('*/api/user', async ({ request }) => {
+  http.patch(/\/api\/user$/, async ({ request }) => {
     const body = await request.json() as Record<string, unknown>;
     
     return HttpResponse.json(
@@ -117,7 +117,7 @@ export const handlers = [
   }),
 
   // DELETE /api/user - Delete user
-  http.delete('*/api/user', () => {
+  http.delete(/\/api\/user$/, () => {
     return HttpResponse.json(
       { success: true, message: 'User deleted' },
       { status: 200 }
@@ -129,7 +129,7 @@ export const handlers = [
   // ============================================================================
   
   // GET /api/progress - Get user progress
-  http.get('*/api/progress', () => {
+  http.get(/\/api\/progress$/, () => {
     return HttpResponse.json(
       { success: true, progress: mockProgress },
       { status: 200 }
@@ -137,7 +137,7 @@ export const handlers = [
   }),
 
   // POST /api/progress - Update progress
-  http.post('*/api/progress', async ({ request }) => {
+  http.post(/\/api\/progress$/, async ({ request }) => {
     const body = await request.json() as Record<string, unknown>;
     
     return HttpResponse.json(
@@ -157,7 +157,7 @@ export const handlers = [
   // ============================================================================
   
   // GET /api/stats - Get user statistics
-  http.get('*/api/stats', () => {
+  http.get(/\/api\/stats$/, () => {
     return HttpResponse.json(
       { success: true, stats: mockStats },
       { status: 200 }
@@ -169,7 +169,7 @@ export const handlers = [
   // ============================================================================
   
   // POST /api/feedback - Submit feedback
-  http.post('*/api/feedback', async ({ request }) => {
+  http.post(/\/api\/feedback$/, async ({ request }) => {
     const origin = request.headers.get('origin') || '';
     
     // CORS check - only allow known origins
@@ -234,7 +234,7 @@ export const handlers = [
   }),
 
   // OPTIONS /api/feedback - CORS preflight
-  http.options('*/api/feedback', ({ request }) => {
+  http.options(/\/api\/feedback$/, ({ request }) => {
     const origin = request.headers.get('origin') || '';
     
     if (!origin || !isFeedbackOriginAllowed(origin)) {
@@ -256,7 +256,7 @@ export const handlers = [
   // ============================================================================
   
   // POST /api/tts - Text-to-Speech
-  http.post('*/api/tts', async ({ request }) => {
+  http.post(/\/api\/tts$/, async ({ request }) => {
     try {
       const body = await request.json() as Record<string, unknown>;
       
@@ -293,7 +293,7 @@ export const handlers = [
   }),
 
   // POST /api/stt - Speech-to-Text
-  http.post('*/api/stt', async ({ request }) => {
+  http.post(/\/api\/stt$/, async ({ request }) => {
     // Validate Content-Type
     const contentType = request.headers.get('Content-Type') || '';
     if (!contentType.startsWith('audio/') && !contentType.startsWith('multipart/form-data')) {
@@ -358,7 +358,7 @@ export const handlers = [
   // ============================================================================
   
   // GET /api/admin/users - Get all users (admin)
-  http.get('*/api/admin/users', () => {
+  http.get(/\/api\/admin\/users$/, () => {
     return HttpResponse.json(
       {
         success: true,
@@ -370,7 +370,7 @@ export const handlers = [
   }),
 
   // GET /api/admin/stats - Get system stats (admin)
-  http.get('*/api/admin/stats', () => {
+  http.get(/\/api\/admin\/stats$/, () => {
     return HttpResponse.json(
       {
         success: true,
@@ -386,7 +386,7 @@ export const handlers = [
   }),
 
   // Wildcard for all other admin routes
-  http.all('*/api/admin/*', ({ request }) => {
+  http.all(/\/api\/admin\//, ({ request }) => {
     const url = new URL(request.url);
     return HttpResponse.json(
       {
@@ -402,7 +402,7 @@ export const handlers = [
   // Sync API Endpoints (wildcard for all sync routes)
   // ============================================================================
   
-  http.all('*/api/sync/*', ({ request }) => {
+  http.all(/\/api\/sync\//, ({ request }) => {
     const url = new URL(request.url);
     return HttpResponse.json(
       {
@@ -420,7 +420,7 @@ export const handlers = [
   // ============================================================================
   
   // GET /api/test/error - Simulate server error
-  http.get('*/api/test/error', () => {
+  http.get(/\/api\/test\/error$/, () => {
     return HttpResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
@@ -428,7 +428,7 @@ export const handlers = [
   }),
 
   // GET /api/test/unauthorized - Simulate unauthorized
-  http.get('*/api/test/unauthorized', () => {
+  http.get(/\/api\/test\/unauthorized$/, () => {
     return HttpResponse.json(
       { success: false, error: 'Unauthorized' },
       { status: 401 }
@@ -436,7 +436,7 @@ export const handlers = [
   }),
 
   // GET /api/test/notfound - Simulate not found
-  http.get('*/api/test/notfound', () => {
+  http.get(/\/api\/test\/notfound$/, () => {
     return HttpResponse.json(
       { success: false, error: 'Not found' },
       { status: 404 }
@@ -444,7 +444,7 @@ export const handlers = [
   }),
 
   // GET /api/test/timeout - Simulate timeout (delayed response)
-  http.get('*/api/test/timeout', async () => {
+  http.get(/\/api\/test\/timeout$/, async () => {
     // Delay response to simulate timeout
     await new Promise(resolve => setTimeout(resolve, 10000));
     return HttpResponse.json(
@@ -458,7 +458,7 @@ export const handlers = [
   // Returns 501 Not Implemented to make missing mocks obvious
   // ============================================================================
   
-  http.all('*/api/*', ({ request }) => {
+  http.all(/\/api\//, ({ request }) => {
     const url = new URL(request.url);
     console.warn(`⚠️  Unmocked API request: ${request.method} ${url.pathname}`);
     
@@ -483,9 +483,9 @@ export const handlers = [
  * Useful for test-specific mocking
  */
 export function createMockHandler(method: string, path: string, response: unknown, status = 200) {
-  const url = path.startsWith('http') || path.startsWith('*') ? path : `*${path}`;
+  const url: string | RegExp = path.startsWith('http') ? path : new RegExp(path.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') + '$');
   const httpMethod = getHttpMethod(method);
-  return httpMethod(url, () => {
+  return httpMethod(url as string, () => {
     return HttpResponse.json(response as Parameters<typeof HttpResponse.json>[0], { status });
   });
 }
@@ -494,9 +494,9 @@ export function createMockHandler(method: string, path: string, response: unknow
  * Create a handler that simulates network delay
  */
 export function createDelayedHandler(method: string, path: string, response: unknown, delay = 1000, status = 200) {
-  const url = path.startsWith('http') || path.startsWith('*') ? path : `*${path}`;
+  const url: string | RegExp = path.startsWith('http') ? path : new RegExp(path.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') + '$');
   const httpMethod = getHttpMethod(method);
-  return httpMethod(url, async () => {
+  return httpMethod(url as string, async () => {
     await new Promise(resolve => setTimeout(resolve, delay));
     return HttpResponse.json(response as Parameters<typeof HttpResponse.json>[0], { status });
   });
@@ -506,9 +506,9 @@ export function createDelayedHandler(method: string, path: string, response: unk
  * Create a handler that simulates network error
  */
 export function createErrorHandler(method: string, path: string, _errorMessage = 'Network error') {
-  const url = path.startsWith('http') || path.startsWith('*') ? path : `*${path}`;
+  const url: string | RegExp = path.startsWith('http') ? path : new RegExp(path.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') + '$');
   const httpMethod = getHttpMethod(method);
-  return httpMethod(url, () => {
+  return httpMethod(url as string, () => {
     return HttpResponse.error();
   });
 }
