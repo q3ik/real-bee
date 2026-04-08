@@ -1,15 +1,15 @@
-import { useCallback, useEffect, useState } from 'react';
-import { localDb } from '../lib/db';
+import { useCallback, useEffect, useState } from "react";
+import { localDb } from "../lib/db";
 import type {
   PreferenceDifficulty,
   GradeLevel,
   UserPreferencesConfig,
   UserPreferencesState,
-} from './useUserPreferences.types';
+} from "./useUserPreferences.types";
 
 const DEFAULTS = {
-  difficulty: 'all' as PreferenceDifficulty,
-  gradeLevel: 'all' as GradeLevel,
+  difficulty: "all" as PreferenceDifficulty,
+  gradeLevel: "all" as GradeLevel,
   soundEnabled: true,
   autoSubmit: false,
   showWelcomeScreen: false,
@@ -23,7 +23,8 @@ const DEFAULTS = {
  *
  * @returns true if VITE_TEST_MODE === 'true' (strict string comparison)
  */
-const isTestModeEnabled = (): boolean => import.meta.env.VITE_TEST_MODE === 'true';
+const isTestModeEnabled = (): boolean =>
+  (import.meta as any).env?.VITE_TEST_MODE === "true";
 
 /**
  * Loads and persists user preferences via Dexie (IndexedDB) and exposes typed preference handlers.
@@ -33,23 +34,36 @@ export function useUserPreferences({
   onDifficultyChange,
   onGradeLevelChange,
 }: UserPreferencesConfig): UserPreferencesState {
-  const [difficulty, setDifficulty] = useState<PreferenceDifficulty>(DEFAULTS.difficulty);
+  const [difficulty, setDifficulty] = useState<PreferenceDifficulty>(
+    DEFAULTS.difficulty,
+  );
   const [gradeLevel, setGradeLevel] = useState<GradeLevel>(DEFAULTS.gradeLevel);
-  const [soundEnabled, setSoundEnabled] = useState<boolean>(DEFAULTS.soundEnabled);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(
+    DEFAULTS.soundEnabled,
+  );
   const [showWelcomeScreen, setShowWelcomeScreen] = useState<boolean>(false);
-  const [dontShowWelcomeAgain, setDontShowWelcomeAgain] = useState<boolean>(false);
+  const [dontShowWelcomeAgain, setDontShowWelcomeAgain] =
+    useState<boolean>(false);
   const [autoSubmit, setAutoSubmit] = useState<boolean>(DEFAULTS.autoSubmit);
-  const [hasLoadedPreference, setHasLoadedPreference] = useState<boolean>(false);
-  const [loadedPreferenceUserId, setLoadedPreferenceUserId] = useState<string | null>(null);
+  const [hasLoadedPreference, setHasLoadedPreference] =
+    useState<boolean>(false);
+  const [loadedPreferenceUserId, setLoadedPreferenceUserId] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     if (userId) {
       setHasLoadedPreference(false);
 
       const loadPrefs = async () => {
-        const saved = await localDb.preferences.where('uid').equals(userId).first();
+        const saved = await localDb.preferences
+          .where("uid")
+          .equals(userId)
+          .first();
 
-        setDifficulty((saved?.difficulty as PreferenceDifficulty) || DEFAULTS.difficulty);
+        setDifficulty(
+          (saved?.difficulty as PreferenceDifficulty) || DEFAULTS.difficulty,
+        );
         setGradeLevel((saved?.gradeLevel as GradeLevel) || DEFAULTS.gradeLevel);
         setSoundEnabled(saved?.soundEnabled ?? DEFAULTS.soundEnabled);
         setAutoSubmit(saved?.autoSubmit ?? DEFAULTS.autoSubmit);
@@ -84,7 +98,10 @@ export function useUserPreferences({
   useEffect(() => {
     if (userId && hasLoadedPreference && loadedPreferenceUserId === userId) {
       void (async () => {
-        const existing = await localDb.preferences.where('uid').equals(userId).first();
+        const existing = await localDb.preferences
+          .where("uid")
+          .equals(userId)
+          .first();
         if (existing) {
           await localDb.preferences.update(existing.id!, {
             difficulty,
@@ -105,25 +122,46 @@ export function useUserPreferences({
         }
       })();
     }
-  }, [userId, difficulty, gradeLevel, soundEnabled, autoSubmit, hasLoadedPreference, loadedPreferenceUserId, showWelcomeScreen, dontShowWelcomeAgain]);
+  }, [
+    userId,
+    difficulty,
+    gradeLevel,
+    soundEnabled,
+    autoSubmit,
+    hasLoadedPreference,
+    loadedPreferenceUserId,
+    showWelcomeScreen,
+    dontShowWelcomeAgain,
+  ]);
 
-  const handleDifficultySelect = useCallback((value: PreferenceDifficulty) => {
-    setDifficulty(value);
-    onDifficultyChange?.(value);
-  }, [onDifficultyChange]);
+  const handleDifficultySelect = useCallback(
+    (value: PreferenceDifficulty) => {
+      setDifficulty(value);
+      onDifficultyChange?.(value);
+    },
+    [onDifficultyChange],
+  );
 
-  const handleGradeLevelSelect = useCallback((value: GradeLevel) => {
-    setGradeLevel(value);
-    onGradeLevelChange?.(value);
-  }, [onGradeLevelChange]);
+  const handleGradeLevelSelect = useCallback(
+    (value: GradeLevel) => {
+      setGradeLevel(value);
+      onGradeLevelChange?.(value);
+    },
+    [onGradeLevelChange],
+  );
 
   const handleCloseWelcome = useCallback(() => {
     if (userId) {
       const shouldShowWelcome = !dontShowWelcomeAgain;
       void (async () => {
-        const existing = await localDb.preferences.where('uid').equals(userId).first();
+        const existing = await localDb.preferences
+          .where("uid")
+          .equals(userId)
+          .first();
         if (existing) {
-          await localDb.preferences.update(existing.id!, { showWelcomeScreen: shouldShowWelcome });
+          await localDb.preferences.update(existing.id!, {
+            showWelcomeScreen: shouldShowWelcome,
+          });
         }
       })();
     }
@@ -153,4 +191,4 @@ export type {
   GradeLevel,
   UserPreferencesConfig,
   UserPreferencesState,
-} from './useUserPreferences.types';
+} from "./useUserPreferences.types";

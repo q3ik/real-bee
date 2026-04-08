@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useGameStore } from "../hooks/useGameStore";
 import { useUserPreferences } from "../hooks/useUserPreferences";
+import { useScrollLock } from "../hooks/useScrollLock";
 import type {
   GradeLevel as UserGradeLevel,
   PreferenceDifficulty,
@@ -45,6 +46,9 @@ const DIFFICULTY_MAP: {
 ];
 
 export default function Settings({ isOpen, onClose }: SettingsProps) {
+  // Lock body scroll when modal is open
+  useScrollLock(isOpen);
+
   const {
     isMuted,
     setMuted,

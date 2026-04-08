@@ -15,6 +15,7 @@ vi.mock("../../lib/db", () => ({
   localDb: {
     progress: {
       put: vi.fn().mockResolvedValue(1),
+      get: vi.fn().mockResolvedValue(null),
       where: vi.fn().mockReturnValue({
         equals: vi.fn().mockReturnValue({
           first: vi.fn().mockResolvedValue(null),
