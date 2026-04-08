@@ -21,10 +21,15 @@ import { useHints } from "../hooks/useHints";
 import { useHostMessages } from "../hooks/useHostMessages";
 import { useGameKeyboardShortcuts } from "../hooks/useGameKeyboardShortcuts";
 import { audioManager } from "../lib/audioManager";
+import {
+  ROUND_DURATION_MS,
+  CONFETTI_CONFIG,
+  VOICE_TIMEOUT_MS,
+  FEEDBACK_DELAY_MS,
+  VISIBLE_MESSAGE_COUNT,
+} from "../constants/game";
 import HintSystem from "./HintSystem";
 import ProgressionOverview from "./ProgressionOverview";
-
-const ROUND_DURATION_MS = 30_000; // 30 seconds per round
 
 export default function GameBoard() {
   const {
@@ -98,7 +103,7 @@ export default function GameBoard() {
         setFeedback(null);
         nextWord();
         setUserInput("");
-      }, 2000);
+      }, FEEDBACK_DELAY_MS);
     },
   });
 
@@ -112,12 +117,7 @@ export default function GameBoard() {
     stopListening,
   } = useVoiceRecognition({
     targetWord: currentWord?.word,
-    timeout:
-      listeningTimeout === "longer"
-        ? 15000
-        : listeningTimeout === "off"
-          ? 60000
-          : 10000,
+    timeout: VOICE_TIMEOUT_MS[listeningTimeout],
     onTranscript: (_t) => setError(null),
     onResult: (res) => handleSubmission(res),
     onError: (err) => {
@@ -186,14 +186,7 @@ export default function GameBoard() {
 
       if (isCorrect) {
         // Subtle confetti burst on correct answer
-        confetti({
-          particleCount: 40,
-          spread: 60,
-          startVelocity: 25,
-          origin: { y: 0.6 },
-          colors: ["#f97316", "#fbbf24", "#34d399", "#60a5fa"],
-          disableForReducedMotion: true,
-        });
+        confetti(CONFETTI_CONFIG as unknown as confetti.Options);
 
         addMessage(
           "player",
@@ -205,7 +198,7 @@ export default function GameBoard() {
         setFeedback(null);
         nextWord();
         setUserInput("");
-      }, 2000);
+      }, FEEDBACK_DELAY_MS);
     },
     [phase, submitAnswer, addMessage, nextWord],
   );
@@ -360,7 +353,7 @@ export default function GameBoard() {
             </span>
           </div>
           <div className="space-y-1">
-            {messages.slice(-3).map((msg, i) => (
+            {messages.slice(-VISIBLE_MESSAGE_COUNT).map((msg, i) => (
               <p key={i} className="text-sm text-gray-600 italic">
                 {msg.text}
               </p>

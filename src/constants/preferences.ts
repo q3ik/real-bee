@@ -1,0 +1,62 @@
+/**
+ * Settings UI and user preference constants.
+ * Extracted from Settings.tsx and useUserPreferences.ts.
+ */
+
+import type { GradeLevel, PreferenceDifficulty } from '../types';
+
+// ---------------------------------------------------------------------------
+// Default preferences
+// ---------------------------------------------------------------------------
+
+/**
+ * Default values for new user preferences.
+ */
+export const PREFERENCE_DEFAULTS = {
+  difficulty: 'all' as PreferenceDifficulty,
+  gradeLevel: 'all' as GradeLevel,
+  soundEnabled: true,
+  autoSubmit: false,
+  showWelcomeScreen: false,
+  dontShowWelcomeAgain: false,
+} as const;
+
+// ---------------------------------------------------------------------------
+// Grade level configuration
+// ---------------------------------------------------------------------------
+
+export interface GradeOption {
+  label: string;
+  value: number;
+  prefValue: GradeLevel;
+}
+
+/**
+ * Grade level options for the settings UI.
+ */
+export const GRADE_OPTIONS: GradeOption[] = [
+  { label: 'K-2', value: 1, prefValue: 'K-2' },
+  { label: '3-5', value: 3, prefValue: '3-5' },
+  { label: '6-8', value: 6, prefValue: '6-8' },
+  { label: 'All', value: 0, prefValue: 'all' },
+];
+
+// ---------------------------------------------------------------------------
+// Difficulty configuration
+// ---------------------------------------------------------------------------
+
+export interface DifficultyOption {
+  label: string;
+  value: string;
+  prefValue: PreferenceDifficulty;
+}
+
+/**
+ * Difficulty options for the settings UI.
+ */
+export const DIFFICULTY_OPTIONS: DifficultyOption[] = [
+  { label: 'Easy', value: 'easy', prefValue: 'easy' },
+  { label: 'Medium', value: 'medium', prefValue: 'medium' },
+  { label: 'Hard', value: 'hard', prefValue: 'hard' },
+  { label: 'Mixed', value: 'all', prefValue: 'all' },
+];

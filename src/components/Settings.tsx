@@ -14,36 +14,13 @@ import {
 import { useGameStore } from "../hooks/useGameStore";
 import { useUserPreferences } from "../hooks/useUserPreferences";
 import { useScrollLock } from "../hooks/useScrollLock";
-import type {
-  GradeLevel as UserGradeLevel,
-  PreferenceDifficulty,
-} from "../hooks/useUserPreferences.types";
+import { GRADE_OPTIONS, DIFFICULTY_OPTIONS } from "../constants/preferences";
 import { motion } from "motion/react";
 
 interface SettingsProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
-// Map between Settings grade values and useUserPreferences grade levels
-const GRADE_MAP: { label: string; value: number; prefValue: UserGradeLevel }[] =
-  [
-    { label: "K-2", value: 1, prefValue: "K-2" },
-    { label: "3-5", value: 3, prefValue: "3-5" },
-    { label: "6-8", value: 6, prefValue: "6-8" },
-    { label: "All", value: 0, prefValue: "all" },
-  ];
-
-const DIFFICULTY_MAP: {
-  label: string;
-  value: string;
-  prefValue: PreferenceDifficulty;
-}[] = [
-  { label: "Easy", value: "easy", prefValue: "easy" },
-  { label: "Medium", value: "medium", prefValue: "medium" },
-  { label: "Hard", value: "hard", prefValue: "hard" },
-  { label: "Mixed", value: "all", prefValue: "all" },
-];
 
 export default function Settings({ isOpen, onClose }: SettingsProps) {
   // Lock body scroll when modal is open
@@ -82,7 +59,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
     },
     onGradeLevelChange: (grade) => {
       const gradeValue =
-        GRADE_MAP.find((g) => g.prefValue === grade)?.value ?? 1;
+        GRADE_OPTIONS.find((g) => g.prefValue === grade)?.value ?? 1;
       setGradeLevel(gradeValue);
     },
   });
@@ -90,12 +67,12 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
   // Sync soundEnabled between store and preferences
   const effectiveMuted = prefSoundEnabled ? isMuted : true;
 
-  const handleGradeChange = (g: (typeof GRADE_MAP)[number]) => {
+  const handleGradeChange = (g: (typeof GRADE_OPTIONS)[number]) => {
     setGradeLevel(g.value);
     handleGradeLevelSelect(g.prefValue);
   };
 
-  const handleDifficultyChange = (d: (typeof DIFFICULTY_MAP)[number]) => {
+  const handleDifficultyChange = (d: (typeof DIFFICULTY_OPTIONS)[number]) => {
     setDifficulty(d.value as "easy" | "medium" | "hard" | "all");
     handleDifficultySelect(d.prefValue);
   };
@@ -137,7 +114,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
               </div>
             </div>
             <div className="grid grid-cols-4 gap-2 p-1 bg-gray-50 rounded-2xl">
-              {GRADE_MAP.map((g) => (
+              {GRADE_OPTIONS.map((g) => (
                 <button
                   key={g.value}
                   onClick={() => handleGradeChange(g)}
@@ -161,7 +138,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
               </div>
             </div>
             <div className="grid grid-cols-4 gap-2 p-1 bg-gray-50 rounded-2xl">
-              {DIFFICULTY_MAP.map((d) => (
+              {DIFFICULTY_OPTIONS.map((d) => (
                 <button
                   key={d.value}
                   onClick={() => handleDifficultyChange(d)}

@@ -1,20 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { localDb } from "../lib/db";
+import { PREFERENCE_DEFAULTS } from "../constants/preferences";
 import type {
   PreferenceDifficulty,
   GradeLevel,
   UserPreferencesConfig,
   UserPreferencesState,
 } from "./useUserPreferences.types";
-
-const DEFAULTS = {
-  difficulty: "all" as PreferenceDifficulty,
-  gradeLevel: "all" as GradeLevel,
-  soundEnabled: true,
-  autoSubmit: false,
-  showWelcomeScreen: false,
-  dontShowWelcomeAgain: false,
-};
 
 /**
  * Check if test mode is enabled via VITE_TEST_MODE environment variable.
@@ -35,16 +27,16 @@ export function useUserPreferences({
   onGradeLevelChange,
 }: UserPreferencesConfig): UserPreferencesState {
   const [difficulty, setDifficulty] = useState<PreferenceDifficulty>(
-    DEFAULTS.difficulty,
+    PREFERENCE_DEFAULTS.difficulty,
   );
-  const [gradeLevel, setGradeLevel] = useState<GradeLevel>(DEFAULTS.gradeLevel);
+  const [gradeLevel, setGradeLevel] = useState<GradeLevel>(PREFERENCE_DEFAULTS.gradeLevel);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(
-    DEFAULTS.soundEnabled,
+    PREFERENCE_DEFAULTS.soundEnabled,
   );
   const [showWelcomeScreen, setShowWelcomeScreen] = useState<boolean>(false);
   const [dontShowWelcomeAgain, setDontShowWelcomeAgain] =
     useState<boolean>(false);
-  const [autoSubmit, setAutoSubmit] = useState<boolean>(DEFAULTS.autoSubmit);
+  const [autoSubmit, setAutoSubmit] = useState<boolean>(PREFERENCE_DEFAULTS.autoSubmit);
   const [hasLoadedPreference, setHasLoadedPreference] =
     useState<boolean>(false);
   const [loadedPreferenceUserId, setLoadedPreferenceUserId] = useState<
@@ -62,11 +54,11 @@ export function useUserPreferences({
           .first();
 
         setDifficulty(
-          (saved?.difficulty as PreferenceDifficulty) || DEFAULTS.difficulty,
+          (saved?.difficulty as PreferenceDifficulty) || PREFERENCE_DEFAULTS.difficulty,
         );
-        setGradeLevel((saved?.gradeLevel as GradeLevel) || DEFAULTS.gradeLevel);
-        setSoundEnabled(saved?.soundEnabled ?? DEFAULTS.soundEnabled);
-        setAutoSubmit(saved?.autoSubmit ?? DEFAULTS.autoSubmit);
+        setGradeLevel((saved?.gradeLevel as GradeLevel) || PREFERENCE_DEFAULTS.gradeLevel);
+        setSoundEnabled(saved?.soundEnabled ?? PREFERENCE_DEFAULTS.soundEnabled);
+        setAutoSubmit(saved?.autoSubmit ?? PREFERENCE_DEFAULTS.autoSubmit);
 
         if (isTestModeEnabled()) {
           setShowWelcomeScreen(false);
@@ -85,13 +77,13 @@ export function useUserPreferences({
       return;
     }
 
-    setDifficulty(DEFAULTS.difficulty);
-    setGradeLevel(DEFAULTS.gradeLevel);
-    setSoundEnabled(DEFAULTS.soundEnabled);
-    setAutoSubmit(DEFAULTS.autoSubmit);
+    setDifficulty(PREFERENCE_DEFAULTS.difficulty);
+    setGradeLevel(PREFERENCE_DEFAULTS.gradeLevel);
+    setSoundEnabled(PREFERENCE_DEFAULTS.soundEnabled);
+    setAutoSubmit(PREFERENCE_DEFAULTS.autoSubmit);
     setHasLoadedPreference(false);
-    setShowWelcomeScreen(DEFAULTS.showWelcomeScreen);
-    setDontShowWelcomeAgain(DEFAULTS.dontShowWelcomeAgain);
+    setShowWelcomeScreen(PREFERENCE_DEFAULTS.showWelcomeScreen);
+    setDontShowWelcomeAgain(PREFERENCE_DEFAULTS.dontShowWelcomeAgain);
     setLoadedPreferenceUserId(null);
   }, [userId]);
 

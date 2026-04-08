@@ -1,24 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-/** Timeout in ms before silence is detected and listening stops */
-const SILENCE_TIMEOUT_MS = 3000;
-
-/** Max listening duration in ms before auto-stop */
-const MAX_LISTEN_MS = 15000;
-
-/** Grace period after onend to collect final transcript fragments */
-const TRANSCRIPT_GRACE_PERIOD_MS = 200;
-
-/** Pattern for stripping completion cue words from transcript */
-const COMPLETION_CUE_PATTERN = /\b(done|finished|that'?s it|that is it)\b/gi;
-
-/** Pattern for detecting completion cues in transcript (used with .test()) */
-const COMPLETION_CUE_DETECTION_PATTERN =
-  /\b(done|finished|that'?s it|that is it)\b/i;
+import {
+  SILENCE_TIMEOUT_MS,
+  MAX_LISTEN_MS,
+  TRANSCRIPT_GRACE_PERIOD_MS,
+  COMPLETION_CUE_PATTERN,
+  COMPLETION_CUE_DETECTION_PATTERN,
+  NATO_ALPHABET,
+  SPEECH_RECOGNITION_LANG,
+  WHOLE_WORD_MIN_LENGTH,
+  PARTIAL_SPELL_THRESHOLD,
+} from "../constants/voice";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -57,37 +48,8 @@ export interface UseVoiceRecognitionResult {
 }
 
 // ---------------------------------------------------------------------------
-// NATO alphabet mapping
+// Helpers (uses NATO_ALPHABET from constants/voice)
 // ---------------------------------------------------------------------------
-
-const NATO: Record<string, string> = {
-  alpha: "a",
-  bravo: "b",
-  charlie: "c",
-  delta: "d",
-  echo: "e",
-  foxtrot: "f",
-  golf: "g",
-  hotel: "h",
-  india: "i",
-  juliet: "j",
-  kilo: "k",
-  lima: "l",
-  mike: "m",
-  november: "n",
-  oscar: "o",
-  papa: "p",
-  quebec: "q",
-  romeo: "r",
-  sierra: "s",
-  tango: "t",
-  uniform: "u",
-  victor: "v",
-  whiskey: "w",
-  xray: "x",
-  yankee: "y",
-  zulu: "z",
-};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -122,7 +84,10 @@ function processSpelling(transcript: string, target?: string): string | null {
 
   // Convert NATO words to letters and filter for single letters
   const letters = spellingWords
-    .map((w) => NATO[w] ?? (w.length === 1 && /^[a-z]$/.test(w) ? w : null))
+    .map(
+      (w) =>
+        NATO_ALPHABET[w] ?? (w.length === 1 && /^[a-z]$/.test(w) ? w : null),
+    )
     .filter(Boolean) as string[];
 
   // If we have a stop word and extracted letters, return the spelling
@@ -133,7 +98,7 @@ function processSpelling(transcript: string, target?: string): string | null {
   // If we have letters but no stop word, return them if we have a decent match
   if (target && letters.length > 0) {
     const spelling = letters.join("");
-    if (spelling.length >= target.length * 0.5) {
+    if (spelling.length >= target.length * PARTIAL_SPELL_THRESHOLD) {
       return spelling;
     }
   }
@@ -147,7 +112,7 @@ function processSpelling(transcript: string, target?: string): string | null {
  */
 function isLikelyWholeWordAttempt(transcript: string): boolean {
   const words = transcript.trim().split(/\s+/);
-  return words.length === 1 && words[0].length > 3;
+  return words.length === 1 && words[0].length >= WHOLE_WORD_MIN_LENGTH;
 }
 
 // ---------------------------------------------------------------------------
@@ -167,7 +132,9 @@ export function useVoiceRecognition(
   const recognitionRef = useRef<any>(null);
   const silenceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const graceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const maxListenTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const maxListenTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionCompletedRef = useRef(false);
   const latestTranscriptRef = useRef("");
@@ -301,7 +268,10 @@ export function useVoiceRecognition(
         const remaining = Math.max(0, 100 - (elapsed / duration) * 100);
         setTimeLeft(remaining);
         if (remaining <= 0) {
-          finishListeningSessionRef.current(false, "Time ran out. Please try again.");
+          finishListeningSessionRef.current(
+            false,
+            "Time ran out. Please try again.",
+          );
         }
       }, interval);
     },
@@ -311,7 +281,10 @@ export function useVoiceRecognition(
   const resetSilenceTimeout = useCallback(() => {
     clearSilenceTimeout();
     silenceTimeoutRef.current = setTimeout(() => {
-      finishListeningSessionRef.current(true, "No speech detected. Please try again.");
+      finishListeningSessionRef.current(
+        true,
+        "No speech detected. Please try again.",
+      );
     }, SILENCE_TIMEOUT_MS);
   }, [clearSilenceTimeout]);
 
@@ -335,7 +308,7 @@ export function useVoiceRecognition(
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = "en-US";
+    recognition.lang = SPEECH_RECOGNITION_LANG;
 
     recognition.onresult = (event: any) => {
       const mergedTranscript = Array.from(event.results)
@@ -367,7 +340,9 @@ export function useVoiceRecognition(
         optionsRef.current.targetWord,
       );
 
-      const hasCue = COMPLETION_CUE_DETECTION_PATTERN.test(nextTranscript.toLowerCase());
+      const hasCue = COMPLETION_CUE_DETECTION_PATTERN.test(
+        nextTranscript.toLowerCase(),
+      );
 
       if (hasCue || spellingResult) {
         // User is done (explicit cue or a complete spelling detected).
@@ -485,7 +460,10 @@ export function useVoiceRecognition(
 
     maxListenTimeoutRef.current = setTimeout(() => {
       if (!sessionCompletedRef.current) {
-        finishListeningSessionRef.current(false, "Time ran out. Please try again.");
+        finishListeningSessionRef.current(
+          false,
+          "Time ran out. Please try again.",
+        );
       }
     }, duration);
 

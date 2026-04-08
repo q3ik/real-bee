@@ -1,4 +1,5 @@
 import Dexie, { type Table } from "dexie";
+import { DB_NAME, DB_SCHEMAS } from "../constants/database";
 
 export interface LocalUserPreferences {
   id?: number;
@@ -40,7 +41,7 @@ export class RealBeeDatabase extends Dexie {
   sessions!: Table<LocalSession>;
 
   constructor() {
-    super("RealBeeDB");
+    super(DB_NAME);
     this.version(2).stores({
       preferences: "++id, uid",
       progress: "++id, uid, synced",

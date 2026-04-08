@@ -2,6 +2,7 @@ import { type Word } from "../lib/wordList";
 import { type Hint } from "../hooks/useHints.types";
 import { HelpCircle, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { MAX_HINTS_PER_WORD } from "../constants/game";
 
 interface HintSystemProps {
   word: Word;
@@ -14,7 +15,7 @@ export default function HintSystem({
   hints,
   onGetHint,
 }: HintSystemProps) {
-  const maxHints = 4;
+  
 
   return (
     <div className="mt-6 w-full max-w-md mx-auto">
@@ -23,7 +24,7 @@ export default function HintSystem({
           <HelpCircle className="w-4 h-4" />
           Hints
         </h3>
-        {hints.length < maxHints && (
+        {hints.length < MAX_HINTS_PER_WORD && (
           <button
             onClick={onGetHint}
             className="text-xs font-bold text-orange-500 hover:text-orange-600 flex items-center gap-1 bg-orange-50 px-2 py-1 rounded-full transition-all"
