@@ -26,4 +26,5 @@ function convertToPhonetic(syllables) {
   // Simple conversion: capitalize first syllable for stress
   const parts = syllables.split("-");
   if (parts.length === 0) return syllables.toUpperCase();
+  return parts[0].toUpperCase() + (parts.length > 1 ? "-" + parts.slice(1).join("-").toLowerCase() : "");
 }

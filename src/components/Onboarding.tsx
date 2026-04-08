@@ -21,8 +21,12 @@ export default function Onboarding({ onStart }: OnboardingProps) {
   }, []);
 
   const handleGoogleSignIn = async () => {
+    if (!supabase) {
+      console.error('[handleGoogleSignIn] Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+      return;
+    }
     try {
-      await supabase?.auth.signInWithOAuth({ provider: 'google' });
+      await supabase.auth.signInWithOAuth({ provider: 'google' });
     } catch (error: unknown) {
       console.error("Google Sign-In failed:", error);
     }
@@ -58,7 +62,8 @@ export default function Onboarding({ onStart }: OnboardingProps) {
           ) : (
             <button 
               onClick={handleGoogleSignIn}
-              className="flex items-center gap-2 text-xs font-bold text-gray-400 hover:text-orange-500 transition-colors"
+              disabled={!supabase}
+              className="flex items-center gap-2 text-xs font-bold text-gray-400 hover:text-orange-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-gray-400"
             >
               <LogIn className="w-4 h-4" />
               Sign in to sync progress

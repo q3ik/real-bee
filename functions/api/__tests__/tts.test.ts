@@ -57,7 +57,27 @@ describe('POST /api/tts', () => {
     expect(res.status).toBe(403);
   });
 
-  it('returns { audio, mimeType } for valid input', async () => {
+  it('returns { audio, mimeType, sampleRate } for valid audio/pcm response', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        candidates: [{
+          content: { parts: [{ inlineData: { data: 'AAAA', mimeType: 'audio/pcm' } }] },
+        }],
+      }),
+    }));
+
+    const res = await onRequestPost(makeContext({ word: 'apple' }));
+    expect(res.status).toBe(200);
+    const body = await res.json() as { audio: string; mimeType: string; sampleRate: number };
+    expect(body.audio).toBe('AAAA');
+    expect(body.mimeType).toBe('audio/pcm');
+    expect(body.sampleRate).toBe(24000);
+
+    vi.unstubAllGlobals();
+  });
+
+  it('returns 500 when Gemini returns a non-pcm mimeType', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -68,10 +88,7 @@ describe('POST /api/tts', () => {
     }));
 
     const res = await onRequestPost(makeContext({ word: 'apple' }));
-    expect(res.status).toBe(200);
-    const body = await res.json() as { audio: string; mimeType: string };
-    expect(body.audio).toBe('AAAA');
-    expect(body.mimeType).toBe('audio/wav');
+    expect(res.status).toBe(500);
 
     vi.unstubAllGlobals();
   });

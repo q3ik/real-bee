@@ -50,7 +50,7 @@ export default defineConfig({
     video: 'retain-on-failure',
     
     // Fix #614: Reduce motion globally to prevent WebKit element instability
-    reducedMotion: 'reduce',
+    contextOptions: { reducedMotion: 'reduce' },
     
     // Fix #1, #3, #613: Increase navigation and action timeouts
     // CI environments are slower - network latency, resource contention
