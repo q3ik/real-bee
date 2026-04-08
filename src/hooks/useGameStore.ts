@@ -2,10 +2,10 @@ import { create } from "zustand";
 import { type Word, getWordsForConfig } from "../lib/wordList";
 import { localDb } from "../lib/db";
 import { supabase } from "../lib/supabase";
-import type { GamePhase } from "../hooks/useGameKeyboardShortcuts.types";
+import type { GamePhase } from "./useGameState.types";
 
 // ---------------------------------------------------------------------------
-// Types (ported from buzzy-game useGameState.types, adapted for real-bee)
+// Types
 // ---------------------------------------------------------------------------
 
 export type GameDifficulty = "easy" | "medium" | "hard" | "all";
@@ -63,7 +63,6 @@ function getOrCreateOfflineUid(): string {
     localStorage.setItem(OFFLINE_UID_KEY, uid);
     return uid;
   } catch {
-    // localStorage unavailable (SSR, private-browsing lockdown, etc.)
     return 'offline-fallback';
   }
 }
@@ -203,19 +202,16 @@ export const useGameStore = create<GameState>((set, get) => ({
       sessionIndex,
     } = get();
 
-    // Start session timer on first round
     if (!get().sessionStartTime) {
       set({ sessionStartTime: Date.now(), sessionBestStreak: 0 });
     }
 
-    // Get words — reuse session words if we already have them, or fetch new ones
     let pool = sessionWords;
     if (pool.length === 0 || sessionIndex >= pool.length) {
       pool = getWordsForConfig(gradeLevel, difficulty);
       pool = [...pool].sort(() => Math.random() - 0.5);
     }
 
-    // Filter out used words
     const availableWords = pool.filter((w: Word) => !usedWordsSet.has(w.word));
 
     if (availableWords.length === 0) {
@@ -269,30 +265,38 @@ export const useGameStore = create<GameState>((set, get) => ({
       : get().masteredCount;
     const newCorrect = isCorrect ? correctAnswers + 1 : correctAnswers;
     const newRounds = roundsPlayed + 1;
-    const evolutionEntry = isCorrect ? 1 : -1;
 
     const feedback = generateFeedback(isCorrect, newStreak, currentWord.word);
+    const evolutionEntry = isCorrect ? 1 : -1;
 
-    // Persist to Dexie (offline-first). Uses the current userId or falls back
-    // to a stable offline UID so no progress is silently dropped.
-    // uid is the primary key on the progress table, so put() upserts correctly.
-    const uid = userId ?? (() => {
+    // Resolve the uid to write progress under (prefer authenticated, fall back to offline)
+    const effectiveUid = userId ?? (() => {
       const offlineUid = getOrCreateOfflineUid();
       set({ userId: offlineUid });
       return offlineUid;
     })();
 
-    void localDb.progress.put({
-      uid,
-      score: newScore,
-      streak: newStreak,
-      bestStreak: newBestStreak,
-      masteredCount: newMastered,
-      gradeLevel: gradeLevel.toString(),
-      difficulty,
-      lastPlayed: new Date().toISOString(),
-      synced: false,
-    });
+    // Non-blocking Dexie write — fire-and-forget but with a rejection handler
+    // so that storage failures (quota exceeded, private browsing, blocked DB)
+    // surface as a warning rather than an unhandled promise rejection.
+    void localDb.progress
+      .put({
+        uid: effectiveUid,
+        score: newScore,
+        streak: newStreak,
+        bestStreak: newBestStreak,
+        masteredCount: newMastered,
+        gradeLevel: gradeLevel.toString(),
+        difficulty,
+        lastPlayed: new Date().toISOString(),
+        synced: false,
+      })
+      .catch((err: unknown) => {
+        console.warn(
+          '[useGameStore] submitAnswer: failed to persist progress to IndexedDB',
+          err,
+        );
+      });
 
     set({
       score: newScore,
@@ -456,10 +460,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       { label: "Rounds", value: roundsPlayed },
       { label: "Accuracy", value: `${sessionAccuracy}%` },
       { label: "Best streak", value: sessionBestStreak },
-      {
-        label: "Score",
-        value: score,
-      },
+      { label: "Score", value: score },
       {
         label: "Time played",
         value: sessionDurationMinutes > 0 ? `${sessionDurationMinutes}m` : "—",
