@@ -63,7 +63,9 @@
     "wrangler": "^4.80.0"
   },
   "overrides": {
-    "path-to-regexp": ">=0.1.13",
+    "express": {
+      "path-to-regexp": "0.1.13"
+    },
     "picomatch": "^4.0.4"
   }
 }
