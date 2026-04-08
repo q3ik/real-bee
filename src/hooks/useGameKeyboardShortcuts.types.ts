@@ -1,14 +1,14 @@
 /**
- * Game phase states — single source of truth for game FSM phases.
- * Mirrors the phase values stored in useGameStore.
+ * Re-export GamePhase from the canonical FSM types file so that
+ * useGameKeyboardShortcuts does not define its own copy.
  */
-export type GamePhase = "idle" | "playing" | "round_end";
+export type { GamePhase } from './useGameState.types';
 
 /**
  * Configuration for useGameKeyboardShortcuts hook
  */
 export interface UseGameKeyboardShortcutsConfig {
-  gameState: GamePhase;
+  gameState: import('./useGameState.types').GamePhase;
   onRepeatWord?: () => void;
   onHint: () => void;
   onDefinition: () => void;
