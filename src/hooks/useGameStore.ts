@@ -48,14 +48,6 @@ function generateFeedback(
   return `Not quite. The word was ${targetWord}.`;
 }
 
-function mapGradeLevelToString(gradeLevel: number): string {
-  if (gradeLevel === 0) return "all";
-  if (gradeLevel === 1) return "K-2";
-  if (gradeLevel === 3) return "3-5";
-  if (gradeLevel === 6) return "6-8";
-  return "all";
-}
-
 // ---------------------------------------------------------------------------
 // Zustand Store
 // ---------------------------------------------------------------------------
@@ -207,7 +199,6 @@ export const useGameStore = create<GameState>((set, get) => ({
     const {
       gradeLevel,
       difficulty,
-      recentPerformance,
       sessionWords,
       sessionIndex,
     } = get();
@@ -262,7 +253,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       userId,
       gradeLevel,
       difficulty,
-      isMuted: muted,
+      difficultyEvolution,
     } = get();
     if (!currentWord || phase !== "playing") return false;
 
@@ -278,60 +269,29 @@ export const useGameStore = create<GameState>((set, get) => ({
       : get().masteredCount;
     const newCorrect = isCorrect ? correctAnswers + 1 : correctAnswers;
     const newRounds = roundsPlayed + 1;
+    const evolutionEntry = isCorrect ? 1 : -1;
 
     const feedback = generateFeedback(isCorrect, newStreak, currentWord.word);
 
-    const evolutionEntry = isCorrect ? 1 : -1;
+    // Persist to Dexie (offline-first). Uses the current userId or falls back
+    // to a stable offline UID so no progress is silently dropped.
+    const uid = userId ?? (() => {
+      const offlineUid = getOrCreateOfflineUid();
+      set({ userId: offlineUid });
+      return offlineUid;
+    })();
 
-    if (isCorrect && userId) {
-      void localDb.progress.put({
-        uid: userId,
-        score: newScore,
-        streak: newStreak,
-        bestStreak: newBestStreak,
-        masteredCount: newMastered,
-        difficultyEvolution: [...difficultyEvolution, 1],
-      });
-
-      if (userId) {
-        localDb.progress.put({
-          uid: userId,
-          score: newScore,
-          streak: newStreak,
-          bestStreak: newBest,
-          masteredCount: newMastered,
-          gradeLevel: get().gradeLevel.toString(),
-          difficulty: get().difficulty,
-          lastPlayed: new Date().toISOString(),
-          synced: false,
-        });
-      } else {
-        // loadProgress() wasn't called yet — persist under the offline UID
-        // so no progress is silently dropped.
-        const offlineUid = getOrCreateOfflineUid();
-        set({ userId: offlineUid });
-        localDb.progress.put({
-          uid: offlineUid,
-          score: newScore,
-          streak: newStreak,
-          bestStreak: newBest,
-          masteredCount: newMastered,
-          gradeLevel: get().gradeLevel.toString(),
-          difficulty: get().difficulty,
-          lastPlayed: new Date().toISOString(),
-          synced: false,
-        });
-      }
-    } else {
-      set({
-        streak: 0,
-        difficultyEvolution: [...difficultyEvolution, -1],
-        gradeLevel: gradeLevel.toString(),
-        difficulty,
-        lastPlayed: new Date().toISOString(),
-        synced: false,
-      });
-    }
+    void localDb.progress.put({
+      uid,
+      score: newScore,
+      streak: newStreak,
+      bestStreak: newBestStreak,
+      masteredCount: newMastered,
+      gradeLevel: gradeLevel.toString(),
+      difficulty,
+      lastPlayed: new Date().toISOString(),
+      synced: false,
+    });
 
     set({
       score: newScore,
@@ -340,7 +300,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       masteredCount: newMastered,
       roundsPlayed: newRounds,
       correctAnswers: newCorrect,
-      difficultyEvolution: [...get().difficultyEvolution, evolutionEntry],
+      difficultyEvolution: [...difficultyEvolution, evolutionEntry],
       recentPerformance: [...get().recentPerformance, isCorrect].slice(-10),
       sessionBestStreak: Math.max(get().sessionBestStreak, newStreak),
       phase: "round_end",
@@ -367,7 +327,6 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     set({
       roundsPlayed: roundsPlayed + 1,
-      // -1 represents a timeout penalty in difficulty evolution tracking (same as an incorrect answer)
       difficultyEvolution: [...get().difficultyEvolution, -1],
       recentPerformance: [...get().recentPerformance, false].slice(-10),
       phase: "round_end",
@@ -447,6 +406,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   setAutoSubmit: (autoSubmit) => set({ autoSubmit }),
 
   loadProgress: async () => {
+    // Resolve auth: prefer Supabase session, fall back to stable offline UID.
     if (supabase) {
       const { data } = await supabase.auth.getUser();
       if (data.user) {
@@ -454,8 +414,6 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
     }
 
-    // Fall back to a stable offline UID so progress is always persisted,
-    // even when the user hasn't signed in yet.
     if (!get().userId) {
       set({ userId: getOrCreateOfflineUid() });
     }
@@ -471,7 +429,6 @@ export const useGameStore = create<GameState>((set, get) => ({
       });
     }
 
-    // Sync mastered words from Dexie if available
     masteredWordsSet.clear();
   },
 
@@ -483,28 +440,22 @@ export const useGameStore = create<GameState>((set, get) => ({
       sessionStartTime,
       sessionBestStreak,
     } = get();
-    const baselineRounds = 0;
-    const baselineCorrect = 0;
-    const baselineScore = 0;
 
-    const sessionRounds = Math.max(roundsPlayed - baselineRounds, 0);
-    const sessionCorrect = Math.max(correctAnswers - baselineCorrect, 0);
-    const sessionScore = score - baselineScore;
     const sessionAccuracy =
-      sessionRounds > 0
-        ? Math.round((sessionCorrect / sessionRounds) * 100)
+      roundsPlayed > 0
+        ? Math.round((correctAnswers / roundsPlayed) * 100)
         : 0;
     const sessionDurationMinutes = sessionStartTime
       ? Math.max(1, Math.round((Date.now() - sessionStartTime) / 60000))
       : 0;
 
     return [
-      { label: "Rounds", value: sessionRounds },
+      { label: "Rounds", value: roundsPlayed },
       { label: "Accuracy", value: `${sessionAccuracy}%` },
       { label: "Best streak", value: sessionBestStreak },
       {
-        label: "Score change",
-        value: sessionScore >= 0 ? `+${sessionScore}` : `${sessionScore}`,
+        label: "Score",
+        value: score,
       },
       {
         label: "Time played",
