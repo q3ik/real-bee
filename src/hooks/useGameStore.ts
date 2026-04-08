@@ -275,6 +275,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     // Persist to Dexie (offline-first). Uses the current userId or falls back
     // to a stable offline UID so no progress is silently dropped.
+    // uid is the primary key on the progress table, so put() upserts correctly.
     const uid = userId ?? (() => {
       const offlineUid = getOrCreateOfflineUid();
       set({ userId: offlineUid });
@@ -419,7 +420,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
 
     const uid = get().userId!;
-    const local = await localDb.progress.where('uid').equals(uid).first();
+    // uid is the primary key — get() is an O(1) lookup and always returns
+    // the single canonical row (no stale duplicates possible).
+    const local = await localDb.progress.get(uid);
     if (local) {
       set({
         score: local.score,
