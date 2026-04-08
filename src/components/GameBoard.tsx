@@ -44,14 +44,14 @@ export default function GameBoard() {
     sessionStats,
   } = useGameStore();
 
-  // Mic permission — shown during onboarding / before first game
+  // Mic permission — shown when permission is denied
   const { permissionDenied, resetPermission, markPermissionDenied } =
     useMicrophonePermission();
 
   // Host messages (game narration transcript)
   const { messages, addMessage, clearMessages } = useHostMessages();
 
-  // Speech synthesis (TTS via Gemini Worker proxy + Web Speech fallback)
+  // Speech synthesis — wraps audioManager with game-specific helpers
   const { speak, ttsSupported, repeatWord, giveDefinition, giveSentence } =
     useSpeechSynthesis({
       addMessage,
@@ -102,7 +102,7 @@ export default function GameBoard() {
   });
 
   // Voice recognition — activated during AWAITING_ANSWER (playing) phase
-  const { isListening, transcript, timeLeft, startListening, stopListening } =
+  const { isListening, transcript, liveTranscript, timeLeft, startListening, stopListening } =
     useVoiceRecognition({
       targetWord: currentWord?.word,
       timeout:
@@ -222,8 +222,10 @@ export default function GameBoard() {
     onSentence: handleSentence,
   });
 
-  // --- Permission denied screen (shown during onboarding / before first game) ---
-  if (permissionDenied && !currentWord) {
+  // --- Permission denied screen ---
+  // Shown whenever mic permission is denied, regardless of game state,
+  // so mid-game revocation is also handled.
+  if (permissionDenied) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center space-y-6">
         <div className="p-6 bg-red-50 rounded-full">
@@ -237,7 +239,18 @@ export default function GameBoard() {
           enable microphone access in your browser settings and try again.
         </p>
         <button
-          onClick={() => {
+          onClick={async () => {
+            // Request mic access first so the browser re-prompts the user
+            // if the permission was soft-denied. Hard-denied permissions
+            // require the user to update browser site settings manually.
+            try {
+              const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+              // Release the track immediately — we only needed the prompt.
+              stream.getTracks().forEach((t) => t.stop());
+            } catch {
+              // User still denied — keep the error screen; do not start session.
+              return;
+            }
             resetPermission();
             startSession();
           }}
@@ -456,8 +469,10 @@ export default function GameBoard() {
                   />
                 </div>
               </div>
+              {/* Prefer liveTranscript during active listening for real-time feedback;
+                  fall back to transcript (set at session end) or placeholder. */}
               <p className="text-2xl font-black text-gray-800 text-center tracking-widest uppercase">
-                {transcript || "..."}
+                {(isListening ? liveTranscript : transcript) || "..."}
               </p>
             </motion.div>
           )}

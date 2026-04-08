@@ -1,7 +1,8 @@
 /**
- * Message types for transcript display
+ * Known message types for transcript display.
+ * Extend this union rather than widening to `string`.
  */
-export type TranscriptMessageType = 'word' | 'sentence' | 'definition' | 'system' | string;
+export type TranscriptMessageType = 'word' | 'sentence' | 'definition' | 'system' | 'player';
 
 /**
  * Callback for adding messages to transcript
@@ -24,7 +25,7 @@ export interface SpeechSynthesisConfig {
  * Browser speech compatibility information
  */
 export interface BrowserSpeechCompatibility {
-  /** Whether the Gemini TTS backend is available */
+  /** Whether AudioContext (required by audioManager) is available in this browser */
   ttsSupported: boolean;
 }
 
@@ -32,7 +33,7 @@ export interface BrowserSpeechCompatibility {
  * Speech synthesis action handlers
  */
 export interface SpeechSynthesisActions {
-  /** Speak text aloud (Gemini TTS → Web Speech fallback) */
+  /** Speak text aloud (Gemini TTS → Web Speech fallback via audioManager) */
   speak: (text: string, callback?: () => void) => Promise<void>;
   /** Repeat the target word aloud */
   repeatWord: (word: string) => Promise<void>;

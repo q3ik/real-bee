@@ -3,31 +3,20 @@ import { audioManager } from '../lib/audioManager';
 import type { SpeechSynthesisConfig, SpeechSynthesisResult } from './useSpeechSynthesis.types';
 
 /**
- * Detect whether the Gemini TTS backend is available.
- * We assume it is available if the browser supports fetch and we are not offline.
+ * Detect whether AudioContext (required by audioManager) is available.
+ * Returns false in SSR / environments without Web Audio support.
  */
 function isTTSSupported(): boolean {
-  return typeof window !== 'undefined' && typeof fetch !== 'undefined';
-}
-
-/**
- * Detect browser Web Speech API availability.
- */
-function isWebSpeechSupported(): boolean {
   if (typeof window === 'undefined') return false;
-  try {
-    const synth = window.speechSynthesis;
-    return !!synth && typeof synth.speak === 'function';
-  } catch {
-    return false;
-  }
+  return typeof (window.AudioContext ?? (window as any).webkitAudioContext) !== 'undefined';
 }
 
 /**
- * Hook that provides speech synthesis (TTS) via the Gemini Worker proxy
- * with Web Speech API fallback.
+ * Hook that provides speech synthesis (TTS) by wrapping the `audioManager`
+ * singleton (Gemini TTS via Worker → Web Speech API fallback).
  *
- * Wraps the `audioManager` singleton and provides game-specific helper methods.
+ * Provides game-specific helper methods (`repeatWord`, `giveDefinition`, etc.)
+ * and a `soundEnabled` guard so callers don't have to check mute state themselves.
  */
 export function useSpeechSynthesis({
   addMessage,
@@ -35,6 +24,9 @@ export function useSpeechSynthesis({
   onError,
 }: SpeechSynthesisConfig): SpeechSynthesisResult {
   const isMountedRef = useRef(false);
+  // currentPlaybackRef tracks the active playback token so that a callback
+  // scheduled by an older speak() call is not invoked after a newer one starts
+  // or after the component unmounts.
   const currentPlaybackRef = useRef<symbol | null>(null);
   const [ttsSupported] = useState(isTTSSupported);
 
@@ -59,12 +51,14 @@ export function useSpeechSynthesis({
         await audioManager.speak(text);
       } catch (error: unknown) {
         if (!isMountedRef.current) return;
-        // audioManager already falls back to Web Speech internally,
-        // so if we reach here both paths failed.
+        // audioManager falls back to Web Speech internally;
+        // reaching here means both paths failed.
         onError?.('Text-to-speech is unavailable right now.');
       }
 
-      if (isMountedRef.current) {
+      // Only invoke the callback if this is still the active playback token
+      // and the component is still mounted.
+      if (isMountedRef.current && currentPlaybackRef.current === playbackId) {
         callback?.();
       }
     },
@@ -73,11 +67,11 @@ export function useSpeechSynthesis({
 
   const repeatWord = useCallback(
     async (word: string) => {
-      const repeatText = ttsSupported ? 'Repeating: [hidden]' : `Repeating: ${word}`;
-      addMessage('word', repeatText);
+      // Always hide the word in the transcript since TTS will speak it aloud.
+      addMessage('word', 'Repeating: [hidden]');
       await speak(`Your word is: ${word}`);
     },
-    [addMessage, speak, ttsSupported],
+    [addMessage, speak],
   );
 
   const giveSentence = useCallback(

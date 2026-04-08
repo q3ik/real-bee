@@ -1,10 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useSpeechSynthesis } from "../useSpeechSynthesis";
-import * as audioManagerModule from "../../lib/audioManager";
 
 // Mock audioManager
-const mockSpeak = vi.fn().mockResolvedValue(undefined);
 vi.mock("../../lib/audioManager", () => ({
   audioManager: {
     speak: vi.fn().mockResolvedValue(undefined),
