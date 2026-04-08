@@ -1,4 +1,15 @@
-import Dexie, { type Table } from 'dexie';
+import Dexie, { type Table } from "dexie";
+
+export interface LocalUserPreferences {
+  id?: number;
+  uid: string;
+  difficulty: string;
+  gradeLevel: string;
+  soundEnabled: boolean;
+  autoSubmit: boolean;
+  showWelcomeScreen: boolean;
+  dontShowWelcomeAgain: boolean;
+}
 
 export interface LocalUserProgress {
   id?: number;
@@ -25,14 +36,16 @@ export interface LocalSession {
 }
 
 export class RealBeeDatabase extends Dexie {
+  preferences!: Table<LocalUserPreferences>;
   progress!: Table<LocalUserProgress>;
   sessions!: Table<LocalSession>;
 
   constructor() {
-    super('RealBeeDB');
-    this.version(1).stores({
-      progress: '++id, uid, synced',
-      sessions: '++id, uid, synced'
+    super("RealBeeDB");
+    this.version(2).stores({
+      preferences: "++id, uid",
+      progress: "++id, uid, synced",
+      sessions: "++id, uid, synced",
     });
   }
 }
