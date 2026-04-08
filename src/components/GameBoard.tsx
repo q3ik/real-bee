@@ -8,10 +8,13 @@ import {
   X,
   AlertCircle,
   MessageCircle,
+  MicOff,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useGameStore } from "../hooks/useGameStore";
 import { useVoiceRecognition } from "../hooks/useVoiceRecognition";
+import { useSpeechSynthesis } from "../hooks/useSpeechSynthesis";
+import { useMicrophonePermission } from "../hooks/useMicrophonePermission";
 import { useCountdown } from "../hooks/useCountdown";
 import { useHints } from "../hooks/useHints";
 import { useHostMessages } from "../hooks/useHostMessages";
@@ -41,6 +44,30 @@ export default function GameBoard() {
     sessionStats,
   } = useGameStore();
 
+  // Mic permission — shown during onboarding / before first game
+  const { permissionDenied, resetPermission, markPermissionDenied } =
+    useMicrophonePermission();
+
+  // Host messages (game narration transcript)
+  const { messages, addMessage, clearMessages } = useHostMessages();
+
+  // Speech synthesis (TTS via Gemini Worker proxy + Web Speech fallback)
+  const { speak, ttsSupported, repeatWord, giveDefinition, giveSentence } =
+    useSpeechSynthesis({
+      addMessage,
+      soundEnabled: !isMuted,
+      onError: (err) => console.warn("[TTS]", err),
+    });
+
+  // Sync store audio settings to audioManager singleton
+  useEffect(() => {
+    audioManager.setMuted(isMuted);
+    audioManager.setVoiceQuality(voiceQuality);
+  }, [isMuted, voiceQuality]);
+
+  // Hints for the current word
+  const { hints, addHint, clearHints } = useHints();
+
   const [userInput, setUserInput] = useState("");
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [feedback, setFeedback] = useState<"correct" | "incorrect" | null>(
@@ -48,12 +75,6 @@ export default function GameBoard() {
   );
   const [error, setError] = useState<string | null>(null);
   const lastSpokenWordRef = useRef<string | null>(null);
-
-  // Host messages (game narration transcript)
-  const { messages, addMessage, clearMessages } = useHostMessages();
-
-  // Hints for the current word
-  const { hints, addHint, clearHints } = useHints();
 
   // Countdown timer — triggers round end when time expires
   const {
@@ -69,7 +90,7 @@ export default function GameBoard() {
       stopListening();
       if (currentWord) {
         addMessage("system", `Time's up! The word was: ${currentWord.word}`);
-        audioManager.speak(`Time's up! The word was ${currentWord.word}`);
+        speak(`Time's up! The word was ${currentWord.word}`);
       }
       setFeedback("incorrect");
       setTimeout(() => {
@@ -80,6 +101,7 @@ export default function GameBoard() {
     },
   });
 
+  // Voice recognition — activated during AWAITING_ANSWER (playing) phase
   const { isListening, transcript, timeLeft, startListening, stopListening } =
     useVoiceRecognition({
       targetWord: currentWord?.word,
@@ -91,10 +113,16 @@ export default function GameBoard() {
             : 10000,
       onTranscript: (t) => setError(null),
       onResult: (res) => handleSubmission(res),
-      onError: (err) => setError(err),
+      onError: (err) => {
+        setError(err);
+        // Mark mic permission denied if it's a permission error
+        if (err.toLowerCase().includes("permission")) {
+          markPermissionDenied();
+        }
+      },
     });
 
-  // Auto-speak the word when it changes
+  // Auto-speak the word when it changes (TTS on WORD_PRESENTED)
   useEffect(() => {
     if (
       currentWord &&
@@ -102,7 +130,7 @@ export default function GameBoard() {
       lastSpokenWordRef.current !== currentWord.word
     ) {
       const speakAndListen = async () => {
-        await audioManager.speak(currentWord.word);
+        await speak(`Your word is: ${currentWord.word}`);
         if (autoListen) {
           startListening();
         }
@@ -111,7 +139,7 @@ export default function GameBoard() {
       lastSpokenWordRef.current = currentWord.word;
       addMessage("word", currentWord.word);
     }
-  }, [currentWord, phase, autoListen, startListening, addMessage]);
+  }, [currentWord, phase, autoListen, startListening, addMessage, speak]);
 
   // Start countdown when a new round begins
   useEffect(() => {
@@ -164,37 +192,62 @@ export default function GameBoard() {
         sentence: currentWord.sentence,
       });
       if (hint) {
-        audioManager.speak(hint.spokenText ?? hint.text);
+        speak(hint.spokenText ?? hint.text);
         addMessage("system", hint.text);
       }
     }
-  }, [currentWord, addHint, addMessage]);
+  }, [currentWord, addHint, addMessage, speak]);
 
   const handleDefinition = useCallback(() => {
     if (currentWord) {
-      audioManager.speak(currentWord.definition);
-      addMessage("definition", currentWord.definition);
+      giveDefinition(currentWord.definition);
     }
-  }, [currentWord, addMessage]);
+  }, [currentWord, giveDefinition]);
 
   const handleSentence = useCallback(() => {
     if (currentWord) {
-      audioManager.speak(currentWord.sentence);
-      addMessage("sentence", currentWord.sentence);
+      giveSentence(currentWord.sentence);
     }
-  }, [currentWord, addMessage]);
+  }, [currentWord, giveSentence]);
 
   useGameKeyboardShortcuts({
     gameState: phase,
     onRepeatWord: () => {
       if (currentWord) {
-        audioManager.speak(currentWord.word);
+        repeatWord(currentWord.word);
       }
     },
     onHint: handleHint,
     onDefinition: handleDefinition,
     onSentence: handleSentence,
   });
+
+  // --- Permission denied screen (shown during onboarding / before first game) ---
+  if (permissionDenied && !currentWord) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 text-center space-y-6">
+        <div className="p-6 bg-red-50 rounded-full">
+          <MicOff className="w-12 h-12 text-red-500" />
+        </div>
+        <h2 className="text-2xl font-black text-gray-800">
+          Microphone Access Required
+        </h2>
+        <p className="text-gray-500 max-w-sm">
+          Spelling Bee needs your microphone to hear you spell words. Please
+          enable microphone access in your browser settings and try again.
+        </p>
+        <button
+          onClick={() => {
+            resetPermission();
+            startSession();
+          }}
+          className="px-8 py-4 bg-orange-500 text-white rounded-2xl font-bold shadow-lg hover:bg-orange-600 transition-all"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   if (phase === "idle" && !currentWord) {
     return (
@@ -323,7 +376,7 @@ export default function GameBoard() {
         </div>
 
         <button
-          onClick={() => audioManager.speak(currentWord.word)}
+          onClick={() => speak(currentWord.word)}
           className="p-8 bg-orange-500 text-white rounded-full shadow-2xl shadow-orange-200 hover:scale-105 transition-transform active:scale-95 mb-10"
         >
           <Volume2 className="w-12 h-12" />
@@ -356,7 +409,7 @@ export default function GameBoard() {
               sentence: currentWord.sentence,
             });
             if (hint) {
-              audioManager.speak(hint.spokenText ?? hint.text);
+              speak(hint.spokenText ?? hint.text);
               addMessage("system", hint.text);
             }
           }}
