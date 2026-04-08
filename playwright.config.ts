@@ -59,12 +59,19 @@ export default defineConfig({
   },
   
   webServer: {
+    // Fix: Use local serve binary (devDependency) instead of npx serve to eliminate
+    // the cold-install race condition that caused Mobile Chrome tests to hang.
+    // `npx serve` would download serve@14.2.6 at runtime *after* workers had already
+    // started, leaving the WebServer unreachable during the first test wave.
     command: useBuiltAppInCI
-      ? 'VITE_TEST_MODE=true npx serve -s dist -l tcp://127.0.0.1:4173'
+      ? 'VITE_TEST_MODE=true ./node_modules/.bin/serve -s dist -l tcp://127.0.0.1:4173'
       : 'VITE_TEST_MODE=true npm run dev -- --host 127.0.0.1 --port 4173',
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: !process.env.CI,
-    timeout: 120000,
+    // Fix: Reduced from 120s → 15s. `serve` on a pre-built dist should be ready
+    // in under 2s. A short timeout surfaces real startup failures fast rather
+    // than silently hanging the entire test run.
+    timeout: 15000,
     // Fix #683: Prevent Vitest globals from loading in Playwright environment
     // This prevents Jest/Vitest matcher conflicts
     env: {

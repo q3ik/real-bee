@@ -44,6 +44,8 @@ jobs:
     name: E2E Tests (${{ inputs.project || 'Mobile Chrome' }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     permissions:
       contents: read
 
@@ -53,7 +55,7 @@ jobs:
       - name: Setup Node
         uses: ./.github/actions/setup-node
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Download build artifact
         id: download-artifact
@@ -71,6 +73,18 @@ jobs:
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
+
+      # Fix: Cache Playwright browser binaries to avoid re-downloading ~282MB
+      # (Chrome for Testing 170MB + Headless Shell 112MB) on every CI run.
+      # Cache key is tied to the Playwright version in package-lock.json so it
+      # automatically invalidates when @playwright/test is upgraded.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
 
       - name: Run Playwright tests
         env:
