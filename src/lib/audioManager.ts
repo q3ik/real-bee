@@ -105,9 +105,15 @@ class AudioManager {
         typeof window.speechSynthesis === 'undefined' ||
         typeof (window as any).SpeechSynthesisUtterance === 'undefined'
       ) {
-        throw new Error(
-          'Speech synthesis not supported: speechSynthesis or SpeechSynthesisUtterance is unavailable.',
-        );
+        const missingSpeechSynthesis = typeof window.speechSynthesis === 'undefined';
+        const missingUtterance =
+          typeof (window as any).SpeechSynthesisUtterance === 'undefined';
+        const details = missingSpeechSynthesis && missingUtterance
+          ? 'speechSynthesis and SpeechSynthesisUtterance are unavailable.'
+          : missingSpeechSynthesis
+            ? 'speechSynthesis is unavailable.'
+            : 'SpeechSynthesisUtterance is unavailable.';
+        throw new Error(`Speech synthesis not supported: ${details}`);
       }
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 0.8; // Slightly slower for clarity
