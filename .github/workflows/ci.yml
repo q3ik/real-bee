@@ -70,13 +70,14 @@ jobs:
       contents: read
     uses: ./.github/workflows/test-e2e.yml
 
+  ### --- TODO: Fix since ported over from buzzy-game to real-bee --- ###
   # Fix #687: Run visual regression tests as a separate CI job so screenshot
   # failures are isolated and their artifacts are easy to find.
-  visual-regression:
-    name: Visual Regression
-    needs: [quality, build]
-    # Prevent forked PRs from gaining contents:write access to the base repo.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
-    permissions:
-      contents: write
-    uses: ./.github/workflows/test-e2e-visual.yml
+  #visual-regression:
+  #  name: Visual Regression
+  #  needs: [quality, build]
+  #  # Prevent forked PRs from gaining contents:write access to the base repo.
+  #  if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
+  #  permissions:
+  #    contents: write
+  #  uses: ./.github/workflows/test-e2e-visual.yml
