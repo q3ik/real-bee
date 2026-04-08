@@ -1,22 +1,20 @@
-import { useState } from 'react';
-import { HelpCircle, ChevronRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { type Word } from '../lib/wordList';
-import { audioManager } from '../lib/audioManager';
+import { type Word } from "../lib/wordList";
+import { type Hint } from "../hooks/useHints.types";
+import { HelpCircle, ChevronRight } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 
 interface HintSystemProps {
   word: Word;
+  hints: Hint[];
+  onGetHint: () => void;
 }
 
-export default function HintSystem({ word }: HintSystemProps) {
-  const [hintLevel, setHintLevel] = useState(0);
-
-  const hints = [
-    { label: 'Definition', content: word.definition, spoken: word.definition },
-    { label: 'Sentence', content: word.sentence.replace(new RegExp(word.word, 'gi'), '_____'), spoken: word.sentence },
-    { label: 'Length', content: `${word.word.length} letters`, spoken: `The word has ${word.word.length} letters` },
-    { label: 'First Letter', content: `Starts with: ${word.word[0].toUpperCase()}`, spoken: `The word starts with ${word.word[0].toUpperCase()}` },
-  ];
+export default function HintSystem({
+  word,
+  hints,
+  onGetHint,
+}: HintSystemProps) {
+  const maxHints = 4;
 
   return (
     <div className="mt-6 w-full max-w-md mx-auto">
@@ -25,13 +23,9 @@ export default function HintSystem({ word }: HintSystemProps) {
           <HelpCircle className="w-4 h-4" />
           Hints
         </h3>
-        {hintLevel < hints.length && (
-          <button 
-            onClick={() => {
-              const nextLevel = hintLevel + 1;
-              setHintLevel(nextLevel);
-              audioManager.speak(hints[nextLevel - 1].spoken);
-            }}
+        {hints.length < maxHints && (
+          <button
+            onClick={onGetHint}
             className="text-xs font-bold text-orange-500 hover:text-orange-600 flex items-center gap-1 bg-orange-50 px-2 py-1 rounded-full transition-all"
           >
             Get Hint <ChevronRight className="w-3 h-3" />
@@ -41,22 +35,24 @@ export default function HintSystem({ word }: HintSystemProps) {
 
       <div className="space-y-2">
         <AnimatePresence>
-          {hints.slice(0, hintLevel).map((hint, i) => (
+          {hints.map((hint, i) => (
             <motion.div
-              key={i}
+              key={`${i}-${hint.type}`}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className="p-3 bg-orange-50/50 border border-orange-100 rounded-xl text-sm"
             >
-              <span className="font-bold text-orange-600 mr-2">{hint.label}:</span>
-              <span className="text-gray-700 italic">{hint.content}</span>
+              <span className="font-bold text-orange-600 mr-2 capitalize">
+                {hint.type}:
+              </span>
+              <span className="text-gray-700 italic">{hint.text}</span>
             </motion.div>
           ))}
         </AnimatePresence>
-        
-        {hintLevel === 0 && (
+
+        {hints.length === 0 && (
           <div className="text-center py-4 text-gray-400 text-xs italic">
-            Need a little help? Click "Get Hint" above!
+            Need a little help? Click &quot;Get Hint&quot; above!
           </div>
         )}
       </div>

@@ -1,43 +1,106 @@
-import { useState } from 'react';
-import { Volume2, VolumeX, Zap, ShieldCheck, Clock, X, GraduationCap, Eye, EyeOff, Mic } from 'lucide-react';
-import { useGameStore } from '../hooks/useGameStore';
-import { motion } from 'motion/react';
+import {
+  Volume2,
+  VolumeX,
+  Zap,
+  ShieldCheck,
+  Clock,
+  X,
+  GraduationCap,
+  Eye,
+  EyeOff,
+  Mic,
+  Check,
+} from "lucide-react";
+import { useGameStore } from "../hooks/useGameStore";
+import { useUserPreferences } from "../hooks/useUserPreferences";
+import type {
+  GradeLevel as UserGradeLevel,
+  PreferenceDifficulty,
+} from "../hooks/useUserPreferences.types";
+import { motion } from "motion/react";
 
 interface SettingsProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+// Map between Settings grade values and useUserPreferences grade levels
+const GRADE_MAP: { label: string; value: number; prefValue: UserGradeLevel }[] =
+  [
+    { label: "K-2", value: 1, prefValue: "K-2" },
+    { label: "3-5", value: 3, prefValue: "3-5" },
+    { label: "6-8", value: 6, prefValue: "6-8" },
+    { label: "All", value: 0, prefValue: "all" },
+  ];
+
+const DIFFICULTY_MAP: {
+  label: string;
+  value: string;
+  prefValue: PreferenceDifficulty;
+}[] = [
+  { label: "Easy", value: "easy", prefValue: "easy" },
+  { label: "Medium", value: "medium", prefValue: "medium" },
+  { label: "Hard", value: "hard", prefValue: "hard" },
+  { label: "Mixed", value: "all", prefValue: "all" },
+];
+
 export default function Settings({ isOpen, onClose }: SettingsProps) {
-  const { 
-    isMuted, toggleMute, 
-    voiceQuality, setVoiceQuality,
-    listeningTimeout, setListeningTimeout,
-    gradeLevel, setGradeLevel,
-    difficulty, setDifficulty,
-    showLetterCount, toggleLetterCount,
-    autoListen, toggleAutoListen
+  const {
+    isMuted,
+    setMuted,
+    voiceQuality,
+    setVoiceQuality,
+    listeningTimeout,
+    setListeningTimeout,
+    gradeLevel,
+    setGradeLevel,
+    difficulty,
+    setDifficulty,
+    showLetterCount,
+    toggleLetterCount,
+    autoListen,
+    toggleAutoListen,
+    userId,
   } = useGameStore();
 
-  const grades = [
-    { label: 'K-2', value: 1 },
-    { label: '3-5', value: 3 },
-    { label: '6-8', value: 6 },
-    { label: 'All', value: 0 },
-  ];
+  // useUserPreferences for Dexie persistence
+  const {
+    soundEnabled: prefSoundEnabled,
+    setSoundEnabled,
+    autoSubmit,
+    setAutoSubmit,
+    handleDifficultySelect,
+    handleGradeLevelSelect,
+  } = useUserPreferences({
+    userId,
+    onDifficultyChange: (diff) => {
+      setDifficulty(diff as "easy" | "medium" | "hard" | "all");
+    },
+    onGradeLevelChange: (grade) => {
+      const gradeValue =
+        GRADE_MAP.find((g) => g.prefValue === grade)?.value ?? 1;
+      setGradeLevel(gradeValue);
+    },
+  });
 
-  const difficulties = [
-    { label: 'Easy', value: 'easy' },
-    { label: 'Medium', value: 'medium' },
-    { label: 'Hard', value: 'hard' },
-    { label: 'Mixed', value: 'all' },
-  ];
+  // Sync soundEnabled between store and preferences
+  const effectiveMuted = prefSoundEnabled ? isMuted : true;
+
+  const handleGradeChange = (g: (typeof GRADE_MAP)[number]) => {
+    setGradeLevel(g.value);
+    handleGradeLevelSelect(g.prefValue);
+  };
+
+  const handleDifficultyChange = (d: (typeof DIFFICULTY_MAP)[number]) => {
+    setDifficulty(d.value as "easy" | "medium" | "hard" | "all");
+    handleDifficultySelect(d.prefValue);
+  };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <motion.div 
+      <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
@@ -47,7 +110,10 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
             <Zap className="w-6 h-6 text-orange-500" />
             Game Settings
           </h2>
-          <button onClick={onClose} className="p-2 hover:bg-white rounded-full transition-colors">
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-white rounded-full transition-colors"
+          >
             <X className="w-6 h-6 text-gray-400" />
           </button>
         </div>
@@ -61,15 +127,17 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
               </div>
               <div>
                 <p className="font-bold text-gray-800">Grade Level</p>
-                <p className="text-xs text-gray-400">Change word difficulty by grade</p>
+                <p className="text-xs text-gray-400">
+                  Change word difficulty by grade
+                </p>
               </div>
             </div>
             <div className="grid grid-cols-4 gap-2 p-1 bg-gray-50 rounded-2xl">
-              {grades.map((g) => (
-                <button 
+              {GRADE_MAP.map((g) => (
+                <button
                   key={g.value}
-                  onClick={() => setGradeLevel(g.value)}
-                  className={`py-2 rounded-xl text-sm font-bold transition-all ${gradeLevel === g.value ? 'bg-white shadow-sm text-orange-600' : 'text-gray-400'}`}
+                  onClick={() => handleGradeChange(g)}
+                  className={`py-2 rounded-xl text-sm font-bold transition-all ${gradeLevel === g.value ? "bg-white shadow-sm text-orange-600" : "text-gray-400"}`}
                 >
                   {g.label}
                 </button>
@@ -89,11 +157,11 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
               </div>
             </div>
             <div className="grid grid-cols-4 gap-2 p-1 bg-gray-50 rounded-2xl">
-              {difficulties.map((d) => (
-                <button 
+              {DIFFICULTY_MAP.map((d) => (
+                <button
                   key={d.value}
-                  onClick={() => setDifficulty(d.value as any)}
-                  className={`py-2 rounded-xl text-sm font-bold transition-all ${difficulty === d.value ? 'bg-white shadow-sm text-yellow-600' : 'text-gray-400'}`}
+                  onClick={() => handleDifficultyChange(d)}
+                  className={`py-2 rounded-xl text-sm font-bold transition-all ${difficulty === d.value ? "bg-white shadow-sm text-yellow-600" : "text-gray-400"}`}
                 >
                   {d.label}
                 </button>
@@ -104,57 +172,106 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
           {/* Letter Count Toggle */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={`p-3 rounded-2xl ${showLetterCount ? 'bg-blue-50 text-blue-500' : 'bg-gray-100 text-gray-400'}`}>
-                {showLetterCount ? <Eye className="w-6 h-6" /> : <EyeOff className="w-6 h-6" />}
+              <div
+                className={`p-3 rounded-2xl ${showLetterCount ? "bg-blue-50 text-blue-500" : "bg-gray-100 text-gray-400"}`}
+              >
+                {showLetterCount ? (
+                  <Eye className="w-6 h-6" />
+                ) : (
+                  <EyeOff className="w-6 h-6" />
+                )}
               </div>
               <div>
                 <p className="font-bold text-gray-800">Show Word Length</p>
-                <p className="text-xs text-gray-400">Display letter placeholders</p>
+                <p className="text-xs text-gray-400">
+                  Display letter placeholders
+                </p>
               </div>
             </div>
-            <button 
+            <button
               onClick={toggleLetterCount}
-              className={`w-14 h-8 rounded-full relative transition-colors ${showLetterCount ? 'bg-blue-500' : 'bg-gray-200'}`}
+              className={`w-14 h-8 rounded-full relative transition-colors ${showLetterCount ? "bg-blue-500" : "bg-gray-200"}`}
             >
-              <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${showLetterCount ? 'left-7' : 'left-1'}`} />
+              <div
+                className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${showLetterCount ? "left-7" : "left-1"}`}
+              />
             </button>
           </div>
 
           {/* Auto Listen Toggle */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={`p-3 rounded-2xl ${autoListen ? 'bg-orange-50 text-orange-500' : 'bg-gray-100 text-gray-400'}`}>
+              <div
+                className={`p-3 rounded-2xl ${autoListen ? "bg-orange-50 text-orange-500" : "bg-gray-100 text-gray-400"}`}
+              >
                 <Mic className="w-6 h-6" />
               </div>
               <div>
                 <p className="font-bold text-gray-800">Auto Listen</p>
-                <p className="text-xs text-gray-400">Start listening after word is read</p>
+                <p className="text-xs text-gray-400">
+                  Start listening after word is read
+                </p>
               </div>
             </div>
-            <button 
+            <button
               onClick={toggleAutoListen}
-              className={`w-14 h-8 rounded-full relative transition-colors ${autoListen ? 'bg-orange-500' : 'bg-gray-200'}`}
+              className={`w-14 h-8 rounded-full relative transition-colors ${autoListen ? "bg-orange-500" : "bg-gray-200"}`}
             >
-              <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${autoListen ? 'left-7' : 'left-1'}`} />
+              <div
+                className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${autoListen ? "left-7" : "left-1"}`}
+              />
             </button>
           </div>
 
-          {/* Audio Toggle */}
+          {/* Sound Effects Toggle */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={`p-3 rounded-2xl ${isMuted ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}>
-                {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+              <div
+                className={`p-3 rounded-2xl ${prefSoundEnabled ? "bg-green-50 text-green-500" : "bg-red-50 text-red-500"}`}
+              >
+                {prefSoundEnabled ? (
+                  <Volume2 className="w-6 h-6" />
+                ) : (
+                  <VolumeX className="w-6 h-6" />
+                )}
               </div>
               <div>
                 <p className="font-bold text-gray-800">Sound Effects</p>
                 <p className="text-xs text-gray-400">Toggle game sounds</p>
               </div>
             </div>
-            <button 
-              onClick={toggleMute}
-              className={`w-14 h-8 rounded-full relative transition-colors ${isMuted ? 'bg-gray-200' : 'bg-green-500'}`}
+            <button
+              onClick={() => setSoundEnabled(!prefSoundEnabled)}
+              className={`w-14 h-8 rounded-full relative transition-colors ${prefSoundEnabled ? "bg-green-500" : "bg-gray-200"}`}
             >
-              <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${isMuted ? 'left-1' : 'left-7'}`} />
+              <div
+                className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${prefSoundEnabled ? "left-7" : "left-1"}`}
+              />
+            </button>
+          </div>
+
+          {/* Auto Submit Toggle */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div
+                className={`p-3 rounded-2xl ${autoSubmit ? "bg-purple-50 text-purple-500" : "bg-gray-100 text-gray-400"}`}
+              >
+                <Check className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="font-bold text-gray-800">Auto Submit</p>
+                <p className="text-xs text-gray-400">
+                  Auto-submit voice spelling
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setAutoSubmit(!autoSubmit)}
+              className={`w-14 h-8 rounded-full relative transition-colors ${autoSubmit ? "bg-purple-500" : "bg-gray-200"}`}
+            >
+              <div
+                className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${autoSubmit ? "left-7" : "left-1"}`}
+              />
             </button>
           </div>
 
@@ -166,19 +283,21 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
               </div>
               <div>
                 <p className="font-bold text-gray-800">Voice Quality</p>
-                <p className="text-xs text-gray-400">Choose how the host sounds</p>
+                <p className="text-xs text-gray-400">
+                  Choose how the host sounds
+                </p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2 p-1 bg-gray-50 rounded-2xl">
-              <button 
-                onClick={() => setVoiceQuality('natural')}
-                className={`py-2 rounded-xl text-sm font-bold transition-all ${voiceQuality === 'natural' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-400'}`}
+              <button
+                onClick={() => setVoiceQuality("natural")}
+                className={`py-2 rounded-xl text-sm font-bold transition-all ${voiceQuality === "natural" ? "bg-white shadow-sm text-blue-600" : "text-gray-400"}`}
               >
                 Natural (AI)
               </button>
-              <button 
-                onClick={() => setVoiceQuality('standard')}
-                className={`py-2 rounded-xl text-sm font-bold transition-all ${voiceQuality === 'standard' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-400'}`}
+              <button
+                onClick={() => setVoiceQuality("standard")}
+                className={`py-2 rounded-xl text-sm font-bold transition-all ${voiceQuality === "standard" ? "bg-white shadow-sm text-blue-600" : "text-gray-400"}`}
               >
                 Standard
               </button>
@@ -193,15 +312,17 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
               </div>
               <div>
                 <p className="font-bold text-gray-800">Listening Time</p>
-                <p className="text-xs text-gray-400">How long to wait for spelling</p>
+                <p className="text-xs text-gray-400">
+                  How long to wait for spelling
+                </p>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2 p-1 bg-gray-50 rounded-2xl">
-              {(['normal', 'longer', 'off'] as const).map((t) => (
-                <button 
+              {(["normal", "longer", "off"] as const).map((t) => (
+                <button
                   key={t}
                   onClick={() => setListeningTimeout(t)}
-                  className={`py-2 rounded-xl text-sm font-bold capitalize transition-all ${listeningTimeout === t ? 'bg-white shadow-sm text-purple-600' : 'text-gray-400'}`}
+                  className={`py-2 rounded-xl text-sm font-bold capitalize transition-all ${listeningTimeout === t ? "bg-white shadow-sm text-purple-600" : "text-gray-400"}`}
                 >
                   {t}
                 </button>
