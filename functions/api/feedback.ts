@@ -158,11 +158,24 @@ export async function onRequestPost({ request, env }: PagesContext): Promise<Res
   // ── 4. Sanitise ───────────────────────────────────────────────────────────
   const sanitisedText = sanitiseText(body.text as string);
 
+  // Reject payloads that sanitise to empty (e.g. pure HTML / control chars).
+  if (sanitisedText.length === 0) {
+    return new Response(
+      JSON.stringify({ error: 'Invalid feedback data', details: ['text: text must not be empty after sanitisation'] }),
+      {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
+      },
+    );
+  }
+
   // ── 5. Deliver (best-effort — errors must not leak internals) ─────────────
   try {
     // Production delivery logic goes here (e.g. Slack webhook).
     // env.SLACK_BOT_TOKEN and env.SLACK_FEEDBACK_CHANNEL_ID are available.
-    void sanitisedText; // consumed above; silence lint
+    // `sanitisedText` (not the raw input) is the canonical value to deliver.
+    void env;
+    void sanitisedText;
   } catch {
     // Intentionally swallowed — delivery failure is non-fatal and must not
     // expose internal state in the response.
@@ -172,7 +185,9 @@ export async function onRequestPost({ request, env }: PagesContext): Promise<Res
     {
       success: true,
       feedbackId: 'feedback-' + Date.now(),
-      deliveredVia: { database: true },
+      // Reflects reality: feedback is accepted but not yet persisted to a
+      // database. Update this once a DB write is implemented.
+      deliveredVia: { accepted: true },
     },
     origin,
   );
