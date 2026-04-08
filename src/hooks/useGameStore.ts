@@ -60,6 +60,22 @@ function mapGradeLevelToString(gradeLevel: number): string {
 // Zustand Store
 // ---------------------------------------------------------------------------
 
+const OFFLINE_UID_KEY = 'real-bee-offline-uid';
+
+/** Returns a stable offline user ID, generating and persisting one on first call. */
+function getOrCreateOfflineUid(): string {
+  try {
+    const existing = localStorage.getItem(OFFLINE_UID_KEY);
+    if (existing) return existing;
+    const uid = `offline-${crypto.randomUUID()}`;
+    localStorage.setItem(OFFLINE_UID_KEY, uid);
+    return uid;
+  } catch {
+    // localStorage unavailable (SSR, private-browsing lockdown, etc.)
+    return 'offline-fallback';
+  }
+}
+
 interface GameState {
   // --- FSM phase ---
   phase: GamePhase;
@@ -274,6 +290,42 @@ export const useGameStore = create<GameState>((set, get) => ({
         streak: newStreak,
         bestStreak: newBestStreak,
         masteredCount: newMastered,
+        difficultyEvolution: [...difficultyEvolution, 1],
+      });
+
+      if (userId) {
+        localDb.progress.put({
+          uid: userId,
+          score: newScore,
+          streak: newStreak,
+          bestStreak: newBest,
+          masteredCount: newMastered,
+          gradeLevel: get().gradeLevel.toString(),
+          difficulty: get().difficulty,
+          lastPlayed: new Date().toISOString(),
+          synced: false,
+        });
+      } else {
+        // loadProgress() wasn't called yet — persist under the offline UID
+        // so no progress is silently dropped.
+        const offlineUid = getOrCreateOfflineUid();
+        set({ userId: offlineUid });
+        localDb.progress.put({
+          uid: offlineUid,
+          score: newScore,
+          streak: newStreak,
+          bestStreak: newBest,
+          masteredCount: newMastered,
+          gradeLevel: get().gradeLevel.toString(),
+          difficulty: get().difficulty,
+          lastPlayed: new Date().toISOString(),
+          synced: false,
+        });
+      }
+    } else {
+      set({
+        streak: 0,
+        difficultyEvolution: [...difficultyEvolution, -1],
         gradeLevel: gradeLevel.toString(),
         difficulty,
         lastPlayed: new Date().toISOString(),
@@ -402,10 +454,14 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
     }
 
-    const uid = get().userId;
-    if (!uid) return;
+    // Fall back to a stable offline UID so progress is always persisted,
+    // even when the user hasn't signed in yet.
+    if (!get().userId) {
+      set({ userId: getOrCreateOfflineUid() });
+    }
 
-    const local = await localDb.progress.where("uid").equals(uid).first();
+    const uid = get().userId!;
+    const local = await localDb.progress.where('uid').equals(uid).first();
     if (local) {
       set({
         score: local.score,
