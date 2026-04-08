@@ -315,6 +315,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     set({
       roundsPlayed: roundsPlayed + 1,
+      // -1 represents a timeout penalty in difficulty evolution tracking (same as an incorrect answer)
       difficultyEvolution: [...get().difficultyEvolution, -1],
       recentPerformance: [...get().recentPerformance, false].slice(-10),
       phase: "round_end",
