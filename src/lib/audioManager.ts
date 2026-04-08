@@ -7,13 +7,21 @@ class AudioManager {
     // Lazy init audio context on first user interaction
   }
 
-  private initAudioContext() {
+  private initAudioContext(): boolean {
     if (!this.audioContext) {
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AudioContextConstructor =
+        window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextConstructor) return false;
+      try {
+        this.audioContext = new AudioContextConstructor();
+      } catch {
+        return false;
+      }
     }
     if (this.audioContext.state === 'suspended') {
-      this.audioContext.resume();
+      void this.audioContext.resume();
     }
+    return true;
   }
 
   setMuted(muted: boolean) {
@@ -26,9 +34,9 @@ class AudioManager {
 
   async speak(text: string): Promise<void> {
     if (this.isMuted) return Promise.resolve();
-    this.initAudioContext();
+    const hasAudioContext = this.initAudioContext();
 
-    if (this.voiceQuality === 'natural') {
+    if (this.voiceQuality === 'natural' && hasAudioContext) {
       try {
         await this.speakViaWorker(text);
         return;
@@ -92,6 +100,13 @@ class AudioManager {
 
   private speakWebSpeech(text: string): Promise<void> {
     return new Promise((resolve) => {
+      if (
+        typeof window === 'undefined' ||
+        typeof window.speechSynthesis === 'undefined' ||
+        typeof (window as any).SpeechSynthesisUtterance === 'undefined'
+      ) {
+        throw new Error('Speech synthesis not supported.');
+      }
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 0.8; // Slightly slower for clarity
       utterance.onend = () => resolve();
@@ -101,7 +116,7 @@ class AudioManager {
 
   playEffect(type: 'correct' | 'incorrect' | 'click') {
     if (this.isMuted) return;
-    this.initAudioContext();
+    if (!this.initAudioContext()) return;
     // Simple oscillator-based sounds for offline support
     const osc = this.audioContext!.createOscillator();
     const gain = this.audioContext!.createGain();

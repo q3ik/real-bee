@@ -8,7 +8,12 @@ import type { SpeechSynthesisConfig, SpeechSynthesisResult } from './useSpeechSy
  */
 function isTTSSupported(): boolean {
   if (typeof window === 'undefined') return false;
-  return typeof (window.AudioContext ?? (window as any).webkitAudioContext) !== 'undefined';
+  const hasAudioContext =
+    typeof (window.AudioContext ?? (window as any).webkitAudioContext) !== 'undefined';
+  const hasSpeechSynthesis =
+    typeof window.speechSynthesis !== 'undefined' &&
+    typeof (window as any).SpeechSynthesisUtterance !== 'undefined';
+  return hasAudioContext || hasSpeechSynthesis;
 }
 
 /**
@@ -28,10 +33,11 @@ export function useSpeechSynthesis({
   // scheduled by an older speak() call is not invoked after a newer one starts
   // or after the component unmounts.
   const currentPlaybackRef = useRef<symbol | null>(null);
-  const [ttsSupported] = useState(isTTSSupported);
+  const [ttsSupported, setTtsSupported] = useState(isTTSSupported);
 
   useEffect(() => {
     isMountedRef.current = true;
+    setTtsSupported(isTTSSupported());
     return () => {
       isMountedRef.current = false;
     };
@@ -40,6 +46,12 @@ export function useSpeechSynthesis({
   const speak = useCallback(
     async (text: string, callback?: () => void) => {
       if (!text || !soundEnabled) {
+        callback?.();
+        return;
+      }
+
+      if (!ttsSupported) {
+        onError?.('Text-to-speech is unavailable right now.');
         callback?.();
         return;
       }
@@ -62,16 +74,16 @@ export function useSpeechSynthesis({
         callback?.();
       }
     },
-    [soundEnabled, onError],
+    [soundEnabled, onError, ttsSupported],
   );
 
   const repeatWord = useCallback(
     async (word: string) => {
-      // Always hide the word in the transcript since TTS will speak it aloud.
-      addMessage('word', 'Repeating: [hidden]');
+      const shouldHideWord = soundEnabled && ttsSupported;
+      addMessage('word', shouldHideWord ? 'Repeating: [hidden]' : `Repeating: ${word}`);
       await speak(`Your word is: ${word}`);
     },
-    [addMessage, speak],
+    [addMessage, speak, soundEnabled, ttsSupported],
   );
 
   const giveSentence = useCallback(
