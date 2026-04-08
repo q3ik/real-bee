@@ -40,6 +40,10 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: Security audit
+        run: npm audit --production
+        continue-on-error: true
+
   build:
     name: Build
     needs: sanity
