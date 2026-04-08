@@ -3,6 +3,19 @@ import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 
+// ---------------------------------------------------------------------------
+// MSW server — intercept fetch() calls so the suite runs fully offline
+// ---------------------------------------------------------------------------
+import { server } from '../mocks/server.js';
+
+beforeAll(() => {
+  server.listen({ onUnhandledRequest: 'warn' });
+});
+
+afterAll(() => {
+  server.close();
+});
+
 // Mock Slack WebClient to avoid "package not installed" errors
 // We define the mock directly instead of importing @slack/web-api
 const mockSlackClient = {
