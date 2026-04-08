@@ -39,7 +39,11 @@ export interface SttResponse {
   transcript: string;
 }
 
-export type HintType = 'definition' | 'sentence' | 'syllables';
+/**
+ * Hint types accepted by the /api/hint Worker.
+ * Must stay in sync with VALID_TYPES in functions/api/hint.ts.
+ */
+export type HintType = 'definition' | 'usage' | 'origin';
 
 export interface HintRequest {
   word: string;
@@ -99,7 +103,8 @@ export const gemini = {
 
   /**
    * Hint generation: returns a contextual hint for the given word.
-   * type: 'definition' | 'sentence' | 'syllables'
+   * type: 'definition' | 'usage' | 'origin'
+   * Must match VALID_TYPES in functions/api/hint.ts.
    */
   hint: (req: HintRequest): Promise<HintResponse> =>
     post<HintRequest, HintResponse>('hint', req),
