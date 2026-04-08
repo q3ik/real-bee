@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { audioManager } from '../lib/audioManager';
 import type { SpeechSynthesisConfig, SpeechSynthesisResult } from './useSpeechSynthesis.types';
 
@@ -33,7 +33,7 @@ export function useSpeechSynthesis({
   // scheduled by an older speak() call is not invoked after a newer one starts
   // or after the component unmounts.
   const currentPlaybackRef = useRef<symbol | null>(null);
-  const ttsSupported = isTTSSupported();
+  const ttsSupported = useMemo(() => isTTSSupported(), []);
 
   useEffect(() => {
     isMountedRef.current = true;

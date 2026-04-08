@@ -56,7 +56,12 @@ class AudioManager {
       }
     }
 
-    return this.speakWebSpeech(text);
+    try {
+      await this.speakWebSpeech(text);
+    } catch (error: any) {
+      const errorMessage = error?.message || String(error);
+      throw new Error(`Web Speech synthesis failed: ${errorMessage}`);
+    }
   }
 
   private async speakViaWorker(text: string): Promise<void> {
