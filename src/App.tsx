@@ -1,12 +1,14 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useGameStore } from "./hooks/useGameStore";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
 import { useDiagnosticsBugReport } from "./hooks/useDiagnosticsBugReport";
+import { useKeyboardShortcut } from "./hooks/useKeyboardShortcut";
 import Onboarding from "./components/Onboarding";
 import GameBoard from "./components/GameBoard";
 import MetricsBar from "./components/MetricsBar";
 import Settings from "./components/Settings";
 import { supabase } from "./lib/supabase";
+import { useEffect } from "react";
 
 export default function App() {
   const [view, setView] = useState<"onboarding" | "game">("onboarding");
@@ -30,19 +32,32 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, [loadProgress]);
 
-  // Global Ctrl+Shift+D shortcut — opens the hidden debug/bug-report panel
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key === "D") {
-        e.preventDefault();
-        setIsDebugOpen((prev) => !prev);
-        reset();
-        setDebugDescription("");
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [reset]);
+  // Global Ctrl+Shift+D shortcut — toggles the hidden debug/bug-report panel.
+  //
+  // ignoreInputFields is tied to !isDebugOpen:
+  //   - panel CLOSED → ignore typing fields (won't fire inside search boxes etc.)
+  //   - panel OPEN   → don't ignore (so the shortcut closes even from the textarea)
+  //
+  // useKeyboardShortcut already guards against event.repeat, so holding the
+  // combo down won't rapidly toggle the panel.
+  useKeyboardShortcut(
+    "D",
+    useCallback(() => {
+      setIsDebugOpen((prev) => {
+        const opening = !prev;
+        if (opening) {
+          // Only clear stale state when opening a fresh panel.
+          reset();
+          setDebugDescription("");
+        }
+        return opening;
+      });
+    }, [reset]),
+    {
+      modifiers: { ctrl: true, shift: true },
+      ignoreInputFields: !isDebugOpen,
+    },
+  );
 
   const handleStart = () => {
     startSession();
@@ -50,7 +65,37 @@ export default function App() {
   };
 
   const handleDebugSubmit = useCallback(async () => {
-    await submitReport(debugDescription || undefined);
+    // Snapshot game state at the moment the user clicks Send — reading from
+    // the Zustand store directly avoids subscribing to high-frequency updates
+    // at the hook level (which would cause the whole App to re-render on every
+    // score/streak change).
+    const {
+      phase,
+      score,
+      streak,
+      bestStreak,
+      gradeLevel,
+      difficulty,
+      isMuted,
+      roundsPlayed,
+      correctAnswers,
+      currentWord,
+    } = useGameStore.getState();
+
+    await submitReport(debugDescription || undefined, {
+      gameState: {
+        phase,
+        score,
+        streak,
+        bestStreak,
+        gradeLevel,
+        difficulty,
+        isMuted,
+        roundsPlayed,
+        correctAnswers,
+        currentWord: currentWord?.word ?? null,
+      },
+    });
   }, [submitReport, debugDescription]);
 
   const handleDebugClose = useCallback(() => {
@@ -121,8 +166,9 @@ export default function App() {
             ) : (
               <>
                 <p className="text-gray-500 text-sm">
-                  Describe what went wrong (optional). Game state and diagnostics
-                  will be captured automatically.
+                  Describe what went wrong (optional). A snapshot of the current
+                  session — score, streak, phase, difficulty — will be included
+                  with the report.
                 </p>
                 <textarea
                   value={debugDescription}

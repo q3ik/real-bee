@@ -15,7 +15,18 @@ export interface UseDiagnosticsBugReportOptions {
 }
 
 export interface UseDiagnosticsBugReportResult {
-  submitReport: (userDescription?: string) => Promise<void>;
+  /**
+   * Submit a bug report.
+   *
+   * @param userDescription - Optional free-text description from the user.
+   * @param runtimeContext  - Optional extra context captured at call time
+   *   (e.g. a game-state snapshot). Merged into `additionalContext` so
+   *   callers don't need to subscribe to high-frequency state at hook level.
+   */
+  submitReport: (
+    userDescription?: string,
+    runtimeContext?: Record<string, unknown>,
+  ) => Promise<void>;
   isSubmitting: boolean;
   isSubmitted: boolean;
   submitError: string | null;
@@ -50,9 +61,15 @@ export function useDiagnosticsBugReport({
   }, []);
 
   const submitReport = useCallback(
-    async (userDescription = "") => {
+    async (
+      userDescription = "",
+      runtimeContext: Record<string, unknown> = {},
+    ) => {
       setIsSubmitting(true);
       setSubmitError(null);
+
+      // Merge static additionalContext with anything passed at call time.
+      const mergedContext = { ...additionalContext, ...runtimeContext };
 
       try {
         // Build error context
@@ -68,7 +85,7 @@ export function useDiagnosticsBugReport({
             errorStack: error.stack,
             errorName: error.name,
           }),
-          ...additionalContext,
+          ...mergedContext,
         };
 
         // Construct diagnostics payload
