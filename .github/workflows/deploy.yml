@@ -8,6 +8,11 @@ on:
       - "**/*.md"
       - "docs/**"
 
+  pull_request:
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+
   workflow_dispatch:
 
 concurrency:
@@ -21,8 +26,42 @@ jobs:
       contents: read
     uses: ./.github/workflows/build.yml
 
-  deploy:
-    name: Deploy to Cloudflare Pages
+  deploy-preview:
+    name: Deploy to Cloudflare Pages (Preview)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    needs: build
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    permissions:
+      contents: read
+      deployments: write
+      pull-requests: write
+    environment:
+      name: preview
+      url: ${{ steps.deploy.outputs.deployment-url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: dist/
+
+      - name: Deploy preview to Cloudflare Pages
+        id: deploy
+        uses: cloudflare/wrangler-action@v3.14.1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist/ --project-name=real-bee --branch=${{ github.head_ref }} --commit-dirty=true
+
+  deploy-production:
+    name: Deploy to Cloudflare Pages (Production)
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     needs: build
     env:
@@ -46,7 +85,7 @@ jobs:
 
       - name: Deploy to Cloudflare Pages
         id: deploy
-        uses: cloudflare/wrangler-action@v4
+        uses: cloudflare/wrangler-action@v3.14.1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
