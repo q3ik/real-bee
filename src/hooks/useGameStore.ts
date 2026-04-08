@@ -195,7 +195,12 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   startNewRound: () => {
-    const { gradeLevel, difficulty, sessionWords, sessionIndex } = get();
+    const {
+      gradeLevel,
+      difficulty,
+      sessionWords,
+      sessionIndex,
+    } = get();
 
     if (!get().sessionStartTime) {
       set({ sessionStartTime: Date.now(), sessionBestStreak: 0 });
@@ -244,6 +249,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       userId,
       gradeLevel,
       difficulty,
+      difficultyEvolution,
     } = get();
     if (!currentWord || phase !== "playing") return false;
 
@@ -299,7 +305,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       masteredCount: newMastered,
       roundsPlayed: newRounds,
       correctAnswers: newCorrect,
-      difficultyEvolution: [...get().difficultyEvolution, evolutionEntry],
+      difficultyEvolution: [...difficultyEvolution, evolutionEntry],
       recentPerformance: [...get().recentPerformance, isCorrect].slice(-10),
       sessionBestStreak: Math.max(get().sessionBestStreak, newStreak),
       phase: "round_end",
@@ -405,6 +411,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   setAutoSubmit: (autoSubmit) => set({ autoSubmit }),
 
   loadProgress: async () => {
+    // Resolve auth: prefer Supabase session, fall back to stable offline UID.
     if (supabase) {
       const { data } = await supabase.auth.getUser();
       if (data.user) {
@@ -417,7 +424,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
 
     const uid = get().userId!;
-    const local = await localDb.progress.where('uid').equals(uid).first();
+    // uid is the primary key — get() is an O(1) lookup and always returns
+    // the single canonical row (no stale duplicates possible).
+    const local = await localDb.progress.get(uid);
     if (local) {
       set({
         score: local.score,
