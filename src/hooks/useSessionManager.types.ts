@@ -7,7 +7,6 @@ export type SummaryAction = 'logout' | 'restart';
  * Parameters for useSessionManager hook
  */
 export interface UseSessionManagerParams {
-  username: string | null;
   logout: () => void;
   restartGame: () => void;
 }

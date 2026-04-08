@@ -1,19 +1,10 @@
-// Sentry must be initialized before any other imports to capture early errors
+// Initialize Sentry first — before the rest of the app module graph is
+// evaluated — by keeping this file free of static app imports and using
+// a dynamic import for the bootstrap. ESM evaluates all static imports
+// before any top-level code in a module, so interleaving initSentry()
+// with static imports does NOT guarantee early capture. The dynamic
+// import below ensures initSentry() executes synchronously first.
 import { initSentry } from "./lib/sentry";
 initSentry();
 
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import App from "./App.tsx";
-import { ErrorBoundary } from "./components/ErrorBoundary";
-import "./index.css";
-import "./styles/touch-target-fixes.css";
-import "./styles/mobile-modal-fixes.css";
-
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
-  </StrictMode>,
-);
+void import("./bootstrap");
