@@ -12,8 +12,7 @@ export interface LocalUserPreferences {
 }
 
 export interface LocalUserProgress {
-  id?: number;
-  uid: string;
+  uid: string; // primary key — one row per user
   score: number;
   streak: number;
   bestStreak: number;
@@ -45,6 +44,14 @@ export class RealBeeDatabase extends Dexie {
     this.version(2).stores({
       preferences: "++id, uid",
       progress: "++id, uid, synced",
+      sessions: "++id, uid, synced",
+    });
+    // v3: make uid the primary key for progress so put() upserts correctly.
+    // The old ++id rows are stale (every submitAnswer inserted a new row),
+    // so dropping and recreating the table is safe.
+    this.version(3).stores({
+      preferences: "++id, uid",
+      progress: "uid, synced",
       sessions: "++id, uid, synced",
     });
   }
