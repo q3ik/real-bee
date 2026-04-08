@@ -8,10 +8,13 @@ import {
   X,
   AlertCircle,
   MessageCircle,
+  MicOff,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useGameStore } from "../hooks/useGameStore";
 import { useVoiceRecognition } from "../hooks/useVoiceRecognition";
+import { useSpeechSynthesis } from "../hooks/useSpeechSynthesis";
+import { useMicrophonePermission } from "../hooks/useMicrophonePermission";
 import { useCountdown } from "../hooks/useCountdown";
 import { useHints } from "../hooks/useHints";
 import { useHostMessages } from "../hooks/useHostMessages";
@@ -41,6 +44,30 @@ export default function GameBoard() {
     sessionStats,
   } = useGameStore();
 
+  // Mic permission — shown when permission is denied
+  const { permissionDenied, resetPermission, markPermissionDenied } =
+    useMicrophonePermission();
+
+  // Host messages (game narration transcript)
+  const { messages, addMessage, clearMessages } = useHostMessages();
+
+  // Speech synthesis — wraps audioManager with game-specific helpers
+  const { speak, ttsSupported, repeatWord, giveDefinition, giveSentence } =
+    useSpeechSynthesis({
+      addMessage,
+      soundEnabled: !isMuted,
+      onError: (err) => console.warn("[TTS]", err),
+    });
+
+  // Sync store audio settings to audioManager singleton
+  useEffect(() => {
+    audioManager.setMuted(isMuted);
+    audioManager.setVoiceQuality(voiceQuality);
+  }, [isMuted, voiceQuality]);
+
+  // Hints for the current word
+  const { hints, addHint, clearHints } = useHints();
+
   const [userInput, setUserInput] = useState("");
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [feedback, setFeedback] = useState<"correct" | "incorrect" | null>(
@@ -48,12 +75,6 @@ export default function GameBoard() {
   );
   const [error, setError] = useState<string | null>(null);
   const lastSpokenWordRef = useRef<string | null>(null);
-
-  // Host messages (game narration transcript)
-  const { messages, addMessage, clearMessages } = useHostMessages();
-
-  // Hints for the current word
-  const { hints, addHint, clearHints } = useHints();
 
   // Countdown timer — triggers round end when time expires
   const {
@@ -69,7 +90,7 @@ export default function GameBoard() {
       stopListening();
       if (currentWord) {
         addMessage("system", `Time's up! The word was: ${currentWord.word}`);
-        audioManager.speak(`Time's up! The word was ${currentWord.word}`);
+        speak(`Time's up! The word was ${currentWord.word}`);
       }
       setFeedback("incorrect");
       setTimeout(() => {
@@ -80,7 +101,8 @@ export default function GameBoard() {
     },
   });
 
-  const { isListening, transcript, timeLeft, startListening, stopListening } =
+  // Voice recognition — activated during AWAITING_ANSWER (playing) phase
+  const { isListening, transcript, liveTranscript, timeLeft, startListening, stopListening } =
     useVoiceRecognition({
       targetWord: currentWord?.word,
       timeout:
@@ -89,12 +111,28 @@ export default function GameBoard() {
           : listeningTimeout === "off"
             ? 60000
             : 10000,
-      onTranscript: (t) => setError(null),
+      onTranscript: (_t) => setError(null),
       onResult: (res) => handleSubmission(res),
-      onError: (err) => setError(err),
+      onError: (err) => {
+        setError(err);
+        // Mark mic permission denied if it's a permission error
+        if (err.toLowerCase().includes("permission")) {
+          markPermissionDenied();
+        }
+      },
     });
 
-  // Auto-speak the word when it changes
+  // When permission is denied mid-game, immediately halt voice recognition
+  // and the round countdown so they don't keep advancing game state while the
+  // permission error screen is displayed.
+  useEffect(() => {
+    if (permissionDenied) {
+      stopListening();
+      stopCountdown();
+    }
+  }, [permissionDenied, stopListening, stopCountdown]);
+
+  // Auto-speak the word when it changes (TTS on WORD_PRESENTED)
   useEffect(() => {
     if (
       currentWord &&
@@ -102,7 +140,7 @@ export default function GameBoard() {
       lastSpokenWordRef.current !== currentWord.word
     ) {
       const speakAndListen = async () => {
-        await audioManager.speak(currentWord.word);
+        await speak(`Your word is: ${currentWord.word}`);
         if (autoListen) {
           startListening();
         }
@@ -111,7 +149,7 @@ export default function GameBoard() {
       lastSpokenWordRef.current = currentWord.word;
       addMessage("word", currentWord.word);
     }
-  }, [currentWord, phase, autoListen, startListening, addMessage]);
+  }, [currentWord, phase, autoListen, startListening, addMessage, speak]);
 
   // Start countdown when a new round begins
   useEffect(() => {
@@ -164,37 +202,75 @@ export default function GameBoard() {
         sentence: currentWord.sentence,
       });
       if (hint) {
-        audioManager.speak(hint.spokenText ?? hint.text);
+        speak(hint.spokenText ?? hint.text);
         addMessage("system", hint.text);
       }
     }
-  }, [currentWord, addHint, addMessage]);
+  }, [currentWord, addHint, addMessage, speak]);
 
   const handleDefinition = useCallback(() => {
     if (currentWord) {
-      audioManager.speak(currentWord.definition);
-      addMessage("definition", currentWord.definition);
+      giveDefinition(currentWord.definition);
     }
-  }, [currentWord, addMessage]);
+  }, [currentWord, giveDefinition]);
 
   const handleSentence = useCallback(() => {
     if (currentWord) {
-      audioManager.speak(currentWord.sentence);
-      addMessage("sentence", currentWord.sentence);
+      giveSentence(currentWord.sentence);
     }
-  }, [currentWord, addMessage]);
+  }, [currentWord, giveSentence]);
 
   useGameKeyboardShortcuts({
     gameState: phase,
     onRepeatWord: () => {
       if (currentWord) {
-        audioManager.speak(currentWord.word);
+        repeatWord(currentWord.word);
       }
     },
     onHint: handleHint,
     onDefinition: handleDefinition,
     onSentence: handleSentence,
   });
+
+  // --- Permission denied screen ---
+  // Shown whenever mic permission is denied, regardless of game state,
+  // so mid-game revocation is also handled.
+  if (permissionDenied) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 text-center space-y-6">
+        <div className="p-6 bg-red-50 rounded-full">
+          <MicOff className="w-12 h-12 text-red-500" />
+        </div>
+        <h2 className="text-2xl font-black text-gray-800">
+          Microphone Access Required
+        </h2>
+        <p className="text-gray-500 max-w-sm">
+          Spelling Bee needs your microphone to hear you spell words. Please
+          enable microphone access in your browser settings and try again.
+        </p>
+        <button
+          onClick={async () => {
+            // Request mic access first so the browser re-prompts the user
+            // if the permission was soft-denied. Hard-denied permissions
+            // require the user to update browser site settings manually.
+            try {
+              const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+              // Release the track immediately — we only needed the prompt.
+              stream.getTracks().forEach((t) => t.stop());
+            } catch {
+              // User still denied — keep the error screen; do not start session.
+              return;
+            }
+            resetPermission();
+            startSession();
+          }}
+          className="px-8 py-4 bg-orange-500 text-white rounded-2xl font-bold shadow-lg hover:bg-orange-600 transition-all"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   if (phase === "idle" && !currentWord) {
     return (
@@ -323,7 +399,7 @@ export default function GameBoard() {
         </div>
 
         <button
-          onClick={() => audioManager.speak(currentWord.word)}
+          onClick={() => speak(currentWord.word)}
           className="p-8 bg-orange-500 text-white rounded-full shadow-2xl shadow-orange-200 hover:scale-105 transition-transform active:scale-95 mb-10"
         >
           <Volume2 className="w-12 h-12" />
@@ -356,7 +432,7 @@ export default function GameBoard() {
               sentence: currentWord.sentence,
             });
             if (hint) {
-              audioManager.speak(hint.spokenText ?? hint.text);
+              speak(hint.spokenText ?? hint.text);
               addMessage("system", hint.text);
             }
           }}
@@ -403,8 +479,10 @@ export default function GameBoard() {
                   />
                 </div>
               </div>
+              {/* liveTranscript updates on every recognition result event;
+                  transcript is set at session end as a final record. */}
               <p className="text-2xl font-black text-gray-800 text-center tracking-widest uppercase">
-                {transcript || "..."}
+                {(isListening ? liveTranscript : transcript) || "..."}
               </p>
             </motion.div>
           )}
