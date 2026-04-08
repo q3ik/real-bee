@@ -1,17 +1,17 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-vi.mock('@/lib/supabase', () => ({
+vi.mock("../../lib/supabase", () => ({
   supabase: {
     auth: {
       getUser: vi.fn().mockResolvedValue({
-        data: { user: { id: 'test-user-123' } },
+        data: { user: { id: "test-user-123" } },
         error: null,
       }),
     },
   },
 }));
 
-vi.mock('@/lib/db', () => ({
+vi.mock("../../lib/db", () => ({
   localDb: {
     progress: {
       put: vi.fn().mockResolvedValue(1),
@@ -21,41 +21,118 @@ vi.mock('@/lib/db', () => ({
         }),
       }),
     },
+    preferences: {
+      where: vi.fn().mockReturnValue({
+        equals: vi.fn().mockReturnValue({
+          first: vi.fn().mockResolvedValue(null),
+        }),
+      }),
+    },
   },
 }));
 
-describe('useGameStore', () => {
+vi.mock("../../lib/wordList", () => ({
+  getWordsForConfig: vi.fn().mockReturnValue([
+    {
+      word: "cat",
+      definition: "A small furry animal.",
+      sentence: "The cat sat.",
+      grade: 1,
+      difficulty: "easy",
+    },
+    {
+      word: "dog",
+      definition: "A friendly pet.",
+      sentence: "The dog barked.",
+      grade: 1,
+      difficulty: "easy",
+    },
+  ]),
+  WORD_LIST: [
+    {
+      word: "cat",
+      definition: "A small furry animal.",
+      sentence: "The cat sat.",
+      grade: 1,
+      difficulty: "easy",
+    },
+    {
+      word: "dog",
+      definition: "A friendly pet.",
+      sentence: "The dog barked.",
+      grade: 1,
+      difficulty: "easy",
+    },
+  ],
+}));
+
+describe("useGameStore", () => {
   beforeEach(() => {
+    vi.resetModules();
     vi.clearAllMocks();
   });
 
-  it('exports useGameStore without throwing', async () => {
-    const { useGameStore } = await import('../useGameStore');
+  afterEach(() => {
+    vi.resetModules();
+  });
+
+  it("exports useGameStore without throwing", async () => {
+    const { useGameStore } = await import("../useGameStore");
     expect(useGameStore).toBeDefined();
   });
 
-  it('loadProgress resolves without throwing when user has no saved data', async () => {
-    const { useGameStore } = await import('../useGameStore');
+  it("loadProgress resolves without throwing when user has no saved data", async () => {
+    const { useGameStore } = await import("../useGameStore");
     const store = useGameStore.getState();
     await expect(store.loadProgress()).resolves.not.toThrow();
   });
 
-  it('submitAnswer writes to localDb with supabase user id', async () => {
-    const { useGameStore } = await import('../useGameStore');
-    const { localDb } = await import('@/lib/db');
+  it("submitAnswer writes to localDb with supabase user id", async () => {
+    const { useGameStore } = await import("../useGameStore");
+    const { localDb } = await import("../../lib/db");
 
     const store = useGameStore.getState();
     // Load progress to hydrate userId from mocked supabase
     await store.loadProgress();
 
-    // Set up a current word
+    // Start a session (mocked word list ensures we get words)
     store.startSession();
-    const currentWord = useGameStore.getState().currentWord;
-    if (!currentWord) return; // no words in test env, skip gracefully
+    const currentState = useGameStore.getState();
+    expect(currentState.currentWord).toBeDefined();
+    expect(currentState.phase).toBe("playing");
 
+    const currentWord = currentState.currentWord!;
     store.submitAnswer(currentWord.word);
+
+    const afterState = useGameStore.getState();
+    expect(afterState.phase).toBe("round_end");
+    expect(afterState.result?.isCorrect).toBe(true);
     expect(localDb.progress.put).toHaveBeenCalledWith(
-      expect.objectContaining({ uid: 'test-user-123' })
+      expect.objectContaining({ uid: "test-user-123" }),
     );
+  });
+
+  it("transitions to playing phase on startNewRound with a word", async () => {
+    const { useGameStore } = await import("../useGameStore");
+    const store = useGameStore.getState();
+
+    store.startSession();
+    const state = useGameStore.getState();
+    expect(state.phase).toBe("playing");
+    expect(state.currentWord).not.toBeNull();
+  });
+
+  it("restartGame resets all state to defaults", async () => {
+    const { useGameStore } = await import("../useGameStore");
+    const store = useGameStore.getState();
+
+    store.startSession();
+    store.restartGame();
+    const state = useGameStore.getState();
+
+    expect(state.phase).toBe("idle");
+    expect(state.currentWord).toBeNull();
+    expect(state.score).toBe(0);
+    expect(state.streak).toBe(0);
   });
 });
