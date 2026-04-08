@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import confetti from "canvas-confetti";
 import {
   Volume2,
   Mic,
@@ -102,25 +103,31 @@ export default function GameBoard() {
   });
 
   // Voice recognition — activated during AWAITING_ANSWER (playing) phase
-  const { isListening, transcript, liveTranscript, timeLeft, startListening, stopListening } =
-    useVoiceRecognition({
-      targetWord: currentWord?.word,
-      timeout:
-        listeningTimeout === "longer"
-          ? 15000
-          : listeningTimeout === "off"
-            ? 60000
-            : 10000,
-      onTranscript: (_t) => setError(null),
-      onResult: (res) => handleSubmission(res),
-      onError: (err) => {
-        setError(err);
-        // Mark mic permission denied if it's a permission error
-        if (err.toLowerCase().includes("permission")) {
-          markPermissionDenied();
-        }
-      },
-    });
+  const {
+    isListening,
+    transcript,
+    liveTranscript,
+    timeLeft,
+    startListening,
+    stopListening,
+  } = useVoiceRecognition({
+    targetWord: currentWord?.word,
+    timeout:
+      listeningTimeout === "longer"
+        ? 15000
+        : listeningTimeout === "off"
+          ? 60000
+          : 10000,
+    onTranscript: (_t) => setError(null),
+    onResult: (res) => handleSubmission(res),
+    onError: (err) => {
+      setError(err);
+      // Mark mic permission denied if it's a permission error
+      if (err.toLowerCase().includes("permission")) {
+        markPermissionDenied();
+      }
+    },
+  });
 
   // When permission is denied mid-game, immediately halt voice recognition
   // and the round countdown so they don't keep advancing game state while the
@@ -178,6 +185,16 @@ export default function GameBoard() {
       audioManager.playEffect(isCorrect ? "correct" : "incorrect");
 
       if (isCorrect) {
+        // Subtle confetti burst on correct answer
+        confetti({
+          particleCount: 40,
+          spread: 60,
+          startVelocity: 25,
+          origin: { y: 0.6 },
+          colors: ["#f97316", "#fbbf24", "#34d399", "#60a5fa"],
+          disableForReducedMotion: true,
+        });
+
         addMessage(
           "player",
           `Spelled: ${val.toUpperCase().split("").join("-")}`,
@@ -254,7 +271,9 @@ export default function GameBoard() {
             // if the permission was soft-denied. Hard-denied permissions
             // require the user to update browser site settings manually.
             try {
-              const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+              const stream = await navigator.mediaDevices.getUserMedia({
+                audio: true,
+              });
               // Release the track immediately — we only needed the prompt.
               stream.getTracks().forEach((t) => t.stop());
             } catch {
@@ -405,7 +424,7 @@ export default function GameBoard() {
           <Volume2 className="w-12 h-12" />
         </button>
 
-        <div className="flex justify-center gap-3 mb-10 min-h-[48px]">
+        <div className="flex justify-center gap-3 mb-10 min-h-12">
           {showLetterCount ? (
             currentWord.word.split("").map((_, i) => (
               <div
@@ -444,7 +463,7 @@ export default function GameBoard() {
         <div className="flex gap-4">
           <button
             onClick={isListening ? stopListening : startListening}
-            className={`flex-1 py-6 rounded-[24px] font-black text-xl flex items-center justify-center gap-3 transition-all shadow-xl ${isListening ? "bg-red-500 text-white animate-pulse" : "bg-orange-500 text-white hover:bg-orange-600 shadow-orange-100"}`}
+            className={`flex-1 py-6 rounded-3xl font-black text-xl flex items-center justify-center gap-3 transition-all shadow-xl ${isListening ? "bg-red-500 text-white animate-pulse" : "bg-orange-500 text-white hover:bg-orange-600 shadow-orange-100"}`}
           >
             <Mic className="w-6 h-6" />
             {isListening ? "Listening..." : "Spell by Voice"}
@@ -452,7 +471,7 @@ export default function GameBoard() {
 
           <button
             onClick={() => setShowKeyboard(!showKeyboard)}
-            className={`p-6 rounded-[24px] transition-all border-2 ${showKeyboard ? "bg-gray-800 text-white border-gray-800" : "bg-white text-gray-400 border-gray-100"}`}
+            className={`p-6 rounded-3xl transition-all border-2 ${showKeyboard ? "bg-gray-800 text-white border-gray-800" : "bg-white text-gray-400 border-gray-100"}`}
           >
             <Keyboard className="w-8 h-8" />
           </button>
@@ -521,7 +540,7 @@ export default function GameBoard() {
                   handleSubmission(userInput)
                 }
                 placeholder="Type spelling here..."
-                className="w-full p-6 rounded-[24px] border-2 border-gray-100 focus:border-orange-500 outline-none font-black text-xl text-center uppercase tracking-widest"
+                className="w-full p-6 rounded-3xl border-2 border-gray-100 focus:border-orange-500 outline-none font-black text-xl text-center uppercase tracking-widest"
                 autoFocus
               />
               <button

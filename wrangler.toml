@@ -16,3 +16,4 @@ ALLOWED_ORIGINS = ""
 
 # Secrets (never in wrangler.toml — set via `wrangler secret put`):
 #   GEMINI_API_KEY
+#   SENTRY_DSN

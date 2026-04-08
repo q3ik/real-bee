@@ -2,10 +2,10 @@ node_modules/
 build/
 dist/
 coverage/
-test-results/
 .DS_Store
 *.log
 .env*
 !.env.example
 firebase-applet-config.json
 .qwen/
+/test-results
