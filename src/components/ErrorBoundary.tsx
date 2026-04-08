@@ -34,17 +34,20 @@ export class ErrorBoundary extends Component<Props, State> {
     };
   }
 
-  async componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Report to Sentry with component stack
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    // Capture synchronously so the event is recorded even if flush fails.
     const eventId = Sentry.captureException(error, {
       extra: { componentStack: errorInfo.componentStack },
     });
 
-    // Flush Sentry to ensure the event is sent before the user navigates away
-    await Sentry.flush(2000);
+    // Store the eventId immediately — do not wait for the flush.
+    this.setState({ sentryEventId: eventId ?? null });
 
-    this.setState({
-      sentryEventId: eventId ?? null,
+    // Fire-and-forget flush: detach the promise and swallow any rejection
+    // so a Sentry network failure cannot become an unhandled promise
+    // rejection on top of an already-broken render.
+    void Sentry.flush(2000).catch(() => {
+      // Intentionally ignored — the event was already captured above.
     });
   }
 
