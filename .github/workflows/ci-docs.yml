@@ -8,11 +8,11 @@ on:
       - reopened
       - ready_for_review
     paths:
-      - 'docs/**'
-      - '**/*.md'
-      - 'LICENSE'
-      - '.claude/**'
-      - '.github/workflows/ci-docs.yml'
+      - "docs/**"
+      - "**/*.md"
+      - "LICENSE"
+      - ".claude/**"
+      - ".github/workflows/ci-docs.yml"
 
 concurrency:
   group: ci-docs-${{ github.event.pull_request.number || github.ref }}
@@ -22,6 +22,8 @@ jobs:
   docs_validation:
     name: Validate docs only changes
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,7 +33,7 @@ jobs:
       - name: Setup Node
         uses: ./.github/actions/setup-node
         with:
-          node-version: '20'
+          node-version: "22"
 
       - name: Lint markdown files
         run: |
