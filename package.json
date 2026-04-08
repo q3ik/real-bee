@@ -21,7 +21,7 @@
     "dev:functions": "wrangler pages dev --port 8788 --proxy 5173",
     "dev:full": "concurrently -n vite,wrangler -c cyan,magenta \"npm run dev\" \"npm run dev:functions\"",
     "typecheck": "tsc --noEmit",
-    "depcheck": "npx depcheck --ignores='concurrently,tsx,@types/*,@vitejs/plugin-react,@tailwindcss/vite,@cloudflare/vite-plugin'"
+    "depcheck": "npx depcheck --ignores='concurrently,serve,tsx,@types/*,@vitejs/plugin-react,@tailwindcss/vite,@cloudflare/vite-plugin'"
   },
   "dependencies": {
     "@sentry/react": "^10.47.0",
