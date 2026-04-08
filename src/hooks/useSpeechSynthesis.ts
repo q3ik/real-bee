@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { audioManager } from '../lib/audioManager';
 import type { SpeechSynthesisConfig, SpeechSynthesisResult } from './useSpeechSynthesis.types';
 
@@ -33,7 +33,7 @@ export function useSpeechSynthesis({
   // scheduled by an older speak() call is not invoked after a newer one starts
   // or after the component unmounts.
   const currentPlaybackRef = useRef<symbol | null>(null);
-  const [ttsSupported] = useState(isTTSSupported());
+  const ttsSupported = isTTSSupported();
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -78,8 +78,11 @@ export function useSpeechSynthesis({
 
   const repeatWord = useCallback(
     async (word: string) => {
-      const shouldHideWord = soundEnabled && ttsSupported;
-      addMessage('word', shouldHideWord ? 'Repeating: [hidden]' : `Repeating: ${word}`);
+      const willSpeakWordAloud = soundEnabled && ttsSupported;
+      addMessage(
+        'word',
+        willSpeakWordAloud ? 'Repeating: [hidden]' : `Repeating: ${word}`,
+      );
       await speak(`Your word is: ${word}`);
     },
     [addMessage, speak, soundEnabled, ttsSupported],
