@@ -5,7 +5,7 @@
  * Method: POST
  *
  * Request body: { word: string, voice?: string }
- * Response: { audio: string (base64), mimeType: string }
+ * Response: { audio: string (base64 PCM), mimeType: 'audio/pcm', sampleRate: 24000 }
  *
  * Model, voice defaults, and generation config are hardcoded server-side.
  * The client cannot influence model selection or audio parameters.
@@ -97,14 +97,14 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
       throw new Error('No audio data in Gemini TTS response');
     }
 
-    const ALLOWED_AUDIO_TYPES = ['audio/wav', 'audio/pcm', 'audio/mpeg', 'audio/mp3', 'audio/ogg'] as const;
-    const responseMimeType = inlineData.mimeType ?? 'audio/wav';
+    const ALLOWED_AUDIO_TYPES = ['audio/pcm'] as const;
+    const responseMimeType = inlineData.mimeType ?? 'audio/pcm';
     if (!ALLOWED_AUDIO_TYPES.includes(responseMimeType as typeof ALLOWED_AUDIO_TYPES[number])) {
       console.error('[tts] Unexpected mimeType from Gemini:', responseMimeType);
       throw new Error(`Unexpected audio mimeType: ${responseMimeType}`);
     }
 
-    return json({ audio: inlineData.data, mimeType: responseMimeType }, 200, origin);
+    return json({ audio: inlineData.data, mimeType: 'audio/pcm', sampleRate: 24000 }, 200, origin);
   } catch (error) {
     console.error('[tts] Error:', error);
     return json({ error: 'TTS generation failed' }, 500, origin);

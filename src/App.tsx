@@ -4,7 +4,6 @@ import Onboarding from './components/Onboarding';
 import GameBoard from './components/GameBoard';
 import MetricsBar from './components/MetricsBar';
 import Settings from './components/Settings';
-import { Toaster } from './components/ui/toaster';
 import { supabase } from './lib/supabase';
 
 export default function App() {
@@ -39,7 +38,6 @@ export default function App() {
       </main>
 
       <Settings isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
-      <Toaster />
     </div>
   );
 }

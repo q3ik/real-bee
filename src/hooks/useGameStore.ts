@@ -3,6 +3,22 @@ import { type Word, getWordsForConfig } from '../lib/wordList';
 import { localDb } from '../lib/db';
 import { supabase } from '../lib/supabase';
 
+const OFFLINE_UID_KEY = 'real-bee-offline-uid';
+
+/** Returns a stable offline user ID, generating and persisting one on first call. */
+function getOrCreateOfflineUid(): string {
+  try {
+    const existing = localStorage.getItem(OFFLINE_UID_KEY);
+    if (existing) return existing;
+    const uid = `offline-${crypto.randomUUID()}`;
+    localStorage.setItem(OFFLINE_UID_KEY, uid);
+    return uid;
+  } catch {
+    // localStorage unavailable (SSR, private-browsing lockdown, etc.)
+    return 'offline-fallback';
+  }
+}
+
 interface GameState {
   score: number;
   streak: number;
@@ -100,6 +116,22 @@ export const useGameStore = create<GameState>((set, get) => ({
           lastPlayed: new Date().toISOString(),
           synced: false,
         });
+      } else {
+        // loadProgress() wasn't called yet — persist under the offline UID
+        // so no progress is silently dropped.
+        const offlineUid = getOrCreateOfflineUid();
+        set({ userId: offlineUid });
+        localDb.progress.put({
+          uid: offlineUid,
+          score: newScore,
+          streak: newStreak,
+          bestStreak: newBest,
+          masteredCount: newMastered,
+          gradeLevel: get().gradeLevel.toString(),
+          difficulty: get().difficulty,
+          lastPlayed: new Date().toISOString(),
+          synced: false,
+        });
       }
     } else {
       set({
@@ -135,9 +167,13 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
     }
 
-    const uid = get().userId;
-    if (!uid) return;
+    // Fall back to a stable offline UID so progress is always persisted,
+    // even when the user hasn't signed in yet.
+    if (!get().userId) {
+      set({ userId: getOrCreateOfflineUid() });
+    }
 
+    const uid = get().userId!;
     const local = await localDb.progress.where('uid').equals(uid).first();
     if (local) {
       set({

@@ -3,7 +3,6 @@ import { GraduationCap, Zap, Play, Sparkles, LogIn, User as UserIcon } from 'luc
 import { motion } from 'motion/react';
 import { useGameStore } from '../hooks/useGameStore';
 import { supabase } from '../lib/supabase';
-import { toast } from './ui/use-toast';
 import type { User } from '@supabase/supabase-js';
 
 interface OnboardingProps {
@@ -24,11 +23,6 @@ export default function Onboarding({ onStart }: OnboardingProps) {
   const handleGoogleSignIn = async () => {
     if (!supabase) {
       console.error('[handleGoogleSignIn] Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
-      toast({
-        title: 'Sign-in unavailable',
-        description: 'Authentication is not configured for this deployment.',
-        variant: 'destructive',
-      });
       return;
     }
     try {
