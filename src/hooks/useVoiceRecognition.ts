@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 // ---------------------------------------------------------------------------
-// Constants (ported from buzzy-game constants/voiceInput, adapted for real-bee)
+// Constants
 // ---------------------------------------------------------------------------
 
 /** Timeout in ms before silence is detected and listening stops */
@@ -78,7 +78,7 @@ const NATO: Record<string, string> = {
   oscar: "o",
   papa: "p",
   quebec: "q",
-  romeo: "r", // fix: was 'rome'
+  romeo: "r",
   sierra: "s",
   tango: "t",
   uniform: "u",
@@ -147,7 +147,6 @@ function processSpelling(transcript: string, target?: string): string | null {
  */
 function isLikelyWholeWordAttempt(transcript: string): boolean {
   const words = transcript.trim().split(/\s+/);
-  // If it's a single word (not single letters), likely a whole-word attempt
   return words.length === 1 && words[0].length > 3;
 }
 
@@ -168,9 +167,7 @@ export function useVoiceRecognition(
   const recognitionRef = useRef<any>(null);
   const silenceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const graceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const maxListenTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
+  const maxListenTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionCompletedRef = useRef(false);
   const latestTranscriptRef = useRef("");
@@ -178,15 +175,14 @@ export function useVoiceRecognition(
   const isMountedRef = useRef(true);
   const isListeningRef = useRef(false);
 
-  // Stable refs for external callbacks so the recognition object is not
-  // recreated every time the parent re-renders with new inline function refs.
+  // Stable ref for options — keeps callbacks fresh without recreating recognition.
   const optionsRef = useRef(options);
   useEffect(() => {
     optionsRef.current = options;
   }, [options]);
 
   // -----------------------------------------------------------------------
-  // Timer management
+  // Timer helpers
   // -----------------------------------------------------------------------
 
   const clearSilenceTimeout = useCallback(() => {
@@ -210,8 +206,23 @@ export function useVoiceRecognition(
   // Session lifecycle
   // -----------------------------------------------------------------------
 
+  /**
+   * Terminate the current listening session.
+   *
+   * @param shouldAutoSubmit - When true and a spelling result is available,
+   *   `onResult` is called automatically.
+   * @param errorMessage - Optional override for the "no speech" error message.
+   * @param precomputedResult - A spelling result already derived by the
+   *   `onresult` handler. When supplied, `finishListeningSession` uses it
+   *   directly instead of re-running `processSpelling`, ensuring `onResult`
+   *   is called **at most once** per session (here, not in the caller).
+   */
   const finishListeningSession = useCallback(
-    (shouldAutoSubmit: boolean, errorMessage?: string) => {
+    (
+      shouldAutoSubmit: boolean,
+      errorMessage?: string,
+      precomputedResult?: string | null,
+    ) => {
       if (sessionCompletedRef.current) return;
       sessionCompletedRef.current = true;
       clearSilenceTimeout();
@@ -246,23 +257,23 @@ export function useVoiceRecognition(
         return;
       }
 
-      // Try to extract spelling from the transcript
-      const spellingResult = processSpelling(
-        finalTranscript,
-        optionsRef.current.targetWord,
-      );
-
       setTranscript(finalTranscript);
 
+      // Use the result pre-computed by `onresult` when available; otherwise
+      // derive it now (timeout / grace-period paths where onresult didn't fire).
+      const spellingResult =
+        precomputedResult !== undefined
+          ? precomputedResult
+          : processSpelling(finalTranscript, optionsRef.current.targetWord);
+
       if (spellingResult && shouldAutoSubmit) {
-        // Auto-submit the spelling result
+        // `onResult` is called exactly once — right here.
         optionsRef.current.onResult?.(spellingResult);
       } else if (spellingResult) {
-        // Store transcript; the parent component will handle submission
+        // No auto-submit: surface the raw transcript so the UI can show it.
         optionsRef.current.onTranscript?.(finalTranscript);
       } else {
-        // Speech was detected but could not be parsed as a spelling.
-        // Surface an actionable error so the user isn't left in silence.
+        // Speech detected but could not be parsed as a spelling.
         optionsRef.current.onTranscript?.(finalTranscript);
         optionsRef.current.onError?.(
           "Couldn't understand that. Please spell letter-by-letter (or use NATO words like Alpha, Bravo, Charlie…).",
@@ -272,9 +283,8 @@ export function useVoiceRecognition(
     [clearSilenceTimeout, clearMaxListenTimeout, clearProgressTimer],
   );
 
-  // Keep a stable ref to finishListeningSession so setInterval callbacks
-  // always call the latest version without the ref being in the dep array
-  // of startProgressTimer (which would cause recreation on every render).
+  // Stable ref so setInterval / setTimeout closures always call the latest
+  // finishListeningSession without it appearing in their dep arrays.
   const finishListeningSessionRef = useRef(finishListeningSession);
   useEffect(() => {
     finishListeningSessionRef.current = finishListeningSession;
@@ -291,8 +301,6 @@ export function useVoiceRecognition(
         const remaining = Math.max(0, 100 - (elapsed / duration) * 100);
         setTimeLeft(remaining);
         if (remaining <= 0) {
-          // Use ref so we always call the latest finishListeningSession
-          // without needing it in this callback's closure.
           finishListeningSessionRef.current(false, "Time ran out. Please try again.");
         }
       }, interval);
@@ -309,8 +317,7 @@ export function useVoiceRecognition(
 
   // -----------------------------------------------------------------------
   // Recognition setup — runs once on mount.
-  // optionsRef keeps all callbacks fresh so this effect has an empty dep
-  // array and never tears down the SpeechRecognition instance mid-session.
+  // optionsRef / finishListeningSessionRef keep everything fresh.
   // -----------------------------------------------------------------------
 
   useEffect(() => {
@@ -339,12 +346,12 @@ export function useVoiceRecognition(
       setLiveTranscript(nextTranscript);
       optionsRef.current.onTranscript?.(nextTranscript);
 
-      // Strip completion cue words
+      // Strip completion cue words before evaluating the spelling
       const withoutCue = nextTranscript
         .replace(COMPLETION_CUE_PATTERN, "")
         .trim();
       if (!withoutCue) {
-        // Only completion-cue words were spoken — end session
+        // Only completion-cue words were spoken — end session with no result
         latestTranscriptRef.current = "";
         finishListeningSessionRef.current(true);
         return;
@@ -352,23 +359,21 @@ export function useVoiceRecognition(
 
       latestTranscriptRef.current = withoutCue;
 
-      // Check for spelling result — if we have one and user is done, submit
+      // Derive the spelling result once here so it can be passed into
+      // finishListeningSession, preventing a second processSpelling call
+      // and therefore a duplicate onResult invocation.
       const spellingResult = processSpelling(
         withoutCue,
         optionsRef.current.targetWord,
       );
 
-      // Check for completion cue in the original transcript
-      if (COMPLETION_CUE_DETECTION_PATTERN.test(nextTranscript.toLowerCase())) {
-        // User signalled they are done spelling
-        if (spellingResult) {
-          optionsRef.current.onResult?.(spellingResult);
-        }
-        finishListeningSessionRef.current(true);
-      } else if (spellingResult) {
-        // We have a valid spelling — submit it and end the session
-        optionsRef.current.onResult?.(spellingResult);
-        finishListeningSessionRef.current(true);
+      const hasCue = COMPLETION_CUE_DETECTION_PATTERN.test(nextTranscript.toLowerCase());
+
+      if (hasCue || spellingResult) {
+        // User is done (explicit cue or a complete spelling detected).
+        // Pass the precomputed result into finishListeningSession so it
+        // is used directly — onResult fires once, inside finishListeningSession.
+        finishListeningSessionRef.current(true, undefined, spellingResult);
       } else {
         // Still spelling — keep the session alive
         resetSilenceTimeout();
@@ -403,7 +408,7 @@ export function useVoiceRecognition(
           "Microphone not available. Check your audio device.",
         );
       } else if (error === "aborted") {
-        // Interruption — don't surface as error to the user
+        // Deliberate interruption — don't surface to the user
       } else {
         optionsRef.current.onError?.(`Speech recognition error: ${error}`);
       }
@@ -425,6 +430,7 @@ export function useVoiceRecognition(
         !isCleaningUpRef.current &&
         endedWhileListening
       ) {
+        // Grace period: collect any final transcript fragment before finalising
         graceTimeoutRef.current = setTimeout(
           () => finishListeningSessionRef.current(true),
           TRANSCRIPT_GRACE_PERIOD_MS,
@@ -448,8 +454,8 @@ export function useVoiceRecognition(
         }
       }
     };
-    // Empty dep array: optionsRef + finishListeningSessionRef keep
-    // callbacks fresh without triggering SpeechRecognition recreation.
+    // Empty dep array intentional: optionsRef + finishListeningSessionRef
+    // keep all callbacks current without recreating the recognition object.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -466,7 +472,6 @@ export function useVoiceRecognition(
       return;
     }
 
-    // Reset state
     setTranscript("");
     setLiveTranscript("");
     latestTranscriptRef.current = "";
@@ -478,7 +483,6 @@ export function useVoiceRecognition(
     const duration = optionsRef.current.timeout ?? MAX_LISTEN_MS;
     startProgressTimer(duration);
 
-    // Set max listen timeout
     maxListenTimeoutRef.current = setTimeout(() => {
       if (!sessionCompletedRef.current) {
         finishListeningSessionRef.current(false, "Time ran out. Please try again.");

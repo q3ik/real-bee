@@ -111,7 +111,7 @@ export default function GameBoard() {
           : listeningTimeout === "off"
             ? 60000
             : 10000,
-      onTranscript: (t) => setError(null),
+      onTranscript: (_t) => setError(null),
       onResult: (res) => handleSubmission(res),
       onError: (err) => {
         setError(err);
@@ -121,6 +121,16 @@ export default function GameBoard() {
         }
       },
     });
+
+  // When permission is denied mid-game, immediately halt voice recognition
+  // and the round countdown so they don't keep advancing game state while the
+  // permission error screen is displayed.
+  useEffect(() => {
+    if (permissionDenied) {
+      stopListening();
+      stopCountdown();
+    }
+  }, [permissionDenied, stopListening, stopCountdown]);
 
   // Auto-speak the word when it changes (TTS on WORD_PRESENTED)
   useEffect(() => {
@@ -469,8 +479,8 @@ export default function GameBoard() {
                   />
                 </div>
               </div>
-              {/* Prefer liveTranscript during active listening for real-time feedback;
-                  fall back to transcript (set at session end) or placeholder. */}
+              {/* liveTranscript updates on every recognition result event;
+                  transcript is set at session end as a final record. */}
               <p className="text-2xl font-black text-gray-800 text-center tracking-widest uppercase">
                 {(isListening ? liveTranscript : transcript) || "..."}
               </p>
