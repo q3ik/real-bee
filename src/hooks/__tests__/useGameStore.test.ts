@@ -135,4 +135,33 @@ describe("useGameStore", () => {
     expect(state.score).toBe(0);
     expect(state.streak).toBe(0);
   });
+
+  it("timeoutRound transitions to round_end with isCorrect:false and resets streak", async () => {
+    const { useGameStore } = await import("../useGameStore");
+    const store = useGameStore.getState();
+
+    store.startSession();
+    const before = useGameStore.getState();
+    expect(before.phase).toBe("playing");
+
+    store.timeoutRound();
+    const after = useGameStore.getState();
+
+    expect(after.phase).toBe("round_end");
+    expect(after.result?.isCorrect).toBe(false);
+    expect(after.result?.rawInput).toBe("");
+    expect(after.streak).toBe(0);
+    expect(after.roundsPlayed).toBe(before.roundsPlayed + 1);
+  });
+
+  it("timeoutRound is a no-op when phase is not playing", async () => {
+    const { useGameStore } = await import("../useGameStore");
+    const store = useGameStore.getState();
+
+    // phase is "idle" by default
+    store.timeoutRound();
+    const state = useGameStore.getState();
+    expect(state.phase).toBe("idle");
+    expect(state.result).toBeNull();
+  });
 });

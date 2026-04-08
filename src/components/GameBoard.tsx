@@ -28,6 +28,7 @@ export default function GameBoard() {
     phase,
     result,
     submitAnswer,
+    timeoutRound,
     nextWord,
     startSession,
     restartGame,
@@ -63,7 +64,9 @@ export default function GameBoard() {
     reset: resetCountdown,
   } = useCountdown(ROUND_DURATION_MS, {
     onComplete: () => {
-      // Time's up — show result and move on
+      // Time's up — record timeout in store, stop voice, show result and move on
+      timeoutRound();
+      stopListening();
       if (currentWord) {
         addMessage("system", `Time's up! The word was: ${currentWord.word}`);
         audioManager.speak(`Time's up! The word was ${currentWord.word}`);
@@ -129,6 +132,9 @@ export default function GameBoard() {
 
   const handleSubmission = useCallback(
     (val: string) => {
+      // Guard against duplicate submissions (e.g., voice result arriving during overlay)
+      if (phase !== "playing") return;
+
       const isCorrect = submitAnswer(val);
       setFeedback(isCorrect ? "correct" : "incorrect");
       audioManager.playEffect(isCorrect ? "correct" : "incorrect");
@@ -142,13 +148,11 @@ export default function GameBoard() {
 
       setTimeout(() => {
         setFeedback(null);
-        if (isCorrect) {
-          nextWord();
-          setUserInput("");
-        }
+        nextWord();
+        setUserInput("");
       }, 2000);
     },
-    [submitAnswer, addMessage, nextWord],
+    [phase, submitAnswer, addMessage, nextWord],
   );
 
   // Keyboard shortcuts

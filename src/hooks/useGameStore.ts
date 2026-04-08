@@ -105,6 +105,7 @@ interface GameState {
 
   // --- Actions: Submission ---
   submitAnswer: (answer: string, isVoice?: boolean) => boolean;
+  timeoutRound: () => void;
 
   // --- Actions: Mastery ---
   toggleMastery: (word: string, shouldMaster: boolean) => void;
@@ -306,6 +307,31 @@ export const useGameStore = create<GameState>((set, get) => ({
     });
 
     return isCorrect;
+  },
+
+  timeoutRound: () => {
+    const { currentWord, phase, roundsPlayed } = get();
+    if (!currentWord || phase !== "playing") return;
+
+    set({
+      roundsPlayed: roundsPlayed + 1,
+      difficultyEvolution: [...get().difficultyEvolution, -1],
+      recentPerformance: [...get().recentPerformance, false].slice(-10),
+      phase: "round_end",
+      result: {
+        isCorrect: false,
+        points: 0,
+        newScore: get().score,
+        newStreak: 0,
+        newBestStreak: get().bestStreak,
+        feedback: `Time's up! The word was ${currentWord.word}.`,
+        targetWord: currentWord.word,
+        rawInput: "",
+        normalizedInput: "",
+        isVoice: false,
+      },
+      streak: 0,
+    });
   },
 
   nextWord: () => {
