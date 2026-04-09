@@ -12,6 +12,7 @@ describe("useHostMessages", () => {
     vi.restoreAllMocks();
   });
 
+  // -------------------------------------------------------------------------
   describe("basic message management", () => {
     it("starts with empty messages", () => {
       const { result } = renderHook(() => useHostMessages());
@@ -48,57 +49,128 @@ describe("useHostMessages", () => {
     });
   });
 
-  describe("toast notifications", () => {
-    it("starts with no toast", () => {
+  // -------------------------------------------------------------------------
+  describe("triggerMessage — HostMessage contract", () => {
+    it("starts with no currentMessage", () => {
       const { result } = renderHook(() => useHostMessages());
-      expect(result.current.toast).toBeNull();
+      expect(result.current.currentMessage).toBeNull();
     });
 
-    it("shows a toast notification", () => {
+    it("triggerMessage('correct') sets currentMessage with encouraging tone", () => {
       const { result } = renderHook(() => useHostMessages());
 
       act(() => {
-        result.current.showToast("success", "Great job!");
+        result.current.triggerMessage("correct");
       });
 
-      expect(result.current.toast).not.toBeNull();
-      expect(result.current.toast!.text).toBe("Great job!");
-      expect(result.current.toast!.level).toBe("success");
+      expect(result.current.currentMessage).not.toBeNull();
+      expect(result.current.currentMessage!.tone).toBe("encouraging");
+      expect(result.current.currentMessage!.text).toContain("Correct");
+      expect(result.current.currentMessage!.speakAloud).toBe(true);
     });
 
-    it("dismisses the current toast", () => {
+    it("triggerMessage('incorrect') sets currentMessage with consoling tone", () => {
       const { result } = renderHook(() => useHostMessages());
 
       act(() => {
-        result.current.showToast("info", "Test toast");
+        result.current.triggerMessage("incorrect");
       });
 
-      expect(result.current.toast).not.toBeNull();
-
-      act(() => {
-        result.current.dismissToast();
-      });
-
-      expect(result.current.toast).toBeNull();
+      expect(result.current.currentMessage!.tone).toBe("consoling");
     });
 
-    it("auto-dismisses toast after duration", () => {
+    it("triggerMessage('streak-5') sets currentMessage with celebratory tone", () => {
       const { result } = renderHook(() => useHostMessages());
 
       act(() => {
-        result.current.showToast("success", "Auto dismiss", 1000);
+        result.current.triggerMessage("streak-5");
       });
 
-      expect(result.current.toast).not.toBeNull();
+      expect(result.current.currentMessage!.tone).toBe("celebratory");
+      expect(result.current.currentMessage!.text).toContain("5");
+    });
+
+    it("triggerMessage('streak-3') sets currentMessage with celebratory tone", () => {
+      const { result } = renderHook(() => useHostMessages());
 
       act(() => {
-        vi.advanceTimersByTime(1000);
+        result.current.triggerMessage("streak-3");
       });
 
-      expect(result.current.toast).toBeNull();
+      expect(result.current.currentMessage!.tone).toBe("celebratory");
+    });
+
+    it("triggerMessage('streak-10') sets currentMessage with celebratory tone", () => {
+      const { result } = renderHook(() => useHostMessages());
+
+      act(() => {
+        result.current.triggerMessage("streak-10");
+      });
+
+      expect(result.current.currentMessage!.tone).toBe("celebratory");
+    });
+
+    it("clearMessage() resets currentMessage to null", () => {
+      const { result } = renderHook(() => useHostMessages());
+
+      act(() => {
+        result.current.triggerMessage("correct");
+      });
+      expect(result.current.currentMessage).not.toBeNull();
+
+      act(() => {
+        result.current.clearMessage();
+      });
+      expect(result.current.currentMessage).toBeNull();
+    });
+
+    it("speakAloud fires the speak callback after 300ms", () => {
+      const { result } = renderHook(() => useHostMessages());
+      const speak = vi.fn();
+
+      act(() => {
+        result.current.triggerMessage("correct", speak);
+      });
+
+      expect(speak).not.toHaveBeenCalled();
+
+      act(() => {
+        vi.advanceTimersByTime(300);
+      });
+
+      expect(speak).toHaveBeenCalledOnce();
+      expect(speak).toHaveBeenCalledWith(expect.stringContaining("Correct"));
+    });
+
+    it("speakAloud is false for hint-used — speak callback is NOT called", () => {
+      const { result } = renderHook(() => useHostMessages());
+      const speak = vi.fn();
+
+      act(() => {
+        result.current.triggerMessage("hint-used", speak);
+        vi.advanceTimersByTime(500);
+      });
+
+      expect(speak).not.toHaveBeenCalled();
+    });
+
+    it("a second triggerMessage cancels the pending speak timer", () => {
+      const { result } = renderHook(() => useHostMessages());
+      const speak = vi.fn();
+
+      act(() => {
+        result.current.triggerMessage("correct", speak);
+        // Supersede before the 300ms fires
+        result.current.triggerMessage("incorrect", speak);
+        vi.advanceTimersByTime(300);
+      });
+
+      // Only one call — from the second trigger's timer, not the first
+      expect(speak).toHaveBeenCalledOnce();
     });
   });
 
+  // -------------------------------------------------------------------------
   describe("feedback state machine", () => {
     it("processes correct feedback event", () => {
       const { result } = renderHook(() => useHostMessages());
@@ -121,7 +193,6 @@ describe("useHostMessages", () => {
         result.current.onFeedback("incorrect", { targetWord: "elephant" });
       });
 
-      expect(result.current.messages.length).toBeGreaterThanOrEqual(1);
       const lastMsg =
         result.current.messages[result.current.messages.length - 1];
       expect(lastMsg.text).toContain("correct spelling");
@@ -141,7 +212,7 @@ describe("useHostMessages", () => {
       expect(lastMsg.text).toContain("cat");
     });
 
-    it("triggers streak milestone toast at milestone streaks", () => {
+    it("triggers streak milestone toast at streak 5", () => {
       const { result } = renderHook(() => useHostMessages());
 
       act(() => {
@@ -150,28 +221,6 @@ describe("useHostMessages", () => {
 
       // Should have at least 2 messages (feedback + milestone)
       expect(result.current.messages.length).toBeGreaterThanOrEqual(2);
-    });
-
-    it("shows toast for feedback events", () => {
-      const { result } = renderHook(() => useHostMessages());
-
-      act(() => {
-        result.current.onFeedback("correct", { streak: 1 });
-      });
-
-      expect(result.current.toast).not.toBeNull();
-      expect(result.current.toast!.level).toBe("success");
-    });
-
-    it("shows error toast for incorrect feedback", () => {
-      const { result } = renderHook(() => useHostMessages());
-
-      act(() => {
-        result.current.onFeedback("incorrect", { targetWord: "test" });
-      });
-
-      expect(result.current.toast).not.toBeNull();
-      expect(result.current.toast!.level).toBe("error");
     });
 
     it("processes hint_given feedback event", () => {

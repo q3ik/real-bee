@@ -1,6 +1,10 @@
 import { useCallback, useRef, useState } from "react";
 import type {
+  FeedbackContext,
   FeedbackEvent,
+  HostMessage,
+  HostMessageTrigger,
+  HostMessageTone,
   Message,
   MessageType,
   ToastLevel,
@@ -9,32 +13,86 @@ import type {
 } from "./useHostMessages.types";
 import { STREAK_MILESTONES } from "../constants/game";
 
-/**
- * Generate a feedback message for a given event.
- */
+// ---------------------------------------------------------------------------
+// HostMessage content map
+// ---------------------------------------------------------------------------
+
+const HOST_MESSAGES: Record<HostMessageTrigger, Omit<HostMessage, "id">> = {
+  correct: {
+    text: "Correct! Well done!",
+    tone: "encouraging",
+    speakAloud: true,
+  },
+  incorrect: {
+    text: "Not quite — let's try again.",
+    tone: "consoling",
+    speakAloud: true,
+  },
+  "streak-3": {
+    text: "3 in a row! You're on fire! 🔥",
+    tone: "celebratory",
+    speakAloud: true,
+  },
+  "streak-5": {
+    text: "5 in a row! Amazing streak! 🌟",
+    tone: "celebratory",
+    speakAloud: true,
+  },
+  "streak-10": {
+    text: "10 in a row! You're unstoppable! 🏆",
+    tone: "celebratory",
+    speakAloud: true,
+  },
+  "hint-used": {
+    text: "Here's a hint to help you out.",
+    tone: "neutral",
+    speakAloud: false,
+  },
+  "session-start": {
+    text: "Let's begin a new session!",
+    tone: "encouraging",
+    speakAloud: true,
+  },
+  "session-complete": {
+    text: "Session complete! Great work!",
+    tone: "celebratory",
+    speakAloud: true,
+  },
+  "first-attempt": {
+    text: "Take your time — spell it letter by letter.",
+    tone: "encouraging",
+    speakAloud: true,
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Generate a feedback message for a given event. */
 function feedbackMessage(
   event: FeedbackEvent,
-  context?: Record<string, unknown>,
+  context?: FeedbackContext,
 ): string {
   switch (event) {
     case "correct":
       return "Correct! Well done!";
     case "incorrect": {
-      const targetWord = (context?.targetWord as string) ?? "the word";
+      const targetWord = context?.targetWord ?? "the word";
       return `Not quite. The correct spelling is: ${targetWord.split("").join(", ")}`;
     }
     case "timeout": {
-      const targetWord = (context?.targetWord as string) ?? "the word";
+      const targetWord = context?.targetWord ?? "the word";
       return `Time's up! The word was: ${targetWord}`;
     }
     case "streak_milestone": {
-      const streak = (context?.streak as number) ?? 0;
+      const streak = context?.streak ?? 0;
       return `Amazing! ${streak} in a row!`;
     }
     case "hint_given":
       return "Here is a hint to help you out.";
     case "word_presented": {
-      const word = (context?.word as string) ?? "";
+      const word = context?.word ?? "";
       return `Your word is: ${word}`;
     }
     default:
@@ -42,9 +100,7 @@ function feedbackMessage(
   }
 }
 
-/**
- * Determine the toast level for a feedback event.
- */
+/** Determine the toast level for a feedback event. */
 function toastLevelForEvent(event: FeedbackEvent): ToastLevel {
   switch (event) {
     case "correct":
@@ -61,18 +117,23 @@ function toastLevelForEvent(event: FeedbackEvent): ToastLevel {
   }
 }
 
+let messageIdCounter = 0;
+
 /**
- * Manage host transcript messages with a feedback state machine
- * and toast notification system.
- *
- * - Messages are appended to a transcript for display.
- * - Toasts are shown briefly for key game events (correct, incorrect, streak).
- * - `onFeedback()` processes feedback events and triggers messages + toasts.
+ * Manage host transcript messages with:
+ * 1. A legacy message queue (addMessage / clearMessages)
+ * 2. A structured HostMessage API (triggerMessage / currentMessage / clearMessage)
+ * 3. Toast notifications (showToast / dismissToast / auto-dismiss)
+ * 4. A feedback state machine (onFeedback)
  */
 export function useHostMessages(): UseHostMessagesResult {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [currentMessage, setCurrentMessage] = useState<HostMessage | null>(
+    null,
+  );
   const [toast, setToast] = useState<ToastNotification | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const speakTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const addMessage = useCallback((type: MessageType, text: string): void => {
     setMessages((prev) => [...prev, { type, text, timestamp: Date.now() }]);
@@ -84,13 +145,8 @@ export function useHostMessages(): UseHostMessagesResult {
 
   const showToast = useCallback(
     (level: ToastLevel, text: string, durationMs = 2000): void => {
-      // Clear any existing toast timer
-      if (toastTimerRef.current) {
-        clearTimeout(toastTimerRef.current);
-      }
-
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
       setToast({ level, text, durationMs });
-
       toastTimerRef.current = setTimeout(() => {
         setToast(null);
         toastTimerRef.current = null;
@@ -107,8 +163,43 @@ export function useHostMessages(): UseHostMessagesResult {
     setToast(null);
   }, []);
 
+  const triggerMessage = useCallback(
+    (trigger: HostMessageTrigger, speak?: (text: string) => void): void => {
+      // Cancel any pending speak timer from a previous trigger
+      if (speakTimerRef.current) {
+        clearTimeout(speakTimerRef.current);
+        speakTimerRef.current = null;
+      }
+
+      const template = HOST_MESSAGES[trigger];
+      if (!template) return;
+
+      const msg: HostMessage = {
+        ...template,
+        id: `msg-${++messageIdCounter}`,
+      };
+      setCurrentMessage(msg);
+
+      if (msg.speakAloud && speak) {
+        speakTimerRef.current = setTimeout(() => {
+          speak(msg.text);
+          speakTimerRef.current = null;
+        }, 300);
+      }
+    },
+    [],
+  );
+
+  const clearMessage = useCallback((): void => {
+    if (speakTimerRef.current) {
+      clearTimeout(speakTimerRef.current);
+      speakTimerRef.current = null;
+    }
+    setCurrentMessage(null);
+  }, []);
+
   const onFeedback = useCallback(
-    (event: FeedbackEvent, context?: Record<string, unknown>): void => {
+    (event: FeedbackEvent, context?: FeedbackContext): void => {
       const text = feedbackMessage(event, context);
       if (!text) return;
 
@@ -137,6 +228,9 @@ export function useHostMessages(): UseHostMessagesResult {
     messages,
     addMessage,
     clearMessages,
+    currentMessage,
+    triggerMessage,
+    clearMessage,
     toast,
     showToast,
     dismissToast,
@@ -148,8 +242,12 @@ export function useHostMessages(): UseHostMessagesResult {
 export type {
   MessageType,
   FeedbackEvent,
+  HostMessageTrigger,
+  HostMessageTone,
   ToastLevel,
-  ToastNotification,
+  HostMessage,
   Message,
+  ToastNotification,
+  FeedbackContext,
   UseHostMessagesResult,
 } from "./useHostMessages.types";

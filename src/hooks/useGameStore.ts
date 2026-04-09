@@ -66,6 +66,15 @@ interface GameState {
   correctAnswers: number;
   sessionStartTime: number | null;
   sessionBestStreak: number;
+  /** Baseline captured at session start so stats reflect session-only deltas. */
+  sessionBaseline: {
+    score: number;
+    roundsPlayed: number;
+    correctAnswers: number;
+  };
+
+  // --- Used words (exposed for UI) ---
+  usedWords: string[];
 
   // --- Config (persisted via Dexie) ---
   gradeLevel: number;
@@ -90,7 +99,14 @@ interface GameState {
   restartGame: () => void;
 
   // --- Actions: Submission ---
-  submitAnswer: (answer: string, isVoice?: boolean) => boolean;
+  /**
+   * Submit an answer for the current round.
+   * Returns:
+   *   true  — answer was correct
+   *   false — answer was incorrect (round recorded)
+   *   null  — submission was invalid (empty after normalization); round NOT advanced
+   */
+  submitAnswer: (answer: string, isVoice?: boolean) => boolean | null;
   timeoutRound: () => void;
 
   // --- Actions: Mastery ---
@@ -120,7 +136,13 @@ interface GameState {
 
 // Keep track of used words during a session
 const usedWordsSet = new Set<string>();
+// NOTE: masteredWordsSet is kept in sync with state.masteredWords in
+// toggleMastery/loadProgress to prevent desync after startSession/loadProgress.
 const masteredWordsSet = new Set<string>();
+/** Debounce guard: timestamp of last successful submission. */
+let lastSubmitAt = 0;
+/** Re-entrancy guard: true while a submission is being processed. */
+let isSubmitting = false;
 
 export const useGameStore = create<GameState>((set, get) => ({
   // --- FSM ---
@@ -142,6 +164,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   correctAnswers: 0,
   sessionStartTime: null,
   sessionBestStreak: 0,
+  sessionBaseline: { score: 0, roundsPlayed: 0, correctAnswers: 0 },
+  usedWords: [],
 
   // --- Config ---
   gradeLevel: 1,
@@ -163,16 +187,24 @@ export const useGameStore = create<GameState>((set, get) => ({
   startSession: () => {
     usedWordsSet.clear();
     masteredWordsSet.clear();
+    lastSubmitAt = 0;
+    isSubmitting = false;
+    // Capture baseline so sessionStats reflects only this session's progress.
+    const { score, roundsPlayed, correctAnswers } = get();
     set({
-      score: 0,
+      score,
       streak: 0,
-      roundsPlayed: 0,
-      correctAnswers: 0,
+      roundsPlayed,
+      correctAnswers,
       sessionStartTime: null,
       sessionBestStreak: 0,
+      sessionBaseline: { score, roundsPlayed, correctAnswers },
       recentPerformance: [],
       difficultyEvolution: [],
       result: null,
+      usedWords: [],
+      masteredWords: [],
+      masteredCount: 0,
     });
     get().startNewRound();
   },
@@ -196,6 +228,11 @@ export const useGameStore = create<GameState>((set, get) => ({
       pool = getWordsForConfig(gradeLevel, difficulty);
       pool = [...pool].sort(() => Math.random() - 0.5);
     }
+
+    // Rebuild masteredWordsSet from authoritative Zustand state on every call.
+    // This prevents desync when startSession() or loadProgress() ran between
+    // rounds without explicitly updating the old module-level Set.
+    const masteredWordsSet = new Set<string>(masteredWords);
 
     // Use game-engine difficulty filtering with mastered-word re-allowance
     const gradeLevelStr = gradeLevel === 0 ? "all" : gradeLevel.toString();
@@ -224,6 +261,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         currentWord: null,
         sessionWords: [],
         sessionIndex: 0,
+        usedWords: [...usedWordsSet],
       });
       return;
     }
@@ -236,10 +274,17 @@ export const useGameStore = create<GameState>((set, get) => ({
       sessionIndex: sessionIndex + 1,
       phase: "playing",
       result: null,
+      usedWords: [...usedWordsSet],
     });
   },
 
   submitAnswer: (answer, isVoice = false) => {
+    // Debounce: prevent rapid-fire duplicate submissions (500ms window)
+    const now = Date.now();
+    if (now - lastSubmitAt < 500) return false;
+    // Re-entrancy guard: block concurrent submissions
+    if (isSubmitting) return false;
+
     const {
       currentWord,
       phase,
@@ -254,11 +299,15 @@ export const useGameStore = create<GameState>((set, get) => ({
       difficultyEvolution,
       masteredWords,
     } = get();
-    if (!currentWord || phase !== "playing") return false;
+    if (!currentWord || phase !== "playing") return null;
 
     // Use game-engine normalization (handles NATO phonetic alphabet, digit stripping, filler words)
     const normalized = normalizeSpelling(answer);
-    if (!normalized) return false;
+
+    // Return null (not false) for invalid/empty input so callers can distinguish
+    // "invalid submission" from "genuine incorrect answer" and avoid advancing
+    // the round or penalising the streak on noise/empty voice input.
+    if (!normalized) return null;
 
     // Map 'all' difficulty to 'medium' for scoring (scoring module expects easy/medium/hard)
     const scoringDifficulty: ScoringDifficulty =
@@ -339,6 +388,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       },
     });
 
+    // Update debounce timestamp
+    lastSubmitAt = Date.now();
+
     return submissionResult.isCorrect;
   },
 
@@ -376,7 +428,6 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   restartGame: () => {
     usedWordsSet.clear();
-    masteredWordsSet.clear();
     set({
       score: 0,
       streak: 0,
@@ -400,14 +451,37 @@ export const useGameStore = create<GameState>((set, get) => ({
   toggleMastery: (word: string, shouldMaster: boolean) => {
     if (shouldMaster) {
       masteredWordsSet.add(word);
-      set((state) => ({
-        masteredWords: [...new Set([...state.masteredWords, word])],
-      }));
+      set((state) => {
+        const next = [...new Set([...state.masteredWords, word])];
+        // Persist mastered words to localStorage (keyed by uid)
+        try {
+          const uid = get().userId;
+          if (uid)
+            localStorage.setItem(
+              `real-bee-mastered-${uid}`,
+              JSON.stringify(next),
+            );
+        } catch {
+          /* ignore */
+        }
+        return { masteredWords: next, masteredCount: next.length };
+      });
     } else {
       masteredWordsSet.delete(word);
-      set((state) => ({
-        masteredWords: state.masteredWords.filter((w) => w !== word),
-      }));
+      set((state) => {
+        const next = state.masteredWords.filter((w) => w !== word);
+        try {
+          const uid = get().userId;
+          if (uid)
+            localStorage.setItem(
+              `real-bee-mastered-${uid}`,
+              JSON.stringify(next),
+            );
+        } catch {
+          /* ignore */
+        }
+        return { masteredWords: next, masteredCount: next.length };
+      });
     }
   },
 
@@ -460,7 +534,18 @@ export const useGameStore = create<GameState>((set, get) => ({
       });
     }
 
+    // Load mastered words from localStorage (keyed by uid)
     masteredWordsSet.clear();
+    try {
+      const raw = localStorage.getItem(`real-bee-mastered-${uid}`);
+      if (raw) {
+        const words: string[] = JSON.parse(raw);
+        for (const w of words) masteredWordsSet.add(w);
+        set({ masteredWords: words, masteredCount: words.length });
+      }
+    } catch {
+      // Ignore parse errors — start fresh
+    }
   },
 
   sessionStats: () => {
@@ -470,19 +555,35 @@ export const useGameStore = create<GameState>((set, get) => ({
       score,
       sessionStartTime,
       sessionBestStreak,
+      sessionBaseline,
     } = get();
 
+    // Session-only deltas (subtract baseline captured at session start)
+    const sessionRounds = Math.max(
+      roundsPlayed - sessionBaseline.roundsPlayed,
+      0,
+    );
+    const sessionCorrect = Math.max(
+      correctAnswers - sessionBaseline.correctAnswers,
+      0,
+    );
+    const sessionScore = score - sessionBaseline.score;
     const sessionAccuracy =
-      roundsPlayed > 0 ? Math.round((correctAnswers / roundsPlayed) * 100) : 0;
+      sessionRounds > 0
+        ? Math.round((sessionCorrect / sessionRounds) * 100)
+        : 0;
     const sessionDurationMinutes = sessionStartTime
       ? Math.max(1, Math.round((Date.now() - sessionStartTime) / 60000))
       : 0;
 
     return [
-      { label: "Rounds", value: roundsPlayed },
+      { label: "Rounds", value: sessionRounds },
       { label: "Accuracy", value: `${sessionAccuracy}%` },
       { label: "Best streak", value: sessionBestStreak },
-      { label: "Score", value: score },
+      {
+        label: "Score change",
+        value: sessionScore >= 0 ? `+${sessionScore}` : `${sessionScore}`,
+      },
       {
         label: "Time played",
         value: sessionDurationMinutes > 0 ? `${sessionDurationMinutes}m` : "—",
