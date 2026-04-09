@@ -8,6 +8,7 @@ import Onboarding from "./components/Onboarding";
 import GameBoard from "./components/GameBoard";
 import MetricsBar from "./components/MetricsBar";
 import Settings from "./components/Settings";
+import AdminFeedback from "./pages/admin/Feedback";
 
 export default function App() {
   const [view, setView] = useState<"onboarding" | "game">("onboarding");
@@ -120,6 +121,14 @@ export default function App() {
     reset();
     setDebugDescription("");
   }, [reset]);
+
+  // Hash-based admin routing: #/admin/feedback shows the admin panel
+  const isAdminRoute =
+    typeof window !== "undefined" && window.location.hash.startsWith("#/admin");
+
+  if (isAdminRoute) {
+    return <AdminFeedback />;
+  }
 
   return (
     <div className="min-h-screen bg-linear-to-br from-orange-50/50 to-white font-sans selection:bg-orange-200 selection:text-orange-900">
