@@ -1,8 +1,15 @@
 /**
  * Word loader — loads and caches word data from grade-level JSON assets.
  *
- * Word files live in /public/data/words/grade-{1-12}.json and are loaded
+ * Word files live in /public/data/words/grade-{1,3,6,9}.json and are loaded
  * on demand with a memory cache to avoid repeated fetches.
+ *
+ * Grade contract (range-based):
+ *   grade 1  → grade-1.json  (K-2)
+ *   grade 3  → grade-3.json  (3-5)
+ *   grade 6  → grade-6.json  (6-8)
+ *   grade 9  → grade-9.json  (9-12)
+ *   grade 0  → all four files combined
  */
 
 import type { Word, GameDifficulty } from "../types";
@@ -36,24 +43,19 @@ export interface GradeWordFile {
 // Constants
 // ---------------------------------------------------------------------------
 
-/** Valid grade numbers that have corresponding JSON files. */
-export const VALID_GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
+/**
+ * The four grade buckets that the generator emits and the loader fetches.
+ * Must stay in sync with generate-word-databases.js GRADE_LEVEL_MAP values.
+ */
+export const VALID_GRADES = [1, 3, 6, 9] as const;
 
 /** Grade-to-file mapping. Grade 0 = "all grades" (loads every file). */
 export const GRADE_FILE_MAP: Record<number, string> = {
   0: "all", // special: loads all files
   1: "grade-1",
-  2: "grade-2",
   3: "grade-3",
-  4: "grade-4",
-  5: "grade-5",
   6: "grade-6",
-  7: "grade-7",
-  8: "grade-8",
   9: "grade-9",
-  10: "grade-10",
-  11: "grade-11",
-  12: "grade-12",
 };
 
 // ---------------------------------------------------------------------------
@@ -85,8 +87,11 @@ export function mapRawWord(raw: RawWordRecord): Word {
 }
 
 /**
- * Parse grade level string (e.g., "K-2", "3-5", "6-8") to the numeric
- * grade filter used by the game (1, 3, 6, or 0 for all).
+ * Parse grade level string (e.g., "K-2", "3-5", "6-8", "9-12") to the
+ * numeric grade filter used by the game (1, 3, 6, 9, or 0 for all).
+ *
+ * The returned values mirror the keys in GRADE_FILE_MAP so that any word's
+ * grade field matches the file it was loaded from.
  */
 export function parseGrade(gradeLevel: string): number {
   const normalized = gradeLevel.trim().toLowerCase();
@@ -104,14 +109,21 @@ export function parseGrade(gradeLevel: string): number {
     normalized.startsWith("8")
   )
     return 6;
-  // Fallback: try to extract a single digit
+  if (
+    normalized.startsWith("9") ||
+    normalized.startsWith("10") ||
+    normalized.startsWith("11") ||
+    normalized.startsWith("12")
+  )
+    return 9;
+  // Fallback: map numeric strings to the nearest range bucket
   const match = normalized.match(/^(\d+)/);
   if (match) {
     const num = parseInt(match[1], 10);
     if (num >= 1 && num <= 2) return 1;
     if (num >= 3 && num <= 5) return 3;
     if (num >= 6 && num <= 8) return 6;
-    if (num >= 9 && num <= 12) return num; // higher grades map to their number
+    if (num >= 9) return 9;
   }
   return 0;
 }
@@ -148,7 +160,7 @@ async function fetchGradeWords(fileName: string): Promise<GradeWordFile> {
 /**
  * Load words for a specific grade level. Results are cached.
  *
- * @param grade - Grade number (1-12) or 0 for all grades
+ * @param grade - Grade bucket (1, 3, 6, or 9) or 0 for all grades
  * @returns Promise resolving to the filtered word list
  */
 export async function loadWordsForGrade(grade: number): Promise<Word[]> {
@@ -160,7 +172,7 @@ export async function loadWordsForGrade(grade: number): Promise<Word[]> {
   let words: Word[] = [];
 
   if (grade === 0) {
-    // Load all grade files
+    // Load only the four range files that the generator produces
     const allPromises = VALID_GRADES.map(async (g) => {
       if (wordCache.has(g)) return wordCache.get(g)!;
       const fileName = GRADE_FILE_MAP[g];

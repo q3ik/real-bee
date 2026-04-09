@@ -5,6 +5,7 @@ import {
   normalizeDifficulty,
   clearWordCache,
   isGradeLoaded,
+  VALID_GRADES,
 } from "../wordLoader";
 
 describe("wordLoader", () => {
@@ -14,6 +15,12 @@ describe("wordLoader", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  describe("VALID_GRADES", () => {
+    it("contains exactly the four range-based grade buckets", () => {
+      expect([...VALID_GRADES]).toEqual([1, 3, 6, 9]);
+    });
   });
 
   describe("mapRawWord", () => {
@@ -52,14 +59,25 @@ describe("wordLoader", () => {
       expect(parseGrade("6-8")).toBe(6);
     });
 
+    it("maps 9-12 to grade 9", () => {
+      expect(parseGrade("9-12")).toBe(9);
+    });
+
     it("maps all to grade 0", () => {
       expect(parseGrade("all")).toBe(0);
     });
 
-    it("maps single grade numbers correctly", () => {
+    it("maps single grade numbers to their range bucket", () => {
       expect(parseGrade("1")).toBe(1);
+      expect(parseGrade("2")).toBe(1);
       expect(parseGrade("4")).toBe(3);
+      expect(parseGrade("5")).toBe(3);
       expect(parseGrade("7")).toBe(6);
+      expect(parseGrade("8")).toBe(6);
+      expect(parseGrade("9")).toBe(9);
+      expect(parseGrade("10")).toBe(9);
+      expect(parseGrade("11")).toBe(9);
+      expect(parseGrade("12")).toBe(9);
     });
   });
 
