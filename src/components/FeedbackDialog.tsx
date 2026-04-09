@@ -1,11 +1,14 @@
 /**
  * FeedbackDialog — player-facing bug report dialog (SUB-14).
  *
- * Rendered as a centred overlay modal using Tailwind utility classes,
- * matching the existing component style in this project (no shadcn/ui).
+ * Rendered as a centred overlay modal using Tailwind utility classes.
  * Wires submission through useDiagnosticsBugReport.
+ *
+ * Auto-close after successful submission is driven by a useEffect watching
+ * `isSubmitted` — NOT by reading submitError after the async call, which
+ * would read stale closure state.
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useDiagnosticsBugReport } from '../hooks/useDiagnosticsBugReport';
 
@@ -18,10 +21,6 @@ interface FeedbackDialogProps {
   defaultDescription?: string;
 }
 
-/**
- * Render a modal dialog that lets the player submit a bug report.
- * Submission is delegated to `useDiagnosticsBugReport`.
- */
 export default function FeedbackDialog({
   open,
   onClose,
@@ -33,6 +32,18 @@ export default function FeedbackDialog({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState(defaultDescription);
 
+  /**
+   * Auto-close after a successful submission.
+   * We watch `isSubmitted` in a useEffect rather than reading `submitError`
+   * synchronously after `await submitReport(...)` — the latter captures a
+   * stale closure value and will always see the pre-call state.
+   */
+  useEffect(() => {
+    if (!isSubmitted) return;
+    const timer = setTimeout(onClose, 1200);
+    return () => clearTimeout(timer);
+  }, [isSubmitted, onClose]);
+
   if (!open) return null;
 
   const handleSubmit = async () => {
@@ -40,10 +51,7 @@ export default function FeedbackDialog({
     const userDescription = description.trim()
       ? `${title.trim()} — ${description.trim()}`
       : title.trim();
-    await submitReport(userDescription);
-    if (!submitError) {
-      setTimeout(onClose, 1200);
-    }
+    await submitReport(userDescription, { title: title.trim(), description: description.trim() });
   };
 
   return (
@@ -71,7 +79,7 @@ export default function FeedbackDialog({
               Report a Problem
             </h2>
             <p className="text-sm text-gray-500 mt-1">
-              Something not working right? Let us know and we’ll fix it.
+              Something not working right? Let us know and we'll fix it.
             </p>
           </div>
           <button
