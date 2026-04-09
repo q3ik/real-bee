@@ -14,28 +14,20 @@ export type {
   GameResult,
   SessionStat,
 } from "../types";
+import { RECENT_PERFORMANCE_WINDOW, OFFLINE_UID_KEY } from "../constants/game";
 import {
-  STREAK_MILESTONES,
-  POINTS_PER_STREAK,
-  RECENT_PERFORMANCE_WINDOW,
-  OFFLINE_UID_KEY,
-} from "../constants/game";
-
-// ---------------------------------------------------------------------------
-
-function generateFeedback(
-  isCorrect: boolean,
-  streak: number,
-  targetWord: string,
-): string {
-  if (isCorrect) {
-    if (STREAK_MILESTONES.includes(streak)) {
-      return `Correct! Amazing. ${streak} in a row!`;
-    }
-    return "Correct! Well done!";
-  }
-  return `Not quite. The word was ${targetWord}.`;
-}
+  normalizeSpelling,
+  isLikelyWholeWordAttempt,
+} from "../game-engine/normalization";
+import {
+  processSpellingSubmission,
+  type Difficulty as ScoringDifficulty,
+} from "../game-engine/scoring";
+import {
+  getAvailableWords,
+  selectRandomWord,
+  getAdjustedDifficulty,
+} from "../game-engine/difficulty";
 
 // ---------------------------------------------------------------------------
 // Zustand Store
@@ -186,7 +178,14 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   startNewRound: () => {
-    const { gradeLevel, difficulty, sessionWords, sessionIndex } = get();
+    const {
+      gradeLevel,
+      difficulty,
+      sessionWords,
+      sessionIndex,
+      recentPerformance,
+      masteredWords,
+    } = get();
 
     if (!get().sessionStartTime) {
       set({ sessionStartTime: Date.now(), sessionBestStreak: 0 });
@@ -198,9 +197,28 @@ export const useGameStore = create<GameState>((set, get) => ({
       pool = [...pool].sort(() => Math.random() - 0.5);
     }
 
-    const availableWords = pool.filter((w: Word) => !usedWordsSet.has(w.word));
+    // Use game-engine difficulty filtering with mastered-word re-allowance
+    const gradeLevelStr = gradeLevel === 0 ? "all" : gradeLevel.toString();
+    const { availableWords, shouldResetUsed, fallbackReason } =
+      getAvailableWords(
+        pool,
+        difficulty,
+        usedWordsSet,
+        masteredWordsSet,
+        gradeLevelStr,
+      );
 
-    if (availableWords.length === 0) {
+    if (shouldResetUsed) {
+      usedWordsSet.clear();
+    }
+
+    if (fallbackReason) {
+      console.warn(`[useGameStore] Word pool fallback: ${fallbackReason}`);
+    }
+
+    // Use game-engine random selection
+    const word = selectRandomWord(availableWords);
+    if (!word) {
       set({
         phase: "idle",
         currentWord: null,
@@ -210,8 +228,6 @@ export const useGameStore = create<GameState>((set, get) => ({
       return;
     }
 
-    const word =
-      availableWords[Math.floor(Math.random() * availableWords.length)];
     usedWordsSet.add(word.word);
 
     set({
@@ -236,24 +252,29 @@ export const useGameStore = create<GameState>((set, get) => ({
       gradeLevel,
       difficulty,
       difficultyEvolution,
+      masteredWords,
     } = get();
     if (!currentWord || phase !== "playing") return false;
 
-    const normalized = answer.toLowerCase().replace(/\s/g, "");
+    // Use game-engine normalization (handles NATO phonetic alphabet, digit stripping, filler words)
+    const normalized = normalizeSpelling(answer);
     if (!normalized) return false;
 
-    const isCorrect = normalized === currentWord.word.toLowerCase();
-    const newStreak = isCorrect ? streak + 1 : 0;
-    const newScore = isCorrect ? score + POINTS_PER_STREAK * newStreak : score;
-    const newBestStreak = Math.max(bestStreak, newStreak);
-    const newMastered = isCorrect
-      ? get().masteredCount + 1
-      : get().masteredCount;
-    const newCorrect = isCorrect ? correctAnswers + 1 : correctAnswers;
-    const newRounds = roundsPlayed + 1;
+    // Map 'all' difficulty to 'medium' for scoring (scoring module expects easy/medium/hard)
+    const scoringDifficulty: ScoringDifficulty =
+      difficulty === "all" ? "medium" : difficulty;
 
-    const feedback = generateFeedback(isCorrect, newStreak, currentWord.word);
-    const evolutionEntry = isCorrect ? 1 : -1;
+    // Use game-engine scoring (difficulty multipliers, streak-based points)
+    const submissionResult = processSpellingSubmission({
+      normalized,
+      target: currentWord.word.toLowerCase(),
+      difficulty: scoringDifficulty,
+      currentStreak: streak,
+      currentScore: score,
+      bestStreak,
+    });
+
+    const evolutionEntry = submissionResult.isCorrect ? 1 : -1;
 
     // Resolve the uid to write progress under (prefer authenticated, fall back to offline)
     const effectiveUid =
@@ -270,10 +291,11 @@ export const useGameStore = create<GameState>((set, get) => ({
     void localDb.progress
       .put({
         uid: effectiveUid,
-        score: newScore,
-        streak: newStreak,
-        bestStreak: newBestStreak,
-        masteredCount: newMastered,
+        score: submissionResult.newScore,
+        streak: submissionResult.newStreak,
+        bestStreak: submissionResult.newBestStreak,
+        masteredCount:
+          get().masteredCount + (submissionResult.isCorrect ? 1 : 0),
         gradeLevel: gradeLevel.toString(),
         difficulty,
         lastPlayed: new Date().toISOString(),
@@ -287,25 +309,29 @@ export const useGameStore = create<GameState>((set, get) => ({
       });
 
     set({
-      score: newScore,
-      streak: newStreak,
-      bestStreak: newBestStreak,
-      masteredCount: newMastered,
-      roundsPlayed: newRounds,
-      correctAnswers: newCorrect,
+      score: submissionResult.newScore,
+      streak: submissionResult.newStreak,
+      bestStreak: submissionResult.newBestStreak,
+      masteredCount: get().masteredCount + (submissionResult.isCorrect ? 1 : 0),
+      roundsPlayed: roundsPlayed + 1,
+      correctAnswers: correctAnswers + (submissionResult.isCorrect ? 1 : 0),
       difficultyEvolution: [...difficultyEvolution, evolutionEntry],
-      recentPerformance: [...get().recentPerformance, isCorrect].slice(
-        -RECENT_PERFORMANCE_WINDOW,
+      recentPerformance: [
+        ...get().recentPerformance,
+        submissionResult.isCorrect,
+      ].slice(-RECENT_PERFORMANCE_WINDOW),
+      sessionBestStreak: Math.max(
+        get().sessionBestStreak,
+        submissionResult.newStreak,
       ),
-      sessionBestStreak: Math.max(get().sessionBestStreak, newStreak),
       phase: "round_end",
       result: {
-        isCorrect,
-        points: isCorrect ? POINTS_PER_STREAK * newStreak : 0,
-        newScore,
-        newStreak,
-        newBestStreak,
-        feedback,
+        isCorrect: submissionResult.isCorrect,
+        points: submissionResult.points,
+        newScore: submissionResult.newScore,
+        newStreak: submissionResult.newStreak,
+        newBestStreak: submissionResult.newBestStreak,
+        feedback: submissionResult.feedback,
         targetWord: currentWord.word,
         rawInput: answer,
         normalizedInput: normalized,
@@ -313,7 +339,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       },
     });
 
-    return isCorrect;
+    return submissionResult.isCorrect;
   },
 
   timeoutRound: () => {
