@@ -43,9 +43,12 @@ export interface UseGameStateResult {
   /**
    * Transition: playing → round_end.
    * Evaluates the answer, updates score/streak, and sets the result.
-   * Returns true if the answer was correct.
+   * Returns:
+   *   true  — answer was correct
+   *   false — answer was incorrect (round recorded)
+   *   null  — submission was invalid (empty after normalization); round NOT advanced
    */
-  submitAnswer: (answer: string, isVoice?: boolean) => boolean;
+  submitAnswer: (answer: string, isVoice?: boolean) => boolean | null;
 
   /** Transition: playing → round_end (timeout path). */
   timeoutRound: () => void;
