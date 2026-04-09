@@ -1,18 +1,312 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+    --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+    /* Game color palette */
+    --color-game-correct: #22c55e;
+    --color-game-incorrect: #ef4444;
+    --color-game-primary: #f97316;
+    --color-game-primary-dark: #ea580c;
 }
+
+/* ========================================================================= */
+/*  Base                                                                     */
+/* ========================================================================= */
 
 @layer base {
-  body {
-    @apply antialiased text-gray-900;
-  }
+    body {
+        @apply antialiased text-gray-900;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Prevent pull-to-refresh on mobile (game-app feel) */
+    html,
+    body {
+        overscroll-behavior-y: contain;
+    }
 }
 
+/* ========================================================================= */
+/*  Components                                                               */
+/* ========================================================================= */
+
 @layer components {
-  .btn-primary {
-    @apply px-6 py-3 bg-orange-500 text-white rounded-2xl font-black shadow-lg hover:bg-orange-600 transition-all active:scale-95;
-  }
+    .btn-primary {
+        @apply px-6 py-3 bg-game-primary text-white rounded-2xl font-black shadow-lg hover:bg-game-primary-dark transition-all active:scale-95;
+    }
+
+    /* Modal backdrop — reusable overlay */
+    .modal-backdrop {
+        @apply fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm;
+    }
+
+    /* Modal card */
+    .modal-card {
+        @apply bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden;
+        animation: modalSlideIn 0.3s ease-out;
+    }
+
+    /* Game card (word display) */
+    .game-card {
+        @apply bg-white rounded-[40px] shadow-xl border border-orange-50 text-center relative overflow-hidden;
+        animation: cardReveal 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* Input pill */
+    .input-pill {
+        @apply w-full p-6 rounded-[24px] border-2 border-gray-100 focus:border-game-primary outline-none font-black text-xl text-center uppercase tracking-widest transition-colors;
+    }
+
+    /* Letter tile (blank placeholder) */
+    .letter-tile {
+        @apply w-8 h-12 border-b-4 border-gray-200 flex items-center justify-center text-2xl font-black text-gray-400;
+        animation: tilePop 0.2s ease-out both;
+    }
+}
+
+/* ========================================================================= */
+/*  @keyframes                                                                */
+/* ========================================================================= */
+
+/* Fade in (opacity only) */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Fade in + slide up */
+@keyframes slideUpFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Slide in from right */
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Slide in from left */
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Bounce (subtle scale) */
+@keyframes bounceSubtle {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+/* Shake (for incorrect answers) */
+@keyframes shake {
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+        transform: translateX(-6px);
+    }
+    20%,
+    40%,
+    60%,
+    80% {
+        transform: translateX(6px);
+    }
+}
+
+/* Card reveal (word card entrance) */
+@keyframes cardReveal {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Modal slide-in */
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Tile pop (letter tile stagger) */
+@keyframes tilePop {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Pulse glow (for listening button) */
+@keyframes pulseGlow {
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 12px rgba(239, 68, 68, 0);
+    }
+}
+
+/* Confetti burst (for celebration) */
+@keyframes confettiBurst {
+    0% {
+        transform: scale(0) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+/* Streak flame (fire emoji replacement animation) */
+@keyframes flameFlicker {
+    0%,
+    100% {
+        transform: scale(1) rotate(-2deg);
+    }
+    50% {
+        transform: scale(1.1) rotate(2deg);
+    }
+}
+
+/* Countdown bar (time remaining) */
+@keyframes countdownBar {
+    from {
+        width: 100%;
+    }
+    to {
+        width: 0%;
+    }
+}
+
+/* ========================================================================= */
+/*  Game-state animation classes                                             */
+/* ========================================================================= */
+
+/* General entrance animations */
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out both;
+}
+.animate-slide-in {
+    animation: slideUpFadeIn 0.3s ease-out both;
+}
+.animate-slide-in-right {
+    animation: slideInRight 0.3s ease-out both;
+}
+.animate-slide-in-left {
+    animation: slideInLeft 0.3s ease-out both;
+}
+.animate-bounce-subtle {
+    animation: bounceSubtle 0.6s ease-in-out both;
+}
+
+/* Feedback animations */
+.animate-shake {
+    animation: shake 0.5s ease-in-out;
+}
+.animate-card-reveal {
+    animation: cardReveal 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.animate-modal-slide-in {
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+/* Letter tile staggering — apply via inline style for delay */
+.animate-tile-pop {
+    animation: tilePop 0.2s ease-out both;
+}
+
+/* State-specific */
+.animate-listening {
+    animation: pulseGlow 1.5s ease-in-out infinite;
+}
+.animate-celebration {
+    animation: confettiBurst 1s ease-out forwards;
+}
+.animate-streak-flame {
+    animation: flameFlicker 0.8s ease-in-out infinite;
+}
+.animate-countdown {
+    animation: countdownBar linear both;
+}
+
+/* Game-state visibility toggles */
+.game-state-idle .game-round {
+    display: none;
+}
+.game-state-idle .game-result {
+    display: none;
+}
+.game-state-playing .game-start {
+    display: none;
+}
+.game-state-playing .game-result {
+    display: none;
+}
+.game-state-round_end .game-start {
+    display: none;
+}
+.game-state-round_end .game-round {
+    display: none;
+}
+
+/* Reduced-motion: disable all animations */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }
