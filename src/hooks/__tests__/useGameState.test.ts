@@ -302,9 +302,11 @@ describe('useGameState', () => {
 
     act(() => { result.current.startSession(); });
 
-    // Play through all MOCK_WORDS (6 words)
+    // Play through all MOCK_WORDS (6 words).
+    // Use store.getState().phase (synchronous) rather than result.current.phase
+    // (React hook state) to avoid reading stale state between act() calls.
     for (let i = 0; i < MOCK_WORDS.length; i++) {
-      if (result.current.phase !== 'playing') break;
+      if (store.getState().phase !== 'playing') break;
       const word = store.getState().currentWord!.word;
       act(() => { result.current.submitAnswer(word); });
       // After the last word, don't call nextWord — let it lapse
@@ -347,10 +349,15 @@ describe('useGameState', () => {
 
     act(() => { gameResult.current.startSession(); });
 
-    // Submit 5 correct answers, advancing through rounds
+    // Submit 5 correct answers, advancing through rounds.
+    // Read phase from store.getState() (synchronous Zustand state) rather than
+    // gameResult.current.phase (React hook state) to avoid reading stale values
+    // between act() calls — the hook re-renders asynchronously after each act,
+    // which caused the loop guard to see 'round_end' instead of 'playing' and
+    // break prematurely after the first correct answer.
     let correctCount = 0;
     for (let i = 0; i < 5; i++) {
-      if (gameResult.current.phase !== 'playing') break;
+      if (store.getState().phase !== 'playing') break;
       const word = store.getState().currentWord!.word;
       let returned: boolean | null = null;
       act(() => { returned = gameResult.current.submitAnswer(word); });
@@ -360,7 +367,7 @@ describe('useGameState', () => {
           act(() => { gameResult.current.nextWord(); });
         }
       } else {
-        // Word pool may have repeated — break to avoid infinite loop
+        // Debounce guard or invalid state — break to avoid infinite loop
         break;
       }
     }
