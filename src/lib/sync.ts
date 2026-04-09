@@ -198,7 +198,16 @@ export async function saveProgressAndQueue(
  * Save a session locally and queue for cloud sync.
  */
 export async function saveSessionAndQueue(
+   // TODO: Part 1/2 - Check if broken from merge conflict resolution
   session: Omit<LocalSession, "id" | "synced">,
+   // TODO: Part 2/2 - Check if broken from merge conflict resolution
+  session: Omit<LocalUserProgress, "synced" | "lastPlayed"> & {
+    startTime: string;
+    endTime?: string;
+    wordsSpelled: number;
+    correctCount: number;
+    difficultyEvolution: number[];
+  },
 ): Promise<number> {
   const id = await saveSession({
     uid: session.uid,

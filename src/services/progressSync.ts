@@ -22,12 +22,22 @@ export interface SyncResult {
 /**
  * Sync all pending user progress and sessions to the cloud.
  *
+ // TODO 2: Part 1/2 - Check if broken from merge conflict resolution
  * The authenticated user identity is derived from the active Supabase
  * session inside `syncPending()` — no userId parameter is needed here.
  *
  * @returns Sync summary
  */
 export async function syncUserProgress(): Promise<SyncResult> {
+  
+ // TODO 2: Part 2/2 - Check if broken from merge conflict resolution
+ /* @param userId - The authenticated user's Supabase UID
+ * @returns Sync summary
+ */
+export async function syncUserProgress(userId: string): Promise<SyncResult> {
+  const progressBefore = await getUnsyncedProgress();
+  const sessionsBefore = await getUnsyncedSessions();
+
   const progressSynced = await syncPending();
 
   // Sessions sync is a no-op for now — sessions are stored locally
@@ -63,5 +73,9 @@ export async function getPendingCount(): Promise<number> {
  */
 export async function autoSyncOnSignIn(userId: string | null): Promise<SyncResult | null> {
   if (!userId) return null;
+  
+   // TODO 3: Part 1/2 - Check if broken from merge conflict resolution
   return syncUserProgress();
+   // TODO 3: Part 2/2 - Check if broken from merge conflict resolution
+  return syncUserProgress(userId);
 }
