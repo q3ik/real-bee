@@ -33,12 +33,15 @@ export interface GradeOption {
 
 /**
  * Grade level options for the settings UI.
+ * Values (1, 3, 6, 9) correspond exactly to the range-based grade buckets
+ * produced by generate-word-databases.js and loaded by wordLoader.
  */
 export const GRADE_OPTIONS: GradeOption[] = [
-  { label: 'K-2', value: 1, prefValue: 'K-2' },
-  { label: '3-5', value: 3, prefValue: '3-5' },
-  { label: '6-8', value: 6, prefValue: '6-8' },
-  { label: 'All', value: 0, prefValue: 'all' },
+  { label: 'K-2',  value: 1, prefValue: 'K-2'  },
+  { label: '3-5',  value: 3, prefValue: '3-5'  },
+  { label: '6-8',  value: 6, prefValue: '6-8'  },
+  { label: '9-12', value: 9, prefValue: '9-12' },
+  { label: 'All',  value: 0, prefValue: 'all'  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -55,8 +58,8 @@ export interface DifficultyOption {
  * Difficulty options for the settings UI.
  */
 export const DIFFICULTY_OPTIONS: DifficultyOption[] = [
-  { label: 'Easy', value: 'easy', prefValue: 'easy' },
+  { label: 'Easy',  value: 'easy',   prefValue: 'easy'   },
   { label: 'Medium', value: 'medium', prefValue: 'medium' },
-  { label: 'Hard', value: 'hard', prefValue: 'hard' },
-  { label: 'Mixed', value: 'all', prefValue: 'all' },
+  { label: 'Hard',  value: 'hard',   prefValue: 'hard'   },
+  { label: 'Mixed', value: 'all',    prefValue: 'all'    },
 ];

@@ -1,5 +1,20 @@
-import type { Word } from "../types";
+/**
+ * Word list — re-exports from wordLoader for backward compatibility.
+ *
+ * Words are loaded on demand from /data/words/grade-{N}.json files
+ * via the wordLoader module. The synchronous getWordsForConfig below
+ * is deprecated and retained only for test compatibility.
+ */
+
+import type { Word, GameDifficulty } from "../types";
+import { loadWordsForGrade } from "./wordLoader";
+
 export type { Word } from "../types";
+
+// ---------------------------------------------------------------------------
+// Deprecated: synchronous fallback for tests. New code should use
+// getWordsForConfigAsync from wordLoader.ts instead.
+// ---------------------------------------------------------------------------
 
 export const WORD_LIST: Word[] = [
   {
@@ -72,9 +87,12 @@ export const WORD_LIST: Word[] = [
     grade: 8,
     difficulty: "hard",
   },
-  // Add more words as needed...
 ];
 
+/**
+ * @deprecated Use getWordsForConfigAsync from wordLoader.ts instead.
+ * Synchronous word filtering for tests and initial state.
+ */
 export function getWordsForConfig(grade: number, difficulty: string): Word[] {
   return WORD_LIST.filter((w) => {
     const gradeMatch = grade === 0 || w.grade === grade;
