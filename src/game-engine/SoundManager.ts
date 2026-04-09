@@ -37,8 +37,12 @@ export class SoundManager {
   /**
    * Get or create the AudioContext singleton.
    * Automatically resumes if suspended.
+   * Throws a clear error when AudioContext is unavailable (SSR / unsupported browsers).
    */
   getContext(): AudioContext {
+    if (!this.isSupported) {
+      throw new Error('AudioContext not supported');
+    }
     if (!this.context) {
       const AC = (window as any).AudioContext ?? (window as any).webkitAudioContext;
       this.context = new AC() as AudioContext;
@@ -62,6 +66,10 @@ export class SoundManager {
     const frequencies = SOUND_FREQUENCIES[kind];
     if (!frequencies) return;
 
+    // Clamp to a strictly positive value so exponentialRampToValueAtTime never
+    // throws when callers legitimately pass volume=0 to mute.
+    const effectiveVolume = Math.max(volume, 0.001);
+
     frequencies.forEach((freq, i) => {
       const osc = context.createOscillator();
       const gain = context.createGain();
@@ -71,7 +79,7 @@ export class SoundManager {
       }
 
       osc.frequency.setValueAtTime(freq, context.currentTime + i * 0.1);
-      gain.gain.setValueAtTime(volume, context.currentTime + i * 0.1);
+      gain.gain.setValueAtTime(effectiveVolume, context.currentTime + i * 0.1);
       gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + i * 0.1 + 0.3);
 
       osc.connect(gain);
@@ -192,8 +200,13 @@ export class SoundManager {
 
   /**
    * Preload and cache audio data without playing.
+   * No-ops when AudioContext is not supported (SSR / unsupported browsers).
    */
   async preloadAudio(audioData: ArrayBuffer | Blob | null, cacheKey: string): Promise<void> {
+    if (!this.isSupported) {
+      throw new Error('AudioContext not supported');
+    }
+
     if (!cacheKey) {
       throw new Error('cacheKey required');
     }

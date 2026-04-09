@@ -95,8 +95,10 @@ export function getAvailableWords(
   });
 
   if (availableWords.length === 0) {
-    // No words available — reset used words and try again
-    const resetPool = basePool.filter((word) => !masteredSet.has(word.word));
+    // No words available — reset used words and try again.
+    // Apply the same word.word truthy guard as the primary path so the fallback
+    // never returns entries with an unusable word string.
+    const resetPool = basePool.filter((word) => word.word && !masteredSet.has(word.word));
     const fallbackReason = basePool.length === 0 ? 'all' : null;
     return { availableWords: resetPool, shouldResetUsed: true, fallbackReason };
   }
