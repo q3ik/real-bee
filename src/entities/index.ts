@@ -28,10 +28,19 @@ export function createWord(
 }
 
 /**
+ * Escape regex metacharacters so the word is treated as a literal string.
+ */
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
  * Create a sentence with the target word blanked out for hint display.
+ * Uses whole-word boundary matching and escapes regex metacharacters.
  */
 export function blankWordInSentence(word: Word): string {
-  return word.sentence.replace(new RegExp(word.word, "gi"), "_____");
+  const escaped = escapeRegex(word.word);
+  return word.sentence.replace(new RegExp(`\\b${escaped}\\b`, "gi"), "_____");
 }
 
 // ---------------------------------------------------------------------------

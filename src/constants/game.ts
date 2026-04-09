@@ -3,6 +3,8 @@
  * Extracted from useGameStore.ts and GameBoard.tsx.
  */
 
+import type { ListeningTimeout } from "../types";
+
 /**
  * Streak milestones that trigger special celebration messages.
  */
@@ -47,8 +49,9 @@ export const CONFETTI_CONFIG = {
 
 /**
  * Voice recognition timeout durations mapped to user setting.
+ * Typed against ListeningTimeout to enforce key completeness at compile time.
  */
-export const VOICE_TIMEOUT_MS: Record<string, number> = {
+export const VOICE_TIMEOUT_MS: Record<ListeningTimeout, number> = {
   normal: 10_000,
   longer: 15_000,
   off: 60_000,

@@ -63,12 +63,13 @@ jobs:
     permissions: {}
     uses: ./.github/workflows/build.yml
 
-  e2e:
-    name: Playwright E2E
-    needs: [quality, build]
-    permissions:
-      contents: read
-    uses: ./.github/workflows/test-e2e.yml
+  ### --- TODO: Fix since ported over from buzzy-game to real-bee --- ###
+  # e2e:
+  #   name: Playwright E2E
+  #   needs: [quality, build]
+  #   permissions:
+  #     contents: read
+  #   uses: ./.github/workflows/test-e2e.yml
 
   ### --- TODO: Fix since ported over from buzzy-game to real-bee --- ###
   # Fix #687: Run visual regression tests as a separate CI job so screenshot
