@@ -7,31 +7,21 @@ import {
   WEB_SPEECH_VOLUME,
   type SoundEffectType,
 } from "../constants/audio";
+import { audioSessionManager } from "./audioSessionManager";
 
+/**
+ * Audio playback manager for TTS and sound effects.
+ *
+ * Delegates AudioContext lifecycle (init, resume, cleanup) to
+ * `audioSessionManager`. Handles TTS (Gemini Worker → Web Speech fallback)
+ * and oscillator-based sound effects.
+ */
 class AudioManager {
-  private audioContext: AudioContext | null = null;
   private isMuted: boolean = false;
   private voiceQuality: "natural" | "standard" = "natural";
 
   constructor() {
-    // Lazy init audio context on first user interaction
-  }
-
-  private initAudioContext(): boolean {
-    if (!this.audioContext) {
-      const AudioContextConstructor =
-        window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioContextConstructor) return false;
-      try {
-        this.audioContext = new AudioContextConstructor();
-      } catch {
-        return false;
-      }
-    }
-    if (this.audioContext.state === "suspended") {
-      void this.audioContext.resume();
-    }
-    return true;
+    // AudioContext lifecycle is managed by audioSessionManager
   }
 
   setMuted(muted: boolean) {
@@ -44,14 +34,15 @@ class AudioManager {
 
   async speak(text: string): Promise<void> {
     if (this.isMuted) return Promise.resolve();
-    const hasAudioContext = this.initAudioContext();
+    const sessionResult = await audioSessionManager.ensureActive();
+    const hasAudioContext = sessionResult.success;
 
     if (this.voiceQuality === "natural" && hasAudioContext) {
       try {
         await this.speakViaWorker(text);
         return;
-      } catch (error: any) {
-        const errorMsg = error?.message || String(error);
+      } catch (error: unknown) {
+        const errorMsg = (error as Error)?.message ?? String(error);
         // Handle quota errors or general TTS failures by falling back
         if (
           errorMsg.includes("429") ||
@@ -71,13 +62,16 @@ class AudioManager {
 
     try {
       await this.speakWebSpeech(text);
-    } catch (error: any) {
-      const errorMessage = error?.message || String(error);
+    } catch (error: unknown) {
+      const errorMessage = (error as Error)?.message ?? String(error);
       throw new Error(`Web Speech synthesis failed: ${errorMessage}`);
     }
   }
 
   private async speakViaWorker(text: string): Promise<void> {
+    const ctx = audioSessionManager.getContext();
+    if (!ctx) throw new Error("AudioContext not available");
+
     const response = await fetch("/api/gemini", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -112,17 +106,13 @@ class AudioManager {
         float32Buffer[i] = int16Buffer[i] / 32768;
       }
 
-      const audioBuffer = this.audioContext!.createBuffer(
-        1,
-        float32Buffer.length,
-        sampleRate,
-      );
+      const audioBuffer = ctx.createBuffer(1, float32Buffer.length, sampleRate);
       audioBuffer.getChannelData(0).set(float32Buffer);
 
       return new Promise((resolve) => {
-        const source = this.audioContext!.createBufferSource();
+        const source = ctx.createBufferSource();
         source.buffer = audioBuffer;
-        source.connect(this.audioContext!.destination);
+        source.connect(ctx.destination);
         source.onended = () => resolve();
         source.start();
       });
@@ -155,46 +145,37 @@ class AudioManager {
     });
   }
 
-  playEffect(type: SoundEffectType) {
+  playEffect(type: SoundEffectType): void {
     if (this.isMuted) return;
-    if (!this.initAudioContext()) return;
-    // Simple oscillator-based sounds for offline support
-    const osc = this.audioContext!.createOscillator();
-    const gain = this.audioContext!.createGain();
-    osc.connect(gain);
-    gain.connect(this.audioContext!.destination);
+    const ctx = audioSessionManager.getContext();
+    if (!ctx) return;
 
-    if (type === "correct") {
-      const { startFrequency, endFrequency, duration, startGain, endGain } =
-        SOUND_EFFECT_CORRECT;
-      osc.frequency.setValueAtTime(startFrequency, this.audioContext!.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(
-        endFrequency,
-        this.audioContext!.currentTime + duration * 0.33,
-      );
-      gain.gain.setValueAtTime(startGain, this.audioContext!.currentTime);
-      gain.gain.exponentialRampToValueAtTime(
-        endGain,
-        this.audioContext!.currentTime + duration,
-      );
-      osc.start();
-      osc.stop(this.audioContext!.currentTime + duration);
-    } else if (type === "incorrect") {
-      const { startFrequency, endFrequency, duration, startGain, endGain } =
-        SOUND_EFFECT_INCORRECT;
-      osc.frequency.setValueAtTime(startFrequency, this.audioContext!.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(
-        endFrequency,
-        this.audioContext!.currentTime + duration * 0.5,
-      );
-      gain.gain.setValueAtTime(startGain, this.audioContext!.currentTime);
-      gain.gain.exponentialRampToValueAtTime(
-        endGain,
-        this.audioContext!.currentTime + duration,
-      );
-      osc.start();
-      osc.stop(this.audioContext!.currentTime + duration);
-    }
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    const config =
+      type === "correct"
+        ? SOUND_EFFECT_CORRECT
+        : type === "incorrect"
+          ? SOUND_EFFECT_INCORRECT
+          : null;
+
+    if (!config) return;
+
+    osc.frequency.setValueAtTime(config.startFrequency, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(
+      config.endFrequency,
+      ctx.currentTime + config.duration * 0.33,
+    );
+    gain.gain.setValueAtTime(config.startGain, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(
+      config.endGain,
+      ctx.currentTime + config.duration,
+    );
+    osc.start();
+    osc.stop(ctx.currentTime + config.duration);
   }
 }
 

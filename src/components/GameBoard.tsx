@@ -21,6 +21,7 @@ import { useHints } from "../hooks/useHints";
 import { useHostMessages } from "../hooks/useHostMessages";
 import { useGameKeyboardShortcuts } from "../hooks/useGameKeyboardShortcuts";
 import { audioManager } from "../lib/audioManager";
+import { audioSessionManager } from "../lib/audioSessionManager";
 import {
   ROUND_DURATION_MS,
   CONFETTI_CONFIG,
