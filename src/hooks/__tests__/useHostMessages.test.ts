@@ -2,14 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useHostMessages } from "../useHostMessages";
 
-// sonner is used for toasts — mock it so we can assert calls without a DOM
-vi.mock("sonner", () => ({
-  toast: Object.assign(vi.fn(), {
-    success: vi.fn(),
-    error: vi.fn(),
-  }),
-}));
-
 describe("useHostMessages", () => {
   beforeEach(() => {
     vi.useFakeTimers();
