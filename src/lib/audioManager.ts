@@ -147,13 +147,15 @@ class AudioManager {
         throw new Error(`Speech synthesis not supported: ${details}`);
       }
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = WEB_SPEECH_RATE; // Slightly slower for clarity
+      utterance.rate = WEB_SPEECH_RATE;
+      utterance.pitch = WEB_SPEECH_PITCH;
+      utterance.volume = WEB_SPEECH_VOLUME;
       utterance.onend = () => resolve();
       window.speechSynthesis.speak(utterance);
     });
   }
 
-  playEffect(type: "correct" | "incorrect" | "click") {
+  playEffect(type: SoundEffectType) {
     if (this.isMuted) return;
     if (!this.initAudioContext()) return;
     // Simple oscillator-based sounds for offline support
@@ -163,31 +165,35 @@ class AudioManager {
     gain.connect(this.audioContext!.destination);
 
     if (type === "correct") {
-      osc.frequency.setValueAtTime(523.25, this.audioContext!.currentTime); // C5
+      const { startFrequency, endFrequency, duration, startGain, endGain } =
+        SOUND_EFFECT_CORRECT;
+      osc.frequency.setValueAtTime(startFrequency, this.audioContext!.currentTime);
       osc.frequency.exponentialRampToValueAtTime(
-        1046.5,
-        this.audioContext!.currentTime + 0.1,
-      ); // C6
-      gain.gain.setValueAtTime(0.1, this.audioContext!.currentTime);
+        endFrequency,
+        this.audioContext!.currentTime + duration * 0.33,
+      );
+      gain.gain.setValueAtTime(startGain, this.audioContext!.currentTime);
       gain.gain.exponentialRampToValueAtTime(
-        0.01,
-        this.audioContext!.currentTime + 0.3,
+        endGain,
+        this.audioContext!.currentTime + duration,
       );
       osc.start();
-      osc.stop(this.audioContext!.currentTime + 0.3);
+      osc.stop(this.audioContext!.currentTime + duration);
     } else if (type === "incorrect") {
-      osc.frequency.setValueAtTime(220, this.audioContext!.currentTime); // A3
+      const { startFrequency, endFrequency, duration, startGain, endGain } =
+        SOUND_EFFECT_INCORRECT;
+      osc.frequency.setValueAtTime(startFrequency, this.audioContext!.currentTime);
       osc.frequency.exponentialRampToValueAtTime(
-        110,
-        this.audioContext!.currentTime + 0.2,
-      ); // A2
-      gain.gain.setValueAtTime(0.1, this.audioContext!.currentTime);
+        endFrequency,
+        this.audioContext!.currentTime + duration * 0.5,
+      );
+      gain.gain.setValueAtTime(startGain, this.audioContext!.currentTime);
       gain.gain.exponentialRampToValueAtTime(
-        0.01,
-        this.audioContext!.currentTime + 0.4,
+        endGain,
+        this.audioContext!.currentTime + duration,
       );
       osc.start();
-      osc.stop(this.audioContext!.currentTime + 0.4);
+      osc.stop(this.audioContext!.currentTime + duration);
     }
   }
 }
