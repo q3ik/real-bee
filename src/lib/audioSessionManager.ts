@@ -1,4 +1,5 @@
 import { Sentry } from "./sentry";
+import { TTS_SAMPLE_RATE } from "../constants/audio";
 
 /**
  * Result of an audio session operation.
@@ -22,6 +23,12 @@ class AudioSessionManager {
   /**
    * Initialize the AudioContext with low-latency settings.
    * Idempotent — safe to call multiple times.
+   *
+   * NOTE: sampleRate is intentionally not set so the browser uses its
+   * hardware default. The Gemini TTS worker returns 24 kHz PCM
+   * (TTS_SAMPLE_RATE); the context resamples each AudioBuffer independently
+   * via AudioBuffer.sampleRate — locking the context to 44100 Hz caused
+   * TTS audio to play at the wrong speed.
    */
   async initialize(): Promise<AudioSessionResult> {
     if (this.initialized) return { success: true };
@@ -49,9 +56,10 @@ class AudioSessionManager {
         this.audioContext = null;
       }
 
+      // Do not set sampleRate — let the browser use its hardware default.
+      // Each AudioBuffer carries its own sampleRate for correct resampling.
       this.audioContext = new AudioContextClass({
         latencyHint: "interactive",
-        sampleRate: 44100,
       });
 
       if (this.audioContext.state === "suspended") {
@@ -68,6 +76,10 @@ class AudioSessionManager {
       this.routingState = "speaker";
       return { success: true };
     } catch (error) {
+      // Null out the context so ensureActive() re-enters initialize() rather
+      // than attempting to resume a broken/timed-out context indefinitely.
+      this.audioContext = null;
+      this.initialized = false;
       const message = error instanceof Error ? error.message : "Unknown error";
       console.error("[AudioSession] Init failed:", error);
       Sentry.captureException(error, {
@@ -124,6 +136,14 @@ class AudioSessionManager {
   }
 
   /**
+   * Whether the AudioContext has been successfully initialized.
+   * Exposed so test mocks can stay in sync with the real interface.
+   */
+  getInitialized(): boolean {
+    return this.initialized;
+  }
+
+  /**
    * Close and clean up the AudioContext.
    * Safe to call even if never initialized.
    */
@@ -148,3 +168,7 @@ class AudioSessionManager {
 }
 
 export const audioSessionManager = new AudioSessionManager();
+
+// Re-export TTS_SAMPLE_RATE so callers don't need a separate constants import
+// when they need to create AudioBuffers at the correct rate.
+export { TTS_SAMPLE_RATE };
