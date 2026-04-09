@@ -422,11 +422,19 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   nextWord: () => {
+<<<<<<< zed-branch-4
     // Reset the debounce guard so the first submitAnswer call on the new round
     // is never blocked by the previous round's timestamp (tests call nextWord
     // and submitAnswer back-to-back in the same synchronous tick).
     lastSubmitAt = 0;
     isSubmitting = false;
+=======
+    // Reset the debounce guard so the first submitAnswer call of the new round
+    // is never blocked by the timestamp from the previous round. The guard only
+    // needs to prevent rapid-fire duplicates within a single round; carrying it
+    // across round boundaries caused test failures at L230 and L282.
+    lastSubmitAt = 0;
+>>>>>>> trunk
     set({ phase: "playing" });
     get().startNewRound();
   },
