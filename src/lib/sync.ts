@@ -168,7 +168,6 @@ export async function syncPending(): Promise<number> {
       retryQueue.delete(record.uid);
       syncedCount++;
     } else {
-      // Increment retry count
       retryQueue.set(record.uid, {
         uid: record.uid,
         retryCount: (retry?.retryCount ?? 0) + 1,
@@ -198,16 +197,7 @@ export async function saveProgressAndQueue(
  * Save a session locally and queue for cloud sync.
  */
 export async function saveSessionAndQueue(
-   // TODO: Part 1/2 - Check if broken from merge conflict resolution
   session: Omit<LocalSession, "id" | "synced">,
-   // TODO: Part 2/2 - Check if broken from merge conflict resolution
-  session: Omit<LocalUserProgress, "synced" | "lastPlayed"> & {
-    startTime: string;
-    endTime?: string;
-    wordsSpelled: number;
-    correctCount: number;
-    difficultyEvolution: number[];
-  },
 ): Promise<number> {
   const id = await saveSession({
     uid: session.uid,

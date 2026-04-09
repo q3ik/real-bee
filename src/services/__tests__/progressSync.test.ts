@@ -33,7 +33,7 @@ describe('services/progressSync', () => {
 
   describe('syncUserProgress', () => {
     it('syncs pending progress', async () => {
-      const result = await syncUserProgress('test-user');
+      const result = await syncUserProgress();
 
       expect(result).toBeDefined();
       expect(result.progressSynced).toBe(2);
