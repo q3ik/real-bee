@@ -6,7 +6,7 @@ export type PreferenceDifficulty = 'easy' | 'medium' | 'hard' | 'all';
 /**
  * Grade level options
  */
-export type GradeLevel = 'K-2' | '3-5' | '6-8' | 'all';
+export type GradeLevel = 'K-2' | '3-5' | '6-8' | '9-12' | 'all';
 
 /**
  * Configuration for useUserPreferences hook
