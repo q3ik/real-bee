@@ -140,9 +140,7 @@ const usedWordsSet = new Set<string>();
 // toggleMastery/loadProgress to prevent desync after startSession/loadProgress.
 const masteredWordsSet = new Set<string>();
 /** Debounce guard: timestamp of last successful submission. */
-let lastSubmitAt = 0;
 /** Re-entrancy guard: true while a submission is being processed. */
-let isSubmitting = false;
 
 export const useGameStore = create<GameState>((set, get) => ({
   // --- FSM ---
@@ -187,9 +185,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   startSession: () => {
     usedWordsSet.clear();
     masteredWordsSet.clear();
-    lastSubmitAt = 0;
-    isSubmitting = false;
-    // Capture baseline so sessionStats reflects only this session's progress.
+        // Capture baseline so sessionStats reflects only this session's progress.
     const { score, roundsPlayed, correctAnswers } = get();
     set({
       score,
@@ -279,12 +275,6 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   submitAnswer: (answer, isVoice = false) => {
-    // Debounce: prevent rapid-fire duplicate submissions (500ms window)
-    const now = Date.now();
-    if (now - lastSubmitAt < 500) return false;
-    // Re-entrancy guard: block concurrent submissions
-    if (isSubmitting) return false;
-
     const {
       currentWord,
       phase,
@@ -389,7 +379,6 @@ export const useGameStore = create<GameState>((set, get) => ({
     });
 
     // Update debounce timestamp
-    lastSubmitAt = Date.now();
 
     return submissionResult.isCorrect;
   },
@@ -426,13 +415,13 @@ export const useGameStore = create<GameState>((set, get) => ({
     // is never blocked by the timestamp from the previous round. The guard only
     // needs to prevent rapid-fire duplicates within a single round; carrying it
     // across round boundaries caused test failures at L230 and L282.
-    lastSubmitAt = 0;
-    set({ phase: "playing" });
+        set({ phase: "playing" });
     get().startNewRound();
   },
 
   restartGame: () => {
     usedWordsSet.clear();
+    masteredWordsSet.clear();
     set({
       score: 0,
       streak: 0,

@@ -1,18 +1,54 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+    --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+    /* shadcn/ui theme variables */
+    --color-background: 0 0% 100%;
+    --color-foreground: 0 0% 3.9%;
+    --color-card: 0 0% 100%;
+    --color-card-foreground: 0 0% 3.9%;
+    --color-popover: 0 0% 100%;
+    --color-popover-foreground: 0 0% 3.9%;
+    --color-primary: 0 0% 9%;
+    --color-primary-foreground: 0 0% 98%;
+    --color-secondary: 0 0% 96.1%;
+    --color-secondary-foreground: 0 0% 9%;
+    --color-muted: 0 0% 96.1%;
+    --color-muted-foreground: 0 0% 45.1%;
+    --color-accent: 0 0% 96.1%;
+    --color-accent-foreground: 0 0% 9%;
+    --color-destructive: 0 84.2% 60.2%;
+    --color-destructive-foreground: 0 0% 98%;
+    --color-border: 0 0% 89.8%;
+    --color-input: 0 0% 89.8%;
+    --color-ring: 0 0% 3.9%;
+    --color-chart-1: 12 76% 61%;
+    --color-chart-2: 173 58% 39%;
+    --color-chart-3: 197 37% 24%;
+    --color-chart-4: 43 74% 66%;
+    --color-chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+
+    /* Game color palette */
+    --color-game-correct: #22c55e;
+    --color-game-incorrect: #ef4444;
+    --color-game-primary: #f97316;
+    --color-game-primary-dark: #ea580c;
 }
 
 @layer base {
-  body {
-    @apply antialiased text-gray-900;
-  }
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply antialiased text-gray-900 bg-background;
+    }
 }
 
 @layer components {
-  .btn-primary {
-    @apply px-6 py-3 bg-orange-500 text-white rounded-2xl font-black shadow-lg hover:bg-orange-600 transition-all active:scale-95;
-  }
+    .btn-primary {
+        @apply px-6 py-3 bg-game-primary text-white rounded-2xl font-black shadow-lg hover:bg-game-primary-dark transition-all active:scale-95;
+    }
 }

@@ -24,11 +24,18 @@
     "depcheck": "npx depcheck --ignores='concurrently,serve,tsx,@types/*,@vitejs/plugin-react,@tailwindcss/vite,@cloudflare/vite-plugin'"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-label": "^2.1.8",
+    "@radix-ui/react-select": "^2.2.6",
+    "@radix-ui/react-slider": "^1.3.6",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/react-switch": "^1.2.6",
     "@sentry/react": "^10.47.0",
     "@supabase/supabase-js": "^2.102.1",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
     "canvas-confetti": "^1.9.4",
+    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dexie": "^4.3.0",
     "express": "^4.21.2",
@@ -36,6 +43,7 @@
     "motion": "^12.23.24",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "sonner": "^2.0.7",
     "tailwind-merge": "^3.5.0",
     "vite": "^6.4.2",
     "zustand": "^5.0.12"
