@@ -4,7 +4,13 @@
  * Strict literal types based on hint generation logic
  * Prevents typos and enforces valid hint types at compile time.
  */
-export type HintType = 'vowel' | 'double' | 'length' | 'first' | 'last' | 'syllables';
+export type HintType =
+  | "vowel"
+  | "double"
+  | "length"
+  | "first"
+  | "last"
+  | "syllables";
 
 /**
  * Generated hint object
@@ -16,15 +22,14 @@ export interface Hint {
 }
 
 /**
- * Word data for hint generation
+ * Word data for hint generation.
+ * Aligned with the centralized `Word` type from `src/types/`.
  */
 export interface WordData {
   word: string;
-  difficulty?: string;
   definition?: string;
   sentence?: string;
   syllables?: string;
-  [key: string]: unknown;
 }
 
 /**
