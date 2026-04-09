@@ -99,8 +99,12 @@ describe("Constants", () => {
   });
 
   describe("Preference constants", () => {
-    it("GRADE_OPTIONS has 4 entries", () => {
-      expect(GRADE_OPTIONS).toHaveLength(4);
+    it("GRADE_OPTIONS has 5 entries (K-2, 3-5, 6-8, 9-12, All)", () => {
+      expect(GRADE_OPTIONS).toHaveLength(5);
+    });
+
+    it("GRADE_OPTIONS includes 9-12 grade level", () => {
+      expect(GRADE_OPTIONS.some((o) => o.prefValue === "9-12")).toBe(true);
     });
 
     it("DIFFICULTY_OPTIONS has 4 entries", () => {
