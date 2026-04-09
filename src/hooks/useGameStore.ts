@@ -90,7 +90,14 @@ interface GameState {
   restartGame: () => void;
 
   // --- Actions: Submission ---
-  submitAnswer: (answer: string, isVoice?: boolean) => boolean;
+  /**
+   * Submit an answer for the current round.
+   * Returns:
+   *   true  — answer was correct
+   *   false — answer was incorrect (round recorded)
+   *   null  — submission was invalid (empty after normalization); round NOT advanced
+   */
+  submitAnswer: (answer: string, isVoice?: boolean) => boolean | null;
   timeoutRound: () => void;
 
   // --- Actions: Mastery ---
@@ -120,7 +127,9 @@ interface GameState {
 
 // Keep track of used words during a session
 const usedWordsSet = new Set<string>();
-const masteredWordsSet = new Set<string>();
+// NOTE: masteredWordsSet is intentionally NOT used as a persistent module-level
+// source of truth — it is rebuilt from state.masteredWords on every call to
+// startNewRound() to prevent desync after startSession/loadProgress clears it.
 
 export const useGameStore = create<GameState>((set, get) => ({
   // --- FSM ---
@@ -162,7 +171,8 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   startSession: () => {
     usedWordsSet.clear();
-    masteredWordsSet.clear();
+    // masteredWordsSet is NOT cleared here — startNewRound() always rebuilds
+    // it fresh from state.masteredWords so there is no stale-Set risk.
     set({
       score: 0,
       streak: 0,
@@ -196,6 +206,11 @@ export const useGameStore = create<GameState>((set, get) => ({
       pool = getWordsForConfig(gradeLevel, difficulty);
       pool = [...pool].sort(() => Math.random() - 0.5);
     }
+
+    // Rebuild masteredWordsSet from authoritative Zustand state on every call.
+    // This prevents desync when startSession() or loadProgress() ran between
+    // rounds without explicitly updating the old module-level Set.
+    const masteredWordsSet = new Set<string>(masteredWords);
 
     // Use game-engine difficulty filtering with mastered-word re-allowance
     const gradeLevelStr = gradeLevel === 0 ? "all" : gradeLevel.toString();
@@ -254,11 +269,15 @@ export const useGameStore = create<GameState>((set, get) => ({
       difficultyEvolution,
       masteredWords,
     } = get();
-    if (!currentWord || phase !== "playing") return false;
+    if (!currentWord || phase !== "playing") return null;
 
     // Use game-engine normalization (handles NATO phonetic alphabet, digit stripping, filler words)
     const normalized = normalizeSpelling(answer);
-    if (!normalized) return false;
+
+    // Return null (not false) for invalid/empty input so callers can distinguish
+    // "invalid submission" from "genuine incorrect answer" and avoid advancing
+    // the round or penalising the streak on noise/empty voice input.
+    if (!normalized) return null;
 
     // Map 'all' difficulty to 'medium' for scoring (scoring module expects easy/medium/hard)
     const scoringDifficulty: ScoringDifficulty =
@@ -376,7 +395,6 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   restartGame: () => {
     usedWordsSet.clear();
-    masteredWordsSet.clear();
     set({
       score: 0,
       streak: 0,
@@ -399,16 +417,15 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   toggleMastery: (word: string, shouldMaster: boolean) => {
     if (shouldMaster) {
-      masteredWordsSet.add(word);
       set((state) => ({
         masteredWords: [...new Set([...state.masteredWords, word])],
       }));
     } else {
-      masteredWordsSet.delete(word);
       set((state) => ({
         masteredWords: state.masteredWords.filter((w) => w !== word),
       }));
     }
+    // No need to touch a module-level Set — startNewRound() rebuilds it from state
   },
 
   // --- Auth ---
@@ -459,8 +476,8 @@ export const useGameStore = create<GameState>((set, get) => ({
         masteredCount: local.masteredCount,
       });
     }
-
-    masteredWordsSet.clear();
+    // masteredWordsSet is NOT touched here — it is rebuilt per-round from
+    // state.masteredWords so loadProgress() cannot desync it.
   },
 
   sessionStats: () => {
