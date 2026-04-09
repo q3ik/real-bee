@@ -22,7 +22,7 @@ export interface Word {
   definition: string;
   /** A sentence using the word (target word replaced with _____ for hints) */
   sentence: string;
-  /** Grade level: 1 (K-2), 3 (3-5), 6 (6-8), 0 (all grades) */
+  /** Grade level: 1 (K-2), 3 (3-5), 6 (6-8), 9 (9-12), 0 (all grades) */
   grade: number;
   /** Word difficulty tier */
   difficulty: GameDifficulty;
@@ -124,8 +124,11 @@ export type PreferenceDifficulty = 'easy' | 'medium' | 'hard' | 'all';
 
 /**
  * Grade level selector for user-facing settings UI.
+ * Variants mirror the range-based grade buckets in wordLoader VALID_GRADES:
+ *   'K-2'  → grade 1, '3-5' → grade 3, '6-8' → grade 6,
+ *   '9-12' → grade 9, 'all' → grade 0
  */
-export type GradeLevel = 'K-2' | '3-5' | '6-8' | 'all';
+export type GradeLevel = 'K-2' | '3-5' | '6-8' | '9-12' | 'all';
 
 /**
  * Voice synthesis quality option.
