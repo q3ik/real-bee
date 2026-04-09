@@ -105,7 +105,8 @@ interface GameState {
   toggleMastery: (word: string, shouldMaster: boolean) => void;
 
   // --- Actions: Auth ---
-  setUserId: (uid: string) => void;
+  /** Set or clear the authenticated user ID. Pass null to reset to offline identity. */
+  setUserId: (uid: string | null) => void;
 
   // --- Actions: Config ---
   setGradeLevel: (grade: number) => void;
@@ -385,6 +386,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   // --- Auth ---
+  // Accepts null to clear the authenticated identity on sign-out so that
+  // subsequent reads/writes fall back to the offline UID rather than
+  // continuing to use a stale authenticated user's ID.
   setUserId: (uid) => set({ userId: uid }),
 
   setGradeLevel: (grade) => {

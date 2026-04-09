@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useGameStore } from "./hooks/useGameStore";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
 import { useDiagnosticsBugReport } from "./hooks/useDiagnosticsBugReport";
@@ -21,13 +21,33 @@ export default function App() {
   const { submitReport, isSubmitting, isSubmitted, submitError, reset } =
     useDiagnosticsBugReport({ feature: "App" });
 
-  // Load progress when user signs in or on initial mount
+  // Track whether the initial post-auth-init load has already been triggered
+  // so we only fire loadProgress() once on mount (not on every re-render).
+  const initialLoadDone = useRef(false);
+
+  // Effect 1: Once auth initialisation completes (isLoading → false), load
+  // progress unconditionally. This covers signed-out and offline users who
+  // would otherwise never hydrate their local progress because `user` is null.
   useEffect(() => {
+    if (isLoading || initialLoadDone.current) return;
+    initialLoadDone.current = true;
+    void loadProgress();
+  }, [isLoading, loadProgress]);
+
+  // Effect 2: Whenever the authenticated identity changes after init, sync the
+  // userId into the store and reload progress under the correct identity.
+  // - user truthy  → signed in: store the auth UID and reload cloud/local progress.
+  // - user null    → signed out: clear the auth UID so the store falls back to
+  //                  the offline identity, then reload to hydrate offline progress.
+  useEffect(() => {
+    if (isLoading) return;
     if (user) {
       setUserId(user.id);
-      void loadProgress();
+    } else {
+      setUserId(null);
     }
-  }, [user, loadProgress, setUserId]);
+    void loadProgress();
+  }, [user, isLoading, loadProgress, setUserId]);
 
   // Global Ctrl+Shift+D shortcut — toggles the hidden debug/bug-report panel.
   //

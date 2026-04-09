@@ -62,23 +62,42 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return;
     }
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      setSession(initialSession);
-      setUser(initialSession?.user ?? null);
-      setIsLoading(false);
-    });
+    // Guard against state updates after unmount
+    let cancelled = false;
+
+    // Wrap getSession() in an async IIFE with try/catch/finally so that:
+    // - a rejection never produces an unhandled promise rejection
+    // - isLoading is guaranteed to flip to false even on failure
+    // - state is never set after the component unmounts
+    void (async () => {
+      try {
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        if (!cancelled) {
+          setSession(initialSession);
+          setUser(initialSession?.user ?? null);
+        }
+      } catch (error: unknown) {
+        console.error('[Auth] Failed to retrieve initial session:', error);
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    })();
 
     // Listen for auth state changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession);
-      setUser(newSession?.user ?? null);
-      setIsLoading(false);
+      if (!cancelled) {
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+        setIsLoading(false);
+      }
     });
 
     return () => {
+      cancelled = true;
       subscription.unsubscribe();
     };
   }, []);
