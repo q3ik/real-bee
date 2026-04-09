@@ -60,9 +60,33 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Same-origin page/navigation — network-first, fallback to cache
+  // Skip non-GET requests — let the browser handle them normally
+  if (request.method !== 'GET') return;
+
+  // Skip Vite dev server assets to avoid caching HMR/dev URLs
+  if (
+    url.pathname.startsWith('/@') ||
+    url.pathname.startsWith('/src/') ||
+    url.pathname.includes('__vite') ||
+    url.pathname.includes('node_modules')
+  ) return;
+
+  // Same-origin page/navigation — network-first, fallback to cached app shell
   if (request.mode === 'navigate') {
-    event.respondWith(networkFirst(request, CACHE_NAME));
+    event.respondWith(
+      networkFirst(request, CACHE_NAME).catch(async () => {
+        const cache = await caches.open(CACHE_NAME);
+        return (
+          (await cache.match('/index.html')) ||
+          (await cache.match('/')) ||
+          new Response('Offline — please check your connection.', {
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: { 'Content-Type': 'text/plain' },
+          })
+        );
+      }),
+    );
     return;
   }
 
@@ -122,11 +146,8 @@ async function networkFirst(request, cacheName) {
   } catch {
     const cached = await caches.match(request);
     if (cached) return cached;
-    return new Response('Offline — please check your connection.', {
-      status: 503,
-      statusText: 'Service Unavailable',
-      headers: { 'Content-Type': 'text/plain' },
-    });
+    // Propagate rejection so navigate handler can fall back to /index.html
+    throw new Error('Network unavailable and no cache entry found');
   }
 }
 
@@ -141,7 +162,12 @@ async function cacheFirst(request, cacheName) {
     }
     return response;
   } catch {
-    return new Response('', { status: 408 });
+    // Return a proper error response — an empty 408 would silently break JS/CSS modules
+    return new Response('', {
+      status: 503,
+      statusText: 'Service Unavailable',
+      headers: { 'Content-Type': 'text/plain' },
+    });
   }
 }
 
@@ -150,11 +176,24 @@ async function staleWhileRevalidate(request, cacheName) {
   const cached = await cache.match(request);
 
   // Fire-and-forget network update
-  fetch(request).then((response) => {
-    if (response.ok) cache.put(request, response.clone());
-  }).catch(() => {});
+  fetch(request)
+    .then((response) => {
+      if (response.ok) cache.put(request, response.clone());
+    })
+    .catch(() => {});
 
-  return cached || fetch(request);
+  // Return cached copy immediately, or attempt a fresh fetch as fallback.
+  // If offline and nothing is cached, return a 503 instead of rejecting.
+  if (cached) return cached;
+  try {
+    return await fetch(request);
+  } catch {
+    return new Response('', {
+      status: 503,
+      statusText: 'Service Unavailable',
+      headers: { 'Content-Type': 'text/plain' },
+    });
+  }
 }
 
 async function networkOnly(request) {
