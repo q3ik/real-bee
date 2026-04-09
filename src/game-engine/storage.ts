@@ -36,7 +36,8 @@ export async function saveGameProgress(
 export async function loadGameProgress(
   uid: string,
 ): Promise<LocalUserProgress | null> {
-  return localDb.progress.get(uid) ?? null;
+  const row = await localDb.progress.get(uid);
+  return row ?? null;
 }
 
 /**
@@ -113,11 +114,13 @@ export async function saveUserPreferences(
 
 /**
  * Load user preferences by uid.
+ * Returns `null` if no preferences exist for the given uid.
  */
 export async function loadUserPreferences(
   uid: string,
 ): Promise<LocalUserPreferences | null> {
-  return localDb.preferences.where("uid").equals(uid).first() ?? null;
+  const row = await localDb.preferences.where("uid").equals(uid).first();
+  return row ?? null;
 }
 
 // ---------------------------------------------------------------------------

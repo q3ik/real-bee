@@ -3,7 +3,8 @@
  *
  * Uses Dexie's `synced` flag on progress and session records to track
  * which items need to be uploaded. When the user signs in (or comes
- * back online), `syncPending()` uploads all unsynced records.
+ * back online), `syncPending()` uploads all unsynced records that
+ * belong to the currently authenticated user.
  *
  * Retry logic: exponential backoff with jitter, max 5 attempts per item.
  */
@@ -118,6 +119,9 @@ function getRetryDelay(retryCount: number): number {
 /**
  * Sync all pending progress records to Supabase.
  *
+ * Only records whose uid matches the authenticated user are uploaded;
+ * offline-UID rows are skipped to prevent failed upserts.
+ *
  * @returns Number of successfully synced records.
  */
 export async function syncPending(): Promise<number> {
@@ -128,7 +132,13 @@ export async function syncPending(): Promise<number> {
   } = await supabase.auth.getUser();
   if (!user) return 0;
 
-  const unsynced = await getUnsyncedProgress();
+  const authedUid = user.id;
+
+  const allUnsynced = await getUnsyncedProgress();
+  // Only attempt to upload records that belong to the authenticated user.
+  // Rows written under an offline-* UID are intentionally excluded here;
+  // they can be migrated separately if needed.
+  const unsynced = allUnsynced.filter((record) => record.uid === authedUid);
   if (unsynced.length === 0) return 0;
 
   const retryQueue = loadRetryQueue();
@@ -188,6 +198,9 @@ export async function saveProgressAndQueue(
  * Save a session locally and queue for cloud sync.
  */
 export async function saveSessionAndQueue(
+   // TODO: Part 1/2 - Check if broken from merge conflict resolution
+  session: Omit<LocalSession, "id" | "synced">,
+   // TODO: Part 2/2 - Check if broken from merge conflict resolution
   session: Omit<LocalUserProgress, "synced" | "lastPlayed"> & {
     startTime: string;
     endTime?: string;
