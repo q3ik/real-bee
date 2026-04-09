@@ -1,36 +1,33 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useGameStore } from "./hooks/useGameStore";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
 import { useDiagnosticsBugReport } from "./hooks/useDiagnosticsBugReport";
 import { useKeyboardShortcut } from "./hooks/useKeyboardShortcut";
+import { useAuth } from "./contexts/AuthContext";
 import Onboarding from "./components/Onboarding";
 import GameBoard from "./components/GameBoard";
 import MetricsBar from "./components/MetricsBar";
 import Settings from "./components/Settings";
-import { supabase } from "./lib/supabase";
-import { useEffect } from "react";
 
 export default function App() {
   const [view, setView] = useState<"onboarding" | "game">("onboarding");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isDebugOpen, setIsDebugOpen] = useState(false);
   const [debugDescription, setDebugDescription] = useState("");
-  const { startSession, loadProgress } = useGameStore();
+  const { startSession, loadProgress, setUserId } = useGameStore();
+  const { user, isLoading } = useAuth();
   const isOnline = useOnlineStatus();
 
   const { submitReport, isSubmitting, isSubmitted, submitError, reset } =
     useDiagnosticsBugReport({ feature: "App" });
 
+  // Load progress when user signs in or on initial mount
   useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase?.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        loadProgress();
-      }
-    }) ?? { data: { subscription: { unsubscribe: () => {} } } };
-    return () => subscription.unsubscribe();
-  }, [loadProgress]);
+    if (user) {
+      setUserId(user.id);
+      void loadProgress();
+    }
+  }, [user, loadProgress, setUserId]);
 
   // Global Ctrl+Shift+D shortcut — toggles the hidden debug/bug-report panel.
   //
@@ -140,7 +137,9 @@ export default function App() {
         >
           <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md mx-4 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-black text-gray-800">🐛 Debug Report</h2>
+              <h2 className="text-lg font-black text-gray-800">
+                🐛 Debug Report
+              </h2>
               <button
                 onClick={handleDebugClose}
                 className="text-gray-400 hover:text-gray-600 text-xl leading-none"
@@ -152,7 +151,9 @@ export default function App() {
 
             {isSubmitted ? (
               <div className="text-center space-y-3 py-4">
-                <p className="text-green-600 font-bold text-lg">✅ Report sent!</p>
+                <p className="text-green-600 font-bold text-lg">
+                  ✅ Report sent!
+                </p>
                 <p className="text-gray-500 text-sm">
                   Diagnostics have been captured and forwarded.
                 </p>

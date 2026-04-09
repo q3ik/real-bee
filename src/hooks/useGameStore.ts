@@ -104,6 +104,9 @@ interface GameState {
   // --- Actions: Mastery ---
   toggleMastery: (word: string, shouldMaster: boolean) => void;
 
+  // --- Actions: Auth ---
+  setUserId: (uid: string) => void;
+
   // --- Actions: Config ---
   setGradeLevel: (grade: number) => void;
   setDifficulty: (diff: GameDifficulty) => void;
@@ -380,6 +383,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       }));
     }
   },
+
+  // --- Auth ---
+  setUserId: (uid) => set({ userId: uid }),
 
   setGradeLevel: (grade) => {
     set({ gradeLevel: grade });
