@@ -73,9 +73,15 @@ const MOCK_WORDS = [
     difficulty: "easy",
   },
   {
+//TODO: Resovle merge conflict! <<<<<<< zed-branch-2
     word: "bee",
     definition: "A flying insect.",
     sentence: "The bee buzzed.",
+// TODO: Resovle merge conflict! =======
+    word: "run",
+    definition: "To move quickly on foot.",
+    sentence: "The child ran fast.",
+// TODO: Resovle merge conflict! >>>>>>> trunk
     grade: 1,
     difficulty: "easy",
   },
@@ -130,8 +136,12 @@ async function getStore() {
 // ---------------------------------------------------------------------------
 
 describe("useGameState", () => {
+// TODO: Resovle merge conflict! <<<<<<< zed-branch-2
   beforeEach(async () => {
     vi.resetModules();
+// TODO: Resovle merge conflict! =======
+  beforeEach(() => {
+// TODO: Resovle merge conflict! >>>>>>> trunk
     vi.clearAllMocks();
     // Reset the debounce guard so tests don't interfere with each other
     const { useGameStore } = await import("../useGameStore");
@@ -401,7 +411,9 @@ describe("useGameState", () => {
       result.current.startSession();
     });
 
-    // Play through all MOCK_WORDS (6 words)
+    // Play through all MOCK_WORDS (6 words).
+    // Use store.getState().phase (synchronous) rather than result.current.phase
+    // (React hook state) to avoid reading stale state between act() calls.
     for (let i = 0; i < MOCK_WORDS.length; i++) {
       if (result.current.phase !== "playing") break;
       const word = store.getState().currentWord!.word;
@@ -454,7 +466,12 @@ describe("useGameState", () => {
       gameResult.current.startSession();
     });
 
-    // Submit 5 correct answers, advancing through rounds
+    // Submit 5 correct answers, advancing through rounds.
+    // Read phase from store.getState() (synchronous Zustand state) rather than
+    // gameResult.current.phase (React hook state) to avoid reading stale values
+    // between act() calls — the hook re-renders asynchronously after each act,
+    // which caused the loop guard to see 'round_end' instead of 'playing' and
+    // break prematurely after the first correct answer.
     let correctCount = 0;
     for (let i = 0; i < 5; i++) {
       if (gameResult.current.phase !== "playing") break;
@@ -471,7 +488,7 @@ describe("useGameState", () => {
           });
         }
       } else {
-        // Word pool may have repeated — break to avoid infinite loop
+        // Debounce guard or invalid state — break to avoid infinite loop
         break;
       }
     }
