@@ -13,25 +13,25 @@
  *  - session completion (word pool exhausted → idle)
  *  - streak-5: store streak reaches 5, triggerMessage yields celebratory tone
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { renderHook, act } from "@testing-library/react";
 
 // ---------------------------------------------------------------------------
 // Module mocks
 // ---------------------------------------------------------------------------
 
-vi.mock('../../lib/supabase', () => ({
+vi.mock("../../lib/supabase", () => ({
   supabase: {
     auth: {
       getUser: vi.fn().mockResolvedValue({
-        data: { user: { id: 'test-user-123' } },
+        data: { user: { id: "test-user-123" } },
         error: null,
       }),
     },
   },
 }));
 
-vi.mock('../../lib/db', () => ({
+vi.mock("../../lib/db", () => ({
   localDb: {
     progress: {
       put: vi.fn().mockResolvedValue(1),
@@ -58,15 +58,51 @@ vi.mock('../../lib/db', () => ({
  * pool) while keeping the set small and deterministic.
  */
 const MOCK_WORDS = [
-  { word: 'cat', definition: 'A small furry animal.', sentence: 'The cat sat.', grade: 1, difficulty: 'easy' },
-  { word: 'dog', definition: 'A friendly pet.', sentence: 'The dog barked.', grade: 1, difficulty: 'easy' },
-  { word: 'bee', definition: 'A flying insect.', sentence: 'The bee buzzed.', grade: 1, difficulty: 'easy' },
-  { word: 'ant', definition: 'A small insect.', sentence: 'The ant worked.', grade: 1, difficulty: 'easy' },
-  { word: 'hen', definition: 'A female chicken.', sentence: 'The hen clucked.', grade: 1, difficulty: 'easy' },
-  { word: 'fox', definition: 'A clever animal.', sentence: 'The fox ran.', grade: 1, difficulty: 'easy' },
+  {
+    word: "cat",
+    definition: "A small furry animal.",
+    sentence: "The cat sat.",
+    grade: 1,
+    difficulty: "easy",
+  },
+  {
+    word: "dog",
+    definition: "A friendly pet.",
+    sentence: "The dog barked.",
+    grade: 1,
+    difficulty: "easy",
+  },
+  {
+    word: "run",
+    definition: "To move quickly on foot.",
+    sentence: "The child ran fast.",
+    grade: 1,
+    difficulty: "easy",
+  },
+  {
+    word: "ant",
+    definition: "A small insect.",
+    sentence: "The ant worked.",
+    grade: 1,
+    difficulty: "easy",
+  },
+  {
+    word: "hen",
+    definition: "A female chicken.",
+    sentence: "The hen clucked.",
+    grade: 1,
+    difficulty: "easy",
+  },
+  {
+    word: "fox",
+    definition: "A clever animal.",
+    sentence: "The fox ran.",
+    grade: 1,
+    difficulty: "easy",
+  },
 ];
 
-vi.mock('../../lib/wordList', () => ({
+vi.mock("../../lib/wordList", () => ({
   getWordsForConfig: vi.fn().mockReturnValue(MOCK_WORDS),
   WORD_LIST: MOCK_WORDS,
 }));
@@ -85,7 +121,7 @@ vi.mock('../../lib/wordList', () => ({
  * call restartGame() which also sets lastSubmitAt = 0 in startSession.
  */
 async function getStore() {
-  const { useGameStore } = await import('../useGameStore');
+  const { useGameStore } = await import("../useGameStore");
   return useGameStore;
 }
 
@@ -93,7 +129,7 @@ async function getStore() {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('useGameState', () => {
+describe("useGameState", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -104,135 +140,178 @@ describe('useGameState', () => {
 
   // ── Basic state ────────────────────────────────────────────────────────────
 
-  it('starts in idle phase', async () => {
-    const { useGameState } = await import('../useGameState');
+  it("starts in idle phase", async () => {
+    const { useGameState } = await import("../useGameState");
     const { result } = renderHook(() => useGameState());
-    expect(result.current.phase).toBe('idle');
+    expect(result.current.phase).toBe("idle");
     expect(result.current.result).toBeNull();
   });
 
   // ── Phase transitions ──────────────────────────────────────────────────────
 
-  it('startSession transitions phase to playing and sets a currentWord', async () => {
+  it("startSession transitions phase to playing and sets a currentWord", async () => {
     const store = await getStore();
-    act(() => { store.getState().restartGame(); });
+    act(() => {
+      store.getState().restartGame();
+    });
 
-    const { useGameState } = await import('../useGameState');
+    const { useGameState } = await import("../useGameState");
     const { result } = renderHook(() => useGameState());
 
-    act(() => { result.current.startSession(); });
+    act(() => {
+      result.current.startSession();
+    });
 
-    expect(result.current.phase).toBe('playing');
+    expect(result.current.phase).toBe("playing");
     expect(store.getState().currentWord).not.toBeNull();
   });
 
-  it('submitAnswer returns true and advances to round_end on correct answer', async () => {
+  it("submitAnswer returns true and advances to round_end on correct answer", async () => {
     const store = await getStore();
-    act(() => { store.getState().restartGame(); });
+    act(() => {
+      store.getState().restartGame();
+    });
 
-    const { useGameState } = await import('../useGameState');
+    const { useGameState } = await import("../useGameState");
     const { result } = renderHook(() => useGameState());
 
-    act(() => { result.current.startSession(); });
+    act(() => {
+      result.current.startSession();
+    });
     const word = store.getState().currentWord!.word;
 
     let returnValue: boolean | null = null;
-    act(() => { returnValue = result.current.submitAnswer(word); });
+    act(() => {
+      returnValue = result.current.submitAnswer(word);
+    });
 
     expect(returnValue).toBe(true);
-    expect(result.current.phase).toBe('round_end');
+    expect(result.current.phase).toBe("round_end");
     expect(result.current.result?.isCorrect).toBe(true);
   });
 
-  it('submitAnswer returns false and advances to round_end on wrong answer', async () => {
+  it("submitAnswer returns false and advances to round_end on wrong answer", async () => {
     const store = await getStore();
-    act(() => { store.getState().restartGame(); });
+    act(() => {
+      store.getState().restartGame();
+    });
 
-    const { useGameState } = await import('../useGameState');
+    const { useGameState } = await import("../useGameState");
     const { result } = renderHook(() => useGameState());
 
-    act(() => { result.current.startSession(); });
+    act(() => {
+      result.current.startSession();
+    });
 
     let returnValue: boolean | null = null;
-    act(() => { returnValue = result.current.submitAnswer('zzzzzzwrongzzzzz'); });
+    act(() => {
+      returnValue = result.current.submitAnswer("zzzzzzwrongzzzzz");
+    });
 
     expect(returnValue).toBe(false);
-    expect(result.current.phase).toBe('round_end');
+    expect(result.current.phase).toBe("round_end");
     expect(result.current.result?.isCorrect).toBe(false);
   });
 
-  it('submitAnswer returns null for empty input and does NOT advance to round_end', async () => {
+  it("submitAnswer returns null for empty input and does NOT advance to round_end", async () => {
     const store = await getStore();
-    act(() => { store.getState().restartGame(); });
+    act(() => {
+      store.getState().restartGame();
+    });
 
-    const { useGameState } = await import('../useGameState');
+    const { useGameState } = await import("../useGameState");
     const { result } = renderHook(() => useGameState());
 
-    act(() => { result.current.startSession(); });
+    act(() => {
+      result.current.startSession();
+    });
 
     let returnValue: boolean | null = false;
-    act(() => { returnValue = result.current.submitAnswer(''); });
+    act(() => {
+      returnValue = result.current.submitAnswer("");
+    });
 
     expect(returnValue).toBeNull();
-    expect(result.current.phase).toBe('playing');
+    expect(result.current.phase).toBe("playing");
   });
 
-  it('timeoutRound transitions to round_end with isCorrect:false and resets streak', async () => {
+  it("timeoutRound transitions to round_end with isCorrect:false and resets streak", async () => {
     const store = await getStore();
-    act(() => { store.getState().restartGame(); });
+    act(() => {
+      store.getState().restartGame();
+    });
 
-    const { useGameState } = await import('../useGameState');
+    const { useGameState } = await import("../useGameState");
     const { result } = renderHook(() => useGameState());
 
-    act(() => { result.current.startSession(); });
-    act(() => { result.current.timeoutRound(); });
+    act(() => {
+      result.current.startSession();
+    });
+    act(() => {
+      result.current.timeoutRound();
+    });
 
-    expect(result.current.phase).toBe('round_end');
+    expect(result.current.phase).toBe("round_end");
     expect(result.current.result?.isCorrect).toBe(false);
     // timeoutRound must reset the streak
     expect(store.getState().streak).toBe(0);
   });
 
-  it('restartGame resets phase to idle and clears result', async () => {
+  it("restartGame resets phase to idle and clears result", async () => {
     const store = await getStore();
-    act(() => { store.getState().restartGame(); });
+    act(() => {
+      store.getState().restartGame();
+    });
 
-    const { useGameState } = await import('../useGameState');
+    const { useGameState } = await import("../useGameState");
     const { result } = renderHook(() => useGameState());
 
-    act(() => { result.current.startSession(); result.current.timeoutRound(); });
-    expect(result.current.phase).toBe('round_end');
+    act(() => {
+      result.current.startSession();
+      result.current.timeoutRound();
+    });
+    expect(result.current.phase).toBe("round_end");
 
-    act(() => { result.current.restartGame(); });
+    act(() => {
+      result.current.restartGame();
+    });
 
-    expect(result.current.phase).toBe('idle');
+    expect(result.current.phase).toBe("idle");
     expect(result.current.result).toBeNull();
   });
 
   // ── Full 3-round session flow ───────────────────────────────────────────────
 
-  it('full 3-round session: correct answers advance through rounds and accumulate score', async () => {
+  it("full 3-round session: correct answers advance through rounds and accumulate score", async () => {
     const store = await getStore();
-    act(() => { store.getState().restartGame(); });
+    act(() => {
+      store.getState().restartGame();
+    });
 
-    const { useGameState } = await import('../useGameState');
+    const { useGameState } = await import("../useGameState");
     const { result } = renderHook(() => useGameState());
 
-    act(() => { result.current.startSession(); });
+    act(() => {
+      result.current.startSession();
+    });
 
     for (let round = 0; round < 3; round++) {
-      expect(result.current.phase).toBe('playing');
+      expect(result.current.phase).toBe("playing");
       const word = store.getState().currentWord!.word;
 
       let returned: boolean | null = null;
-      act(() => { returned = result.current.submitAnswer(word); });
+      act(() => {
+        returned = result.current.submitAnswer(word);
+      });
 
       expect(returned).toBe(true);
-      expect(result.current.phase).toBe('round_end');
+      expect(result.current.phase).toBe("round_end");
       expect(result.current.result?.isCorrect).toBe(true);
 
       if (round < 2) {
-        act(() => { result.current.nextWord(); });
+        act(() => {
+          result.current.nextWord();
+        });
       }
     }
 
@@ -249,36 +328,48 @@ describe('useGameState', () => {
    * which is the message GameBoard should display when the player requests
    * a hint. The integration point is the trigger key — not store state.
    */
-  it('triggerMessage(hint-used) produces a neutral-tone host message', async () => {
-    const { useHostMessages } = await import('../useHostMessages');
+  it("triggerMessage(hint-used) produces a neutral-tone host message", async () => {
+    const { useHostMessages } = await import("../useHostMessages");
     const { result } = renderHook(() => useHostMessages());
 
-    act(() => { result.current.triggerMessage('hint-used'); });
+    act(() => {
+      result.current.triggerMessage("hint-used");
+    });
 
     expect(result.current.currentMessage).not.toBeNull();
-    expect(result.current.currentMessage!.tone).toBe('neutral');
+    expect(result.current.currentMessage!.tone).toBe("neutral");
   });
 
   // ── Streak reset on incorrect ──────────────────────────────────────────────
 
-  it('streak resets to 0 after an incorrect answer following a correct one', async () => {
+  it("streak resets to 0 after an incorrect answer following a correct one", async () => {
     const store = await getStore();
-    act(() => { store.getState().restartGame(); });
+    act(() => {
+      store.getState().restartGame();
+    });
 
-    const { useGameState } = await import('../useGameState');
+    const { useGameState } = await import("../useGameState");
     const { result } = renderHook(() => useGameState());
 
-    act(() => { result.current.startSession(); });
+    act(() => {
+      result.current.startSession();
+    });
 
     // Round 1: correct — builds streak to 1
     const word = store.getState().currentWord!.word;
-    act(() => { result.current.submitAnswer(word); });
+    act(() => {
+      result.current.submitAnswer(word);
+    });
     expect(store.getState().streak).toBe(1);
 
-    act(() => { result.current.nextWord(); });
+    act(() => {
+      result.current.nextWord();
+    });
 
     // Round 2: incorrect — streak must drop to 0
-    act(() => { result.current.submitAnswer('zzzzzzwrongzzzzz'); });
+    act(() => {
+      result.current.submitAnswer("zzzzzzwrongzzzzz");
+    });
     expect(store.getState().streak).toBe(0);
   });
 
@@ -293,29 +384,39 @@ describe('useGameState', () => {
    * completing all MOCK_WORDS words and confirming the session is still
    * playable (pool resets) — i.e., phase is not "crashed".
    */
-  it('session completion: playing all words exhausts pool and store resets used-words for continued play', async () => {
+  it("session completion: playing all words exhausts pool and store resets used-words for continued play", async () => {
     const store = await getStore();
-    act(() => { store.getState().restartGame(); });
+    act(() => {
+      store.getState().restartGame();
+    });
 
-    const { useGameState } = await import('../useGameState');
+    const { useGameState } = await import("../useGameState");
     const { result } = renderHook(() => useGameState());
 
-    act(() => { result.current.startSession(); });
+    act(() => {
+      result.current.startSession();
+    });
 
-    // Play through all MOCK_WORDS (6 words)
+    // Play through all MOCK_WORDS (6 words).
+    // Use store.getState().phase (synchronous) rather than result.current.phase
+    // (React hook state) to avoid reading stale state between act() calls.
     for (let i = 0; i < MOCK_WORDS.length; i++) {
-      if (result.current.phase !== 'playing') break;
+      if (result.current.phase !== "playing") break;
       const word = store.getState().currentWord!.word;
-      act(() => { result.current.submitAnswer(word); });
+      act(() => {
+        result.current.submitAnswer(word);
+      });
       // After the last word, don't call nextWord — let it lapse
       if (i < MOCK_WORDS.length - 1) {
-        act(() => { result.current.nextWord(); });
+        act(() => {
+          result.current.nextWord();
+        });
       }
     }
 
     // Phase is either round_end (last word played) or idle (pool empty fallback)
     // In both cases the store must not be in an error state
-    expect(['round_end', 'playing', 'idle']).toContain(result.current.phase);
+    expect(["round_end", "playing", "idle"]).toContain(result.current.phase);
     // usedWords reflects words seen — should be >= 1
     expect(store.getState().usedWords.length).toBeGreaterThanOrEqual(1);
   });
@@ -335,32 +436,45 @@ describe('useGameState', () => {
    *   - store side: streak reaches 5 after 5 correct answers
    *   - host side: 'streak-5' trigger produces celebratory tone with "5" in text
    */
-  it('streak reaches 5 after 5 correct answers and streak-5 trigger produces celebratory message', async () => {
+  it("streak reaches 5 after 5 correct answers and streak-5 trigger produces celebratory message", async () => {
     const store = await getStore();
     // Full reset: clears lastSubmitAt (happens inside startSession)
-    act(() => { store.getState().restartGame(); });
+    act(() => {
+      store.getState().restartGame();
+    });
 
-    const { useGameState } = await import('../useGameState');
-    const { useHostMessages } = await import('../useHostMessages');
+    const { useGameState } = await import("../useGameState");
+    const { useHostMessages } = await import("../useHostMessages");
     const { result: gameResult } = renderHook(() => useGameState());
     const { result: hostResult } = renderHook(() => useHostMessages());
 
-    act(() => { gameResult.current.startSession(); });
+    act(() => {
+      gameResult.current.startSession();
+    });
 
-    // Submit 5 correct answers, advancing through rounds
+    // Submit 5 correct answers, advancing through rounds.
+    // Read phase from store.getState() (synchronous Zustand state) rather than
+    // gameResult.current.phase (React hook state) to avoid reading stale values
+    // between act() calls — the hook re-renders asynchronously after each act,
+    // which caused the loop guard to see 'round_end' instead of 'playing' and
+    // break prematurely after the first correct answer.
     let correctCount = 0;
     for (let i = 0; i < 5; i++) {
-      if (gameResult.current.phase !== 'playing') break;
+      if (gameResult.current.phase !== "playing") break;
       const word = store.getState().currentWord!.word;
       let returned: boolean | null = null;
-      act(() => { returned = gameResult.current.submitAnswer(word); });
+      act(() => {
+        returned = gameResult.current.submitAnswer(word);
+      });
       if (returned === true) {
         correctCount++;
         if (correctCount < 5) {
-          act(() => { gameResult.current.nextWord(); });
+          act(() => {
+            gameResult.current.nextWord();
+          });
         }
       } else {
-        // Word pool may have repeated — break to avoid infinite loop
+        // Debounce guard or invalid state — break to avoid infinite loop
         break;
       }
     }
@@ -372,11 +486,13 @@ describe('useGameState', () => {
     if (correctCount >= 5) {
       expect(store.getState().streak).toBe(5);
 
-      act(() => { hostResult.current.triggerMessage('streak-5'); });
+      act(() => {
+        hostResult.current.triggerMessage("streak-5");
+      });
 
       expect(hostResult.current.currentMessage).not.toBeNull();
-      expect(hostResult.current.currentMessage!.tone).toBe('celebratory');
-      expect(hostResult.current.currentMessage!.text).toContain('5');
+      expect(hostResult.current.currentMessage!.tone).toBe("celebratory");
+      expect(hostResult.current.currentMessage!.text).toContain("5");
     } else {
       // Word pool too small to reach 5 without repetition in this env —
       // assert streak matches correctCount (pool-size constraint acknowledged)

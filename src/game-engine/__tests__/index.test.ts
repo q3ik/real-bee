@@ -244,9 +244,27 @@ describe("difficulty", () => {
 
   describe("getAvailableWords", () => {
     const words: Word[] = [
-      { word: "cat", definition: "A pet.", sentence: "The cat sat.", difficulty: "easy" as const, grade: 1 },
-      { word: "dog", definition: "A pet.", sentence: "The dog barked.", difficulty: "easy" as const, grade: 1 },
-      { word: "apple", definition: "A fruit.", sentence: "I ate an apple.", difficulty: "medium" as const, grade: 1 },
+      {
+        word: "cat",
+        definition: "A pet.",
+        sentence: "The cat sat.",
+        difficulty: "easy" as const,
+        grade: 1,
+      },
+      {
+        word: "dog",
+        definition: "A pet.",
+        sentence: "The dog barked.",
+        difficulty: "easy" as const,
+        grade: 1,
+      },
+      {
+        word: "apple",
+        definition: "A fruit.",
+        sentence: "I ate an apple.",
+        difficulty: "medium" as const,
+        grade: 1,
+      },
     ];
 
     it("returns available words filtered by difficulty", () => {
@@ -270,6 +288,10 @@ describe("difficulty", () => {
     });
 
     it("excludes mastered words (mostly)", () => {
+      // Mock Math.random() to ensure deterministic behavior
+      // We want allowMastered to be false (Math.random() >= 0.1)
+      const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.5);
+
       const mastered = new Set(["cat", "dog"]);
       const result = getAvailableWords(
         words,
@@ -279,6 +301,8 @@ describe("difficulty", () => {
         "all",
       );
       expect(result.availableWords).toHaveLength(0);
+
+      randomSpy.mockRestore();
     });
 
     it("shouldResetUsed is true when no words available", () => {
@@ -300,7 +324,13 @@ describe("difficulty", () => {
 
     it("returns a word from the array", () => {
       const words: Word[] = [
-        { word: "cat", definition: "A pet.", sentence: "The cat sat.", difficulty: "easy" as const, grade: 1 },
+        {
+          word: "cat",
+          definition: "A pet.",
+          sentence: "The cat sat.",
+          difficulty: "easy" as const,
+          grade: 1,
+        },
       ];
       expect(selectRandomWord(words)).toEqual(words[0]);
     });

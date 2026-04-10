@@ -7,6 +7,23 @@ import "./index.css";
 import "./styles/touch-target-fixes.css";
 import "./styles/mobile-modal-fixes.css";
 
+// ---------------------------------------------------------------------------
+// PWA Service Worker Registration (production only — avoids HMR conflicts)
+// ---------------------------------------------------------------------------
+
+if ("serviceWorker" in navigator && import.meta.env.PROD) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/service-worker.js", { scope: "/" })
+      .then((registration) => {
+        console.log("[PWA] Service Worker registered:", registration.scope);
+      })
+      .catch((error) => {
+        console.warn("[PWA] Service Worker registration failed:", error);
+      });
+  });
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErrorBoundary>
