@@ -35,6 +35,12 @@ export interface Word {
 }
 
 /**
+ * Convenience alias for the grade field of a Word.
+ * Exported so hooks and stores can reference it without re-deriving it.
+ */
+export type Grade = Word['grade'];
+
+/**
  * Tracking data for a single word's mastery progress.
  */
 export interface WordProgress {
@@ -67,15 +73,25 @@ export type GamePhase = 'idle' | 'playing' | 'round_end';
  * Result of a single spelling submission.
  */
 export interface GameResult {
+  /** Whether the submitted spelling was correct */
   isCorrect: boolean;
+  /** Points awarded for this submission */
   points: number;
+  /** Running total score after this submission */
   newScore: number;
+  /** Current streak count after this submission */
   newStreak: number;
+  /** Best streak achieved so far in the session */
   newBestStreak: number;
+  /** Human-readable feedback message */
   feedback: string;
+  /** The word that was being spelled */
   targetWord: string;
+  /** Raw text/voice input as received */
   rawInput: string;
+  /** Normalized (trimmed, lowercased) input used for comparison */
   normalizedInput: string;
+  /** Whether the answer was submitted via voice recognition */
   isVoice: boolean;
 }
 
@@ -83,7 +99,9 @@ export interface GameResult {
  * Displayable session statistic.
  */
 export interface SessionStat {
+  /** Human-readable label (e.g., "Words Correct") */
   label: string;
+  /** Formatted or raw value to display */
   value: string | number;
 }
 

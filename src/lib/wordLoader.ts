@@ -12,7 +12,7 @@
  *   grade 0  → all four files combined
  */
 
-import type { Word, GameDifficulty } from "../types";
+import type { Word, GameDifficulty, Grade } from '../types';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -51,11 +51,11 @@ export const VALID_GRADES = [1, 3, 6, 9] as const;
 
 /** Grade-to-file mapping. Grade 0 = "all grades" (loads every file). */
 export const GRADE_FILE_MAP: Record<number, string> = {
-  0: "all", // special: loads all files
-  1: "grade-1",
-  3: "grade-3",
-  6: "grade-6",
-  9: "grade-9",
+  0: 'all', // special: loads all files
+  1: 'grade-1',
+  3: 'grade-3',
+  6: 'grade-6',
+  9: 'grade-9',
 };
 
 // ---------------------------------------------------------------------------
@@ -95,25 +95,25 @@ export function mapRawWord(raw: RawWordRecord): Word {
  */
 export function parseGrade(gradeLevel: string): number {
   const normalized = gradeLevel.trim().toLowerCase();
-  if (normalized === "all" || normalized === "k-12") return 0;
-  if (normalized === "k-2" || normalized === "k-3") return 1;
+  if (normalized === 'all' || normalized === 'k-12') return 0;
+  if (normalized === 'k-2' || normalized === 'k-3') return 1;
   if (
-    normalized.startsWith("3") ||
-    normalized.startsWith("4") ||
-    normalized.startsWith("5")
+    normalized.startsWith('3') ||
+    normalized.startsWith('4') ||
+    normalized.startsWith('5')
   )
     return 3;
   if (
-    normalized.startsWith("6") ||
-    normalized.startsWith("7") ||
-    normalized.startsWith("8")
+    normalized.startsWith('6') ||
+    normalized.startsWith('7') ||
+    normalized.startsWith('8')
   )
     return 6;
   if (
-    normalized.startsWith("9") ||
-    normalized.startsWith("10") ||
-    normalized.startsWith("11") ||
-    normalized.startsWith("12")
+    normalized.startsWith('9') ||
+    normalized.startsWith('10') ||
+    normalized.startsWith('11') ||
+    normalized.startsWith('12')
   )
     return 9;
   // Fallback: map numeric strings to the nearest range bucket
@@ -132,19 +132,22 @@ export function parseGrade(gradeLevel: string): number {
 export function normalizeDifficulty(diff: string): GameDifficulty {
   const normalized = diff.toLowerCase().trim();
   if (
-    normalized === "easy" ||
-    normalized === "medium" ||
-    normalized === "hard" ||
-    normalized === "all"
+    normalized === 'easy' ||
+    normalized === 'medium' ||
+    normalized === 'hard' ||
+    normalized === 'all'
   ) {
     return normalized;
   }
-  return "medium"; // safe default
+  return 'medium'; // safe default
 }
 
 /** Fetch and parse a single grade JSON file. */
-async function fetchGradeWords(fileName: string): Promise<GradeWordFile> {
-  const response = await fetch(`/data/words/${fileName}.json`);
+async function fetchGradeWords(
+  fileName: string,
+  signal?: AbortSignal,
+): Promise<GradeWordFile> {
+  const response = await fetch(`/data/words/${fileName}.json`, { signal });
   if (!response.ok) {
     throw new Error(
       `Failed to load word file: /data/words/${fileName}.json (${response.status})`,
@@ -161,9 +164,13 @@ async function fetchGradeWords(fileName: string): Promise<GradeWordFile> {
  * Load words for a specific grade level. Results are cached.
  *
  * @param grade - Grade bucket (1, 3, 6, or 9) or 0 for all grades
+ * @param signal - Optional AbortSignal to cancel in-flight requests
  * @returns Promise resolving to the filtered word list
  */
-export async function loadWordsForGrade(grade: number): Promise<Word[]> {
+export async function loadWordsForGrade(
+  grade: Grade,
+  signal?: AbortSignal,
+): Promise<Word[]> {
   // Return cached if available
   if (wordCache.has(grade)) {
     return wordCache.get(grade)!;
@@ -176,7 +183,7 @@ export async function loadWordsForGrade(grade: number): Promise<Word[]> {
     const allPromises = VALID_GRADES.map(async (g) => {
       if (wordCache.has(g)) return wordCache.get(g)!;
       const fileName = GRADE_FILE_MAP[g];
-      const data = await fetchGradeWords(fileName);
+      const data = await fetchGradeWords(fileName, signal);
       const gradeWords = data.words.map(mapRawWord);
       wordCache.set(g, gradeWords);
       return gradeWords;
@@ -190,7 +197,7 @@ export async function loadWordsForGrade(grade: number): Promise<Word[]> {
     if (!fileName) {
       throw new Error(`No word file configured for grade ${grade}`);
     }
-    const data = await fetchGradeWords(fileName);
+    const data = await fetchGradeWords(fileName, signal);
     words = data.words.map(mapRawWord);
   }
 
@@ -209,7 +216,7 @@ export async function getWordsForConfigAsync(
   const words = await loadWordsForGrade(grade);
 
   return words.filter((w) => {
-    const diffMatch = difficulty === "all" || w.difficulty === difficulty;
+    const diffMatch = difficulty === 'all' || w.difficulty === difficulty;
     return diffMatch;
   });
 }
@@ -227,4 +234,12 @@ export function clearWordCache(): void {
  */
 export function isGradeLoaded(grade: number): boolean {
   return wordCache.has(grade) || (grade === 0 && allGradesLoaded);
+}
+
+/**
+ * Return the list of grade numbers currently held in the cache.
+ * Useful for debugging and for inspecting warm-cache state in tests.
+ */
+export function getCachedGrades(): Grade[] {
+  return Array.from(wordCache.keys());
 }

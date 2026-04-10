@@ -2,26 +2,980 @@
   "grade": 1,
   "language": "en-US",
   "version": "1.0.0",
-  "lastUpdated": "2026-03-23T17:03:57.090Z",
-  "wordCount": 15,
+  "lastUpdated": "2026-03-03T22:00:53.309Z",
+  "wordCount": 108,
   "words": [
     {
       "word": "apple",
-      "definition": "A round fruit with red, green, or yellow skin and crisp flesh.",
-      "example": "I ate a juicy apple for lunch.",
+      "definition": "A round fruit with red or green skin",
+      "example": "She picked a fresh apple from the tree.",
       "phonetic": "AP-ple",
       "syllables": "ap-ple",
       "difficulty": "easy",
       "gradeLevel": "K-2"
     },
     {
-      "word": "banana",
-      "definition": "A long curved fruit with yellow skin and soft flesh.",
-      "example": "The monkey peeled the banana.",
-      "phonetic": "BA-na-na",
-      "syllables": "ba-na-na",
+      "word": "book",
+      "definition": "A written work bound together",
+      "example": "I read a great book last week.",
+      "phonetic": "BOOK",
+      "syllables": "book",
       "difficulty": "easy",
       "gradeLevel": "K-2"
     },
     {
+      "word": "cat",
+      "definition": "A small domesticated feline",
+      "example": "The cat slept on the warm windowsill.",
+      "phonetic": "CAT",
+      "syllables": "cat",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "door",
+      "definition": "A hinged barrier at an entrance",
+      "example": "Please close the door behind you.",
+      "phonetic": "DOOR",
+      "syllables": "door",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "friend",
+      "definition": "A person you know and like",
+      "example": "My best friend lives next door.",
+      "phonetic": "FRIEND",
+      "syllables": "friend",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "garden",
+      "definition": "A piece of ground for growing plants",
+      "example": "We planted tomatoes in the garden.",
+      "phonetic": "GAR-den",
+      "syllables": "gar-den",
+      "difficulty": "medium",
+      "gradeLevel": "K-2"
+    },
+    {
       "word": "happy",
+      "definition": "Feeling pleasure or contentment",
+      "example": "The children were happy to see snow.",
+      "phonetic": "HAP-py",
+      "syllables": "hap-py",
+      "difficulty": "medium",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "kite",
+      "definition": "A toy flown in the wind",
+      "example": "The kite soared high above the park.",
+      "phonetic": "KITE",
+      "syllables": "kite",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "lemon",
+      "definition": "A yellow citrus fruit",
+      "example": "She squeezed lemon into her tea.",
+      "phonetic": "LEM-on",
+      "syllables": "lem-on",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "monkey",
+      "definition": "A primate with a long tail",
+      "example": "The monkey swung from branch to branch.",
+      "phonetic": "MON-key",
+      "syllables": "mon-key",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "pencil",
+      "definition": "A writing instrument",
+      "example": "Write your name with a pencil.",
+      "phonetic": "PEN-cil",
+      "syllables": "pen-cil",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "queen",
+      "definition": "A female monarch",
+      "example": "The queen wore a golden crown.",
+      "phonetic": "QUEEN",
+      "syllables": "queen",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "ant",
+      "definition": "A small insect that lives in colonies",
+      "example": "The ant carried a crumb to its hill.",
+      "phonetic": "ANT",
+      "syllables": "ant",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "baby",
+      "definition": "A very young child",
+      "example": "The baby is sleeping in the crib.",
+      "phonetic": "BA-by",
+      "syllables": "ba-by",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "bear",
+      "definition": "A large mammal with fur",
+      "example": "The bear loves to eat honey.",
+      "phonetic": "BEAR",
+      "syllables": "bear",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "bird",
+      "definition": "An animal with feathers and wings",
+      "example": "A blue bird sang in the tree.",
+      "phonetic": "BIRD",
+      "syllables": "bird",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "boat",
+      "definition": "A vehicle for traveling on water",
+      "example": "We rowed the boat across the lake.",
+      "phonetic": "BOAT",
+      "syllables": "boat",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "bread",
+      "definition": "Food made from flour and baked",
+      "example": "I like bread with butter.",
+      "phonetic": "BREAD",
+      "syllables": "bread",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "bus",
+      "definition": "A large vehicle for carrying passengers",
+      "example": "The school bus arrives at 8 AM.",
+      "phonetic": "BUS",
+      "syllables": "bus",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "cake",
+      "definition": "A sweet baked dessert",
+      "example": "We ate chocolate cake for his birthday.",
+      "phonetic": "CAKE",
+      "syllables": "cake",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "car",
+      "definition": "A vehicle with four wheels",
+      "example": "My dad drives a red car.",
+      "phonetic": "CAR",
+      "syllables": "car",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "chair",
+      "definition": "A seat with a back",
+      "example": "Please sit on the chair.",
+      "phonetic": "CHAIR",
+      "syllables": "chair",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "chicken",
+      "definition": "A bird raised for food",
+      "example": "The chicken laid an egg.",
+      "phonetic": "CHICK-en",
+      "syllables": "chick-en",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "clock",
+      "definition": "A device that tells time",
+      "example": "The clock struck twelve.",
+      "phonetic": "CLOCK",
+      "syllables": "clock",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "coat",
+      "definition": "Outer clothing worn for warmth",
+      "example": "Wear your coat, it's cold outside.",
+      "phonetic": "COAT",
+      "syllables": "coat",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "cow",
+      "definition": "A large farm animal that gives milk",
+      "example": "The cow is eating grass.",
+      "phonetic": "COW",
+      "syllables": "cow",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "cup",
+      "definition": "A small bowl for drinking",
+      "example": "I would like a cup of water.",
+      "phonetic": "CUP",
+      "syllables": "cup",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "desk",
+      "definition": "A table for writing or working",
+      "example": "She sat at her desk to study.",
+      "phonetic": "DESK",
+      "syllables": "desk",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "dog",
+      "definition": "A common pet animal",
+      "example": "The dog wagged its tail.",
+      "phonetic": "DOG",
+      "syllables": "dog",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "doll",
+      "definition": "A toy that looks like a person",
+      "example": "She played with her favorite doll.",
+      "phonetic": "DOLL",
+      "syllables": "doll",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "duck",
+      "definition": "A water bird with webbed feet",
+      "example": "The duck swam in the pond.",
+      "phonetic": "DUCK",
+      "syllables": "duck",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "egg",
+      "definition": "An oval object laid by birds",
+      "example": "He ate a boiled egg for breakfast.",
+      "phonetic": "EGG",
+      "syllables": "egg",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "eye",
+      "definition": "The organ of sight",
+      "example": "She closed one eye to aim.",
+      "phonetic": "EYE",
+      "syllables": "eye",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "farm",
+      "definition": "Land used for growing crops",
+      "example": "Animals live on the farm.",
+      "phonetic": "FARM",
+      "syllables": "farm",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "fish",
+      "definition": "An animal that lives in water",
+      "example": "The fish swam in the bowl.",
+      "phonetic": "FISH",
+      "syllables": "fish",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "flower",
+      "definition": "The colorful part of a plant",
+      "example": "He picked a yellow flower.",
+      "phonetic": "FLOW-er",
+      "syllables": "flow-er",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "food",
+      "definition": "What people and animals eat",
+      "example": "We need food to live.",
+      "phonetic": "FOOD",
+      "syllables": "food",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "frog",
+      "definition": "A small green animal that hops",
+      "example": "The frog jumped into the water.",
+      "phonetic": "FROG",
+      "syllables": "frog",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "game",
+      "definition": "An activity played for fun",
+      "example": "Let's play a board game.",
+      "phonetic": "GAME",
+      "syllables": "game",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "girl",
+      "definition": "A female child",
+      "example": "The girl skipped down the street.",
+      "phonetic": "GIRL",
+      "syllables": "girl",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "goat",
+      "definition": "A farm animal with horns",
+      "example": "The goat climbed the rock.",
+      "phonetic": "GOAT",
+      "syllables": "goat",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "grass",
+      "definition": "Green plants covering the ground",
+      "example": "The grass is wet with dew.",
+      "phonetic": "GRASS",
+      "syllables": "grass",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "hand",
+      "definition": "Body part at the end of the arm",
+      "example": "Raise your hand if you know the answer.",
+      "phonetic": "HAND",
+      "syllables": "hand",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "hat",
+      "definition": "A covering for the head",
+      "example": "He wore a hat to block the sun.",
+      "phonetic": "HAT",
+      "syllables": "hat",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "hill",
+      "definition": "A raised area of land",
+      "example": "We rolled down the grassy hill.",
+      "phonetic": "HILL",
+      "syllables": "hill",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "horse",
+      "definition": "A large animal used for riding",
+      "example": "She loves to ride her horse.",
+      "phonetic": "HORSE",
+      "syllables": "horse",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "house",
+      "definition": "A building where people live",
+      "example": "Our house has a red door.",
+      "phonetic": "HOUSE",
+      "syllables": "house",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "ice",
+      "definition": "Frozen water",
+      "example": "Put some ice in my drink.",
+      "phonetic": "ICE",
+      "syllables": "ice",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "juice",
+      "definition": "Liquid from fruit or vegetables",
+      "example": "I drank orange juice with toast.",
+      "phonetic": "JUICE",
+      "syllables": "juice",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "lamp",
+      "definition": "A device that gives light",
+      "example": "Turn on the lamp so we can see.",
+      "phonetic": "LAMP",
+      "syllables": "lamp",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "leaf",
+      "definition": "The green part of a plant",
+      "example": "A brown leaf fell from the tree.",
+      "phonetic": "LEAF",
+      "syllables": "leaf",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "lion",
+      "definition": "A large wild cat",
+      "example": "The lion roared loudly.",
+      "phonetic": "LI-on",
+      "syllables": "li-on",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "milk",
+      "definition": "White liquid from cows",
+      "example": "Milk is good for your bones.",
+      "phonetic": "MILK",
+      "syllables": "milk",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "moon",
+      "definition": "Object that orbits the Earth",
+      "example": "The full moon shines at night.",
+      "phonetic": "MOON",
+      "syllables": "moon",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "mouse",
+      "definition": "A small rodent",
+      "example": "The mouse ran into a hole.",
+      "phonetic": "MOUSE",
+      "syllables": "mouse",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "nest",
+      "definition": "A home built by a bird",
+      "example": "There are three eggs in the nest.",
+      "phonetic": "NEST",
+      "syllables": "nest",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "nose",
+      "definition": "Body part used for smelling",
+      "example": "My nose is cold.",
+      "phonetic": "NOSE",
+      "syllables": "nose",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "park",
+      "definition": "Public land for recreation",
+      "example": "We played soccer at the park.",
+      "phonetic": "PARK",
+      "syllables": "park",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "pig",
+      "definition": "A farm animal with a pink snout",
+      "example": "The pig played in the mud.",
+      "phonetic": "PIG",
+      "syllables": "pig",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "rain",
+      "definition": "Water falling from clouds",
+      "example": "Take an umbrella in the rain.",
+      "phonetic": "RAIN",
+      "syllables": "rain",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "ring",
+      "definition": "A circular band worn on a finger",
+      "example": "She lost her gold ring.",
+      "phonetic": "RING",
+      "syllables": "ring",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "road",
+      "definition": "A hard surface for vehicles",
+      "example": "Look both ways before crossing the road.",
+      "phonetic": "ROAD",
+      "syllables": "road",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "room",
+      "definition": "A space inside a building",
+      "example": "My room is very messy.",
+      "phonetic": "ROOM",
+      "syllables": "room",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "shoe",
+      "definition": "Footwear",
+      "example": "Tie your shoe lace.",
+      "phonetic": "SHOE",
+      "syllables": "shoe",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "snow",
+      "definition": "Frozen white rain",
+      "example": "The snow covered the ground.",
+      "phonetic": "SNOW",
+      "syllables": "snow",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "star",
+      "definition": "A bright point in the night sky",
+      "example": "Make a wish on a falling star.",
+      "phonetic": "STAR",
+      "syllables": "star",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "sun",
+      "definition": "The star that warms the Earth",
+      "example": "The sun rises in the east.",
+      "phonetic": "SUN",
+      "syllables": "sun",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "acorn",
+      "definition": "The nut of an oak tree",
+      "example": "A squirrel carried the acorn up the tree.",
+      "phonetic": "A-corn",
+      "syllables": "a-corn",
+      "difficulty": "medium",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "bubble",
+      "definition": "A thin sphere of liquid filled with air",
+      "example": "The bubble floated and popped.",
+      "phonetic": "BUB-ble",
+      "syllables": "bub-ble",
+      "difficulty": "medium",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "cabin",
+      "definition": "A small simple house, often in the woods",
+      "example": "They stayed in a cozy cabin by the lake.",
+      "phonetic": "CAB-in",
+      "syllables": "cab-in",
+      "difficulty": "medium",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "lantern",
+      "definition": "A portable light with a protective cover",
+      "example": "We carried a lantern on the evening walk.",
+      "phonetic": "LAN-tern",
+      "syllables": "lan-tern",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "igloo",
+      "definition": "A dome-shaped shelter made of snow blocks",
+      "example": "The picture book showed an igloo in winter.",
+      "phonetic": "IG-loo",
+      "syllables": "ig-loo",
+      "difficulty": "medium",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "glove",
+      "definition": "A hand covering with finger sections",
+      "example": "She wore one warm glove on each hand.",
+      "phonetic": "GLOVE",
+      "syllables": "glove",
+      "difficulty": "medium",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "meadow",
+      "definition": "A grassy field",
+      "example": "Wildflowers bloomed in the meadow.",
+      "phonetic": "MEAD-ow",
+      "syllables": "mead-ow",
+      "difficulty": "medium",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "pebble",
+      "definition": "A small smooth stone",
+      "example": "He skipped a pebble across the pond.",
+      "phonetic": "PEB-ble",
+      "syllables": "peb-ble",
+      "difficulty": "medium",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "thunder",
+      "definition": "The loud sound during a storm",
+      "example": "Thunder rumbled in the distance.",
+      "phonetic": "THUN-der",
+      "syllables": "thun-der",
+      "difficulty": "easy",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "basket",
+      "definition": "A container woven from strips",
+      "example": "She carried apples in a basket.",
+      "phonetic": "BAS-ket",
+      "syllables": "bas-ket",
+      "difficulty": "hard",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "blanket",
+      "definition": "A warm cover for a bed",
+      "example": "I pulled the blanket up to my chin.",
+      "phonetic": "BLAN-ket",
+      "syllables": "blan-ket",
+      "difficulty": "hard",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "branch",
+      "definition": "A part of a tree that grows from the trunk",
+      "example": "A bird landed on the branch.",
+      "phonetic": "BRANCH",
+      "syllables": "branch",
+      "difficulty": "medium",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "cactus",
+      "definition": "A desert plant with spines",
+      "example": "The cactus needs very little water.",
+      "phonetic": "CAC-tus",
+      "syllables": "cac-tus",
+      "difficulty": "hard",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "dragon",
+      "definition": "A large mythical creature",
+      "example": "The storybook dragon guarded a cave.",
+      "phonetic": "DRAG-on",
+      "syllables": "drag-on",
+      "difficulty": "medium",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "frozen",
+      "definition": "Turned into ice by cold",
+      "example": "The pond was frozen this morning.",
+      "phonetic": "FRO-zen",
+      "syllables": "fro-zen",
+      "difficulty": "medium",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "gardenia",
+      "definition": "A fragrant white flower",
+      "example": "A gardenia bloomed near the porch.",
+      "phonetic": "GAR-de-ni-a",
+      "syllables": "gar-de-ni-a",
+      "difficulty": "hard",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "helmet",
+      "definition": "A hard hat for protection",
+      "example": "Wear your helmet when riding a bike.",
+      "phonetic": "HEL-met",
+      "syllables": "hel-met",
+      "difficulty": "medium",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "kittenish",
+      "definition": "Playful like a kitten",
+      "example": "The puppy made kittenish jumps around us.",
+      "phonetic": "KIT-ten-ish",
+      "syllables": "kit-ten-ish",
+      "difficulty": "medium",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "lantern",
+      "definition": "A lamp with a protective case",
+      "example": "We carried a lantern on the trail.",
+      "phonetic": "LAN-tern",
+      "syllables": "lan-tern",
+      "difficulty": "hard",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "magnet",
+      "definition": "An object that attracts iron",
+      "example": "The magnet pulled the paper clips close.",
+      "phonetic": "MAG-net",
+      "syllables": "mag-net",
+      "difficulty": "medium",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "napkin",
+      "definition": "A cloth or paper used at meals",
+      "example": "Put the napkin on your lap.",
+      "phonetic": "NAP-kin",
+      "syllables": "nap-kin",
+      "difficulty": "hard",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "planet",
+      "definition": "A large body orbiting a star",
+      "example": "Earth is the planet we live on.",
+      "phonetic": "PLAN-et",
+      "syllables": "plan-et",
+      "difficulty": "hard",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "rocket",
+      "definition": "A vehicle that can travel into space",
+      "example": "The toy rocket zoomed across the room.",
+      "phonetic": "ROCK-et",
+      "syllables": "rock-et",
+      "difficulty": "medium",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "splash",
+      "definition": "The sound or act of water striking",
+      "example": "The duck made a big splash.",
+      "phonetic": "SPLASH",
+      "syllables": "splash",
+      "difficulty": "medium",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "thunder",
+      "definition": "The loud sound after lightning",
+      "example": "Thunder shook the windows last night.",
+      "phonetic": "THUN-der",
+      "syllables": "thun-der",
+      "difficulty": "hard",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "trumpet",
+      "definition": "A brass musical instrument",
+      "example": "He practiced trumpet in band class.",
+      "phonetic": "TRUM-pet",
+      "syllables": "trum-pet",
+      "difficulty": "hard",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "window",
+      "definition": "An opening in a wall with glass",
+      "example": "Rain tapped on the window.",
+      "phonetic": "WIN-dow",
+      "syllables": "win-dow",
+      "difficulty": "medium",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "yellowish",
+      "definition": "Slightly yellow in color",
+      "example": "The old paper looked yellowish.",
+      "phonetic": "YEL-low-ish",
+      "syllables": "yel-low-ish",
+      "difficulty": "medium",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "zigzag",
+      "definition": "A pattern with sharp turns",
+      "example": "The path made a zigzag up the hill.",
+      "phonetic": "ZIG-zag",
+      "syllables": "zig-zag",
+      "difficulty": "medium",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "adventure",
+      "definition": "An exciting experience",
+      "example": "Our camping trip was a big adventure.",
+      "phonetic": "AD-ven-ture",
+      "syllables": "ad-ven-ture",
+      "difficulty": "hard",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "butterfly",
+      "definition": "An insect with colorful wings",
+      "example": "A butterfly landed on the flower.",
+      "phonetic": "BUT-ter-fly",
+      "syllables": "but-ter-fly",
+      "difficulty": "hard",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "chocolate",
+      "definition": "A sweet food made from cocoa",
+      "example": "She shared a piece of chocolate.",
+      "phonetic": "CHOC-o-late",
+      "syllables": "choc-o-late",
+      "difficulty": "hard",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "dinosaur",
+      "definition": "A prehistoric reptile",
+      "example": "The dinosaur exhibit was my favorite.",
+      "phonetic": "DI-no-saur",
+      "syllables": "di-no-saur",
+      "difficulty": "hard",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "elephant",
+      "definition": "A very large animal with a trunk",
+      "example": "The elephant sprayed water on itself.",
+      "phonetic": "EL-e-phant",
+      "syllables": "el-e-phant",
+      "difficulty": "hard",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "fireworks",
+      "definition": "Exploding lights in the sky",
+      "example": "We watched fireworks on the holiday.",
+      "phonetic": "FIRE-works",
+      "syllables": "fire-works",
+      "difficulty": "hard",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "giraffe",
+      "definition": "A tall animal with a long neck",
+      "example": "The giraffe reached the highest leaves.",
+      "phonetic": "GI-raffe",
+      "syllables": "gi-raffe",
+      "difficulty": "hard",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "hamburger",
+      "definition": "A sandwich with a cooked patty",
+      "example": "He ordered a hamburger for lunch.",
+      "phonetic": "HAM-bur-ger",
+      "syllables": "ham-bur-ger",
+      "difficulty": "hard",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "important",
+      "definition": "Having great value or meaning",
+      "example": "It is important to be kind to others.",
+      "phonetic": "IM-por-tant",
+      "syllables": "im-por-tant",
+      "difficulty": "hard",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "jellyfish",
+      "definition": "A sea animal with soft body",
+      "example": "A jellyfish drifted near the shore.",
+      "phonetic": "JEL-ly-fish",
+      "syllables": "jel-ly-fish",
+      "difficulty": "hard",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "kangaroo",
+      "definition": "A hopping animal from Australia",
+      "example": "The kangaroo carried a joey in its pouch.",
+      "phonetic": "KAN-ga-roo",
+      "syllables": "kan-ga-roo",
+      "difficulty": "hard",
+      "gradeLevel": "K-2"
+    },
+    {
+      "word": "lighthouse",
+      "definition": "A tower with a bright warning light",
+      "example": "The lighthouse guided ships at night.",
+      "phonetic": "LIGHT-house",
+      "syllables": "light-house",
+      "difficulty": "hard",
+      "gradeLevel": "K-2"
+    }
+  ]
+}
