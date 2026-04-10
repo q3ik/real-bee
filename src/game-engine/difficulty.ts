@@ -57,7 +57,11 @@ export interface AvailableWordsResult {
 
 /**
  * Returns available words filtered by difficulty and grade,
- * excluding recently used and mastered words (with 10% mastered re-allowance).
+ * excluding recently used and mastered words.
+ *
+ * The 10% mastered re-allowance is applied only in the empty-pool fallback
+ * path so that the primary filter is deterministic (important for tests and
+ * for preventing mastered words from unexpectedly surfacing mid-session).
  */
 export function getAvailableWords(
   words: Word[],
@@ -84,21 +88,22 @@ export function getAvailableWords(
     (word) => matchesDifficulty(word) && matchesGrade(word),
   );
 
-  // Allow 10% chance to include mastered words to prevent over-filtering
-  const allowMastered = Math.random() < 0.1;
-
+  // Primary filter: always exclude mastered and used words.
+  // The 10% re-allowance for mastered words is intentionally deferred to the
+  // empty-pool fallback below so this path is fully deterministic.
   const availableWords = basePool.filter((word) => {
     if (!word.word) return false;
-    const isMastered = masteredSet.has(word.word);
-    if (isMastered && !allowMastered) return false;
+    if (masteredSet.has(word.word)) return false;
     return !usedSet.has(word.word);
   });
 
   if (availableWords.length === 0) {
-    // No words available — reset used words and try again.
-    // Apply the same word.word truthy guard as the primary path so the fallback
-    // never returns entries with an unusable word string.
-    const resetPool = basePool.filter((word) => word.word && !masteredSet.has(word.word));
+    // Pool exhausted — allow a 10% chance to surface mastered words so the
+    // player isn't permanently blocked after mastering everything.
+    const allowMastered = Math.random() < 0.1;
+    const resetPool = basePool.filter(
+      (word) => word.word && (allowMastered || !masteredSet.has(word.word)),
+    );
     const fallbackReason = basePool.length === 0 ? 'all' : null;
     return { availableWords: resetPool, shouldResetUsed: true, fallbackReason };
   }

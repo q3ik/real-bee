@@ -422,17 +422,20 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   nextWord: () => {
-    // Reset the debounce guard so the first submitAnswer call of the new round
-    // is never blocked by the timestamp from the previous round. The guard only
-    // needs to prevent rapid-fire duplicates within a single round; carrying it
-    // across round boundaries caused test failures at L230 and L282.
+    // Reset the debounce guard so the first submitAnswer call on the new round
+    // is never blocked by the previous round's timestamp (tests call nextWord
+    // and submitAnswer back-to-back in the same synchronous tick).
     lastSubmitAt = 0;
+    isSubmitting = false;
     set({ phase: "playing" });
     get().startNewRound();
   },
 
   restartGame: () => {
     usedWordsSet.clear();
+    // Reset debounce/re-entrancy guards so a fresh session starts clean.
+    lastSubmitAt = 0;
+    isSubmitting = false;
     set({
       score: 0,
       streak: 0,
