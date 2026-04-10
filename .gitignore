@@ -9,3 +9,4 @@ coverage/
 firebase-applet-config.json
 .qwen/
 /test-results
+/logs
