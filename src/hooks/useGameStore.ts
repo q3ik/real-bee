@@ -185,7 +185,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   startSession: () => {
     usedWordsSet.clear();
     masteredWordsSet.clear();
-        // Capture baseline so sessionStats reflects only this session's progress.
+    // Capture baseline so sessionStats reflects only this session's progress.
     const { score, roundsPlayed, correctAnswers } = get();
     set({
       score,
@@ -411,32 +411,13 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   nextWord: () => {
-// TODO: Resovle merge conflict! <<<<<<< zed-branch-2
-    // Reset the debounce guard so the first submitAnswer call of the new round
-    // is never blocked by the timestamp from the previous round. The guard only
-    // needs to prevent rapid-fire duplicates within a single round; carrying it
-    // across round boundaries caused test failures at L230 and L282.
-        set({ phase: "playing" });
-// TODO: Resovle merge conflict! =======
-    // Reset the debounce guard so the first submitAnswer call on the new round
-    // is never blocked by the previous round's timestamp (tests call nextWord
-    // and submitAnswer back-to-back in the same synchronous tick).
-    lastSubmitAt = 0;
-    isSubmitting = false;
     set({ phase: "playing" });
-// TODO: Resovle merge conflict! >>>>>>> trunk
     get().startNewRound();
   },
 
   restartGame: () => {
     usedWordsSet.clear();
-// TODO: Resovle merge conflict! <<<<<<< zed-branch-2
     masteredWordsSet.clear();
-// TODO: Resovle merge conflict! =======
-    // Reset debounce/re-entrancy guards so a fresh session starts clean.
-    lastSubmitAt = 0;
-    isSubmitting = false;
-// TODO: Resovle merge conflict! >>>>>>> trunk
     set({
       score: 0,
       streak: 0,

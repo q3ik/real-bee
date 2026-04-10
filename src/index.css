@@ -43,15 +43,11 @@
 /* ========================================================================= */
 
 @layer base {
-/* TODO: Resovle merge conflict! <<<<<<< zed-branch-2 */
     * {
         @apply border-border;
     }
     body {
         @apply antialiased text-gray-900 bg-background;
-/* TODO: Resovle merge conflict! ======= */
-    body {
-        @apply antialiased text-gray-900;
         -webkit-tap-highlight-color: transparent;
     }
 
@@ -59,7 +55,6 @@
     html,
     body {
         overscroll-behavior-y: contain;
-/* TODO: Resovle merge conflict! >>>>>>> trunk */
     }
 }
 

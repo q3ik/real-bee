@@ -73,15 +73,16 @@ const MOCK_WORDS = [
     difficulty: "easy",
   },
   {
-//TODO: Resovle merge conflict! <<<<<<< zed-branch-2
     word: "bee",
     definition: "A flying insect.",
     sentence: "The bee buzzed.",
-// TODO: Resovle merge conflict! =======
+    grade: 1,
+    difficulty: "easy",
+  },
+  {
     word: "run",
     definition: "To move quickly on foot.",
     sentence: "The child ran fast.",
-// TODO: Resovle merge conflict! >>>>>>> trunk
     grade: 1,
     difficulty: "easy",
   },
@@ -136,12 +137,8 @@ async function getStore() {
 // ---------------------------------------------------------------------------
 
 describe("useGameState", () => {
-// TODO: Resovle merge conflict! <<<<<<< zed-branch-2
   beforeEach(async () => {
     vi.resetModules();
-// TODO: Resovle merge conflict! =======
-  beforeEach(() => {
-// TODO: Resovle merge conflict! >>>>>>> trunk
     vi.clearAllMocks();
     // Reset the debounce guard so tests don't interfere with each other
     const { useGameStore } = await import("../useGameStore");

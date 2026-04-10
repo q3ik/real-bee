@@ -10,17 +10,9 @@ import "./styles/mobile-modal-fixes.css";
 
 // ---------------------------------------------------------------------------
 
-// TODO: Resovle merge conflict! <<<<<<< zed-branch-2
-// PWA Service Worker Registration
-// ---------------------------------------------------------------------------
-if ("serviceWorker" in navigator) {
-  
-// TODO: Resovle merge conflict! =======
 // PWA Service Worker Registration (production only — avoids HMR conflicts)
 // ---------------------------------------------------------------------------
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
-// TODO: Resovle merge conflict! >>>>>>> trunk
-
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("/service-worker.js", { scope: "/" })
