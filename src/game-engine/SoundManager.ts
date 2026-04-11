@@ -27,11 +27,27 @@ export class SoundManager {
   private audioCache: Map<string, AudioBuffer> = new Map();
   private cacheKeys: string[] = [];
   private activeSources: AudioBufferSourceNode[] = [];
+  private _enabled: boolean = true;
 
   constructor() {
     this.isSupported =
-      typeof window !== 'undefined' &&
-      ('AudioContext' in window || 'webkitAudioContext' in window);
+      typeof window !== "undefined" &&
+      ("AudioContext" in window || "webkitAudioContext" in window);
+  }
+
+  /**
+   * Enable or disable sound playback.
+   * When disabled, `play()` becomes a no-op.
+   */
+  setEnabled(enabled: boolean): void {
+    this._enabled = enabled;
+  }
+
+  /**
+   * Returns whether sound playback is currently enabled.
+   */
+  isEnabled(): boolean {
+    return this._enabled;
   }
 
   /**
@@ -41,13 +57,14 @@ export class SoundManager {
    */
   getContext(): AudioContext {
     if (!this.isSupported) {
-      throw new Error('AudioContext not supported');
+      throw new Error("AudioContext not supported");
     }
     if (!this.context) {
-      const AC = (window as any).AudioContext ?? (window as any).webkitAudioContext;
+      const AC =
+        (window as any).AudioContext ?? (window as any).webkitAudioContext;
       this.context = new AC() as AudioContext;
     }
-    if (this.context.state === 'suspended') {
+    if (this.context.state === "suspended") {
       this.context.resume();
     }
     return this.context;
@@ -60,7 +77,7 @@ export class SoundManager {
    * @param volume - Volume level (0-1, default 0.2)
    */
   play(kind: string, volume: number = 0.2): void {
-    if (!this.isSupported) return;
+    if (!this.isSupported || !this._enabled) return;
 
     const context = this.getContext();
     const frequencies = SOUND_FREQUENCIES[kind];
@@ -74,13 +91,16 @@ export class SoundManager {
       const osc = context.createOscillator();
       const gain = context.createGain();
 
-      if (kind === 'incorrect') {
-        osc.type = 'sawtooth';
+      if (kind === "incorrect") {
+        osc.type = "sawtooth";
       }
 
       osc.frequency.setValueAtTime(freq, context.currentTime + i * 0.1);
       gain.gain.setValueAtTime(effectiveVolume, context.currentTime + i * 0.1);
-      gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + i * 0.1 + 0.3);
+      gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        context.currentTime + i * 0.1 + 0.3,
+      );
 
       osc.connect(gain);
       gain.connect(context.destination);
@@ -99,7 +119,7 @@ export class SoundManager {
     options: PlayAudioBufferOptions = {},
   ): Promise<void> {
     if (!this.isSupported) {
-      throw new Error('AudioContext not supported');
+      throw new Error("AudioContext not supported");
     }
 
     const context = this.getContext();
@@ -116,10 +136,13 @@ export class SoundManager {
         let arrayBuffer: ArrayBuffer;
         if (audioData instanceof ArrayBuffer) {
           arrayBuffer = audioData;
-        } else if (audioData && typeof (audioData as Blob).arrayBuffer === 'function') {
+        } else if (
+          audioData &&
+          typeof (audioData as Blob).arrayBuffer === "function"
+        ) {
           arrayBuffer = await (audioData as Blob).arrayBuffer();
         } else {
-          throw new Error('Invalid audio data');
+          throw new Error("Invalid audio data");
         }
 
         audioBuffer = await context.decodeAudioData(arrayBuffer);
@@ -202,13 +225,16 @@ export class SoundManager {
    * Preload and cache audio data without playing.
    * No-ops when AudioContext is not supported (SSR / unsupported browsers).
    */
-  async preloadAudio(audioData: ArrayBuffer | Blob | null, cacheKey: string): Promise<void> {
+  async preloadAudio(
+    audioData: ArrayBuffer | Blob | null,
+    cacheKey: string,
+  ): Promise<void> {
     if (!this.isSupported) {
-      throw new Error('AudioContext not supported');
+      throw new Error("AudioContext not supported");
     }
 
     if (!cacheKey) {
-      throw new Error('cacheKey required');
+      throw new Error("cacheKey required");
     }
 
     if (this.isCached(cacheKey)) {
@@ -220,10 +246,13 @@ export class SoundManager {
     let arrayBuffer: ArrayBuffer;
     if (audioData instanceof ArrayBuffer) {
       arrayBuffer = audioData;
-    } else if (audioData && typeof (audioData as Blob).arrayBuffer === 'function') {
+    } else if (
+      audioData &&
+      typeof (audioData as Blob).arrayBuffer === "function"
+    ) {
       arrayBuffer = await (audioData as Blob).arrayBuffer();
     } else {
-      throw new Error('Invalid audio data');
+      throw new Error("Invalid audio data");
     }
 
     const audioBuffer = await context.decodeAudioData(arrayBuffer);

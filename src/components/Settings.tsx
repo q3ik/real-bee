@@ -45,14 +45,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
   } = useGameStore();
 
   // useUserPreferences for Dexie persistence
-  const {
-    soundEnabled: prefSoundEnabled,
-    setSoundEnabled,
-    autoSubmit,
-    setAutoSubmit,
-    handleDifficultySelect,
-    handleGradeLevelSelect,
-  } = useUserPreferences({
+  const { preferences, updatePreference } = useUserPreferences({
     userId,
     onDifficultyChange: (diff) => {
       setDifficulty(diff as "easy" | "medium" | "hard" | "all");
@@ -65,16 +58,16 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
   });
 
   // Sync soundEnabled between store and preferences
-  const effectiveMuted = prefSoundEnabled ? isMuted : true;
+  const effectiveMuted = preferences.soundEnabled ? isMuted : true;
 
   const handleGradeChange = (g: (typeof GRADE_OPTIONS)[number]) => {
     setGradeLevel(g.value);
-    handleGradeLevelSelect(g.prefValue);
+    updatePreference("grade", g.prefValue);
   };
 
   const handleDifficultyChange = (d: (typeof DIFFICULTY_OPTIONS)[number]) => {
     setDifficulty(d.value as "easy" | "medium" | "hard" | "all");
-    handleDifficultySelect(d.prefValue);
+    updatePreference("difficulty", d.prefValue);
   };
 
   if (!isOpen) return null;
@@ -208,9 +201,9 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div
-                className={`p-3 rounded-2xl ${prefSoundEnabled ? "bg-green-50 text-green-500" : "bg-red-50 text-red-500"}`}
+                className={`p-3 rounded-2xl ${preferences.soundEnabled ? "bg-green-50 text-green-500" : "bg-red-50 text-red-500"}`}
               >
-                {prefSoundEnabled ? (
+                {preferences.soundEnabled ? (
                   <Volume2 className="w-6 h-6" />
                 ) : (
                   <VolumeX className="w-6 h-6" />
@@ -222,11 +215,13 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
               </div>
             </div>
             <button
-              onClick={() => setSoundEnabled(!prefSoundEnabled)}
-              className={`w-14 h-8 rounded-full relative transition-colors ${prefSoundEnabled ? "bg-green-500" : "bg-gray-200"}`}
+              onClick={() =>
+                updatePreference("soundEnabled", !preferences.soundEnabled)
+              }
+              className={`w-14 h-8 rounded-full relative transition-colors ${preferences.soundEnabled ? "bg-green-500" : "bg-gray-200"}`}
             >
               <div
-                className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${prefSoundEnabled ? "left-7" : "left-1"}`}
+                className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${preferences.soundEnabled ? "left-7" : "left-1"}`}
               />
             </button>
           </div>
@@ -235,7 +230,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div
-                className={`p-3 rounded-2xl ${autoSubmit ? "bg-purple-50 text-purple-500" : "bg-gray-100 text-gray-400"}`}
+                className={`p-3 rounded-2xl ${preferences.autoSubmit ? "bg-purple-50 text-purple-500" : "bg-gray-100 text-gray-400"}`}
               >
                 <Check className="w-6 h-6" />
               </div>
@@ -247,11 +242,13 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
               </div>
             </div>
             <button
-              onClick={() => setAutoSubmit(!autoSubmit)}
-              className={`w-14 h-8 rounded-full relative transition-colors ${autoSubmit ? "bg-purple-500" : "bg-gray-200"}`}
+              onClick={() =>
+                updatePreference("autoSubmit", !preferences.autoSubmit)
+              }
+              className={`w-14 h-8 rounded-full relative transition-colors ${preferences.autoSubmit ? "bg-purple-500" : "bg-gray-200"}`}
             >
               <div
-                className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${autoSubmit ? "left-7" : "left-1"}`}
+                className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${preferences.autoSubmit ? "left-7" : "left-1"}`}
               />
             </button>
           </div>
