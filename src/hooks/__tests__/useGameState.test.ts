@@ -73,6 +73,13 @@ const MOCK_WORDS = [
     difficulty: "easy",
   },
   {
+    word: "bee",
+    definition: "A flying insect.",
+    sentence: "The bee buzzed.",
+    grade: 1,
+    difficulty: "easy",
+  },
+  {
     word: "run",
     definition: "To move quickly on foot.",
     sentence: "The child ran fast.",
@@ -107,6 +114,15 @@ vi.mock("../../lib/wordList", () => ({
   WORD_LIST: MOCK_WORDS,
 }));
 
+vi.mock("sonner", () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+  },
+}));
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -130,11 +146,16 @@ async function getStore() {
 // ---------------------------------------------------------------------------
 
 describe("useGameState", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    vi.resetModules();
     vi.clearAllMocks();
+    // Reset the debounce guard so tests don't interfere with each other
+    const { useGameStore } = await import("../useGameStore");
+    useGameStore.getState().restartGame();
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.useRealTimers();
   });
 
@@ -401,7 +422,7 @@ describe("useGameState", () => {
     // Use store.getState().phase (synchronous) rather than result.current.phase
     // (React hook state) to avoid reading stale state between act() calls.
     for (let i = 0; i < MOCK_WORDS.length; i++) {
-      if (result.current.phase !== "playing") break;
+      if (store.getState().phase !== "playing") break;
       const word = store.getState().currentWord!.word;
       act(() => {
         result.current.submitAnswer(word);
@@ -460,7 +481,7 @@ describe("useGameState", () => {
     // break prematurely after the first correct answer.
     let correctCount = 0;
     for (let i = 0; i < 5; i++) {
-      if (gameResult.current.phase !== "playing") break;
+      if (store.getState().phase !== "playing") break;
       const word = store.getState().currentWord!.word;
       let returned: boolean | null = null;
       act(() => {

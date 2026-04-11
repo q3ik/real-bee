@@ -140,9 +140,7 @@ const usedWordsSet = new Set<string>();
 // toggleMastery/loadProgress to prevent desync after startSession/loadProgress.
 const masteredWordsSet = new Set<string>();
 /** Debounce guard: timestamp of last successful submission. */
-let lastSubmitAt = 0;
 /** Re-entrancy guard: true while a submission is being processed. */
-let isSubmitting = false;
 
 export const useGameStore = create<GameState>((set, get) => ({
   // --- FSM ---
@@ -187,8 +185,6 @@ export const useGameStore = create<GameState>((set, get) => ({
   startSession: () => {
     usedWordsSet.clear();
     masteredWordsSet.clear();
-    lastSubmitAt = 0;
-    isSubmitting = false;
     // Capture baseline so sessionStats reflects only this session's progress.
     const { score, roundsPlayed, correctAnswers } = get();
     set({
@@ -279,12 +275,6 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   submitAnswer: (answer, isVoice = false) => {
-    // Debounce: prevent rapid-fire duplicate submissions (500ms window)
-    const now = Date.now();
-    if (now - lastSubmitAt < 500) return false;
-    // Re-entrancy guard: block concurrent submissions
-    if (isSubmitting) return false;
-
     const {
       currentWord,
       phase,
@@ -389,7 +379,6 @@ export const useGameStore = create<GameState>((set, get) => ({
     });
 
     // Update debounce timestamp
-    lastSubmitAt = Date.now();
 
     return submissionResult.isCorrect;
   },
@@ -422,20 +411,13 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   nextWord: () => {
-    // Reset the debounce guard so the first submitAnswer call on the new round
-    // is never blocked by the previous round's timestamp (tests call nextWord
-    // and submitAnswer back-to-back in the same synchronous tick).
-    lastSubmitAt = 0;
-    isSubmitting = false;
     set({ phase: "playing" });
     get().startNewRound();
   },
 
   restartGame: () => {
     usedWordsSet.clear();
-    // Reset debounce/re-entrancy guards so a fresh session starts clean.
-    lastSubmitAt = 0;
-    isSubmitting = false;
+    masteredWordsSet.clear();
     set({
       score: 0,
       streak: 0,

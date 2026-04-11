@@ -118,11 +118,9 @@ export interface UseHostMessagesResult {
   /** Clear the current host message */
   clearMessage: () => void;
 
-  /** Current active toast notification, or null */
-  toast: ToastNotification | null;
-  /** Show a toast notification */
+  /** Show a toast notification via sonner */
   showToast: (level: ToastLevel, text: string, durationMs?: number) => void;
-  /** Dismiss the current toast */
+  /** Dismiss all toasts */
   dismissToast: () => void;
 
   /** Process a feedback event (state machine trigger) */

@@ -8,9 +8,9 @@ import "./styles/touch-target-fixes.css";
 import "./styles/mobile-modal-fixes.css";
 
 // ---------------------------------------------------------------------------
+
 // PWA Service Worker Registration (production only — avoids HMR conflicts)
 // ---------------------------------------------------------------------------
-
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
