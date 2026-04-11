@@ -43,14 +43,21 @@ class AudioManager {
         return;
       } catch (error: unknown) {
         const errorMsg = (error as Error)?.message ?? String(error);
-        // Handle quota errors or general TTS failures by falling back
+        // Quota errors and network errors (offline, DNS, worker not running)
+        // are expected conditions — silently fall back to Web Speech without
+        // console noise.  Only truly unexpected errors (e.g. audio decode
+        // failures) should be logged.
         if (
           errorMsg.includes("429") ||
           errorMsg.includes("RESOURCE_EXHAUSTED") ||
           errorMsg.includes("quota") ||
-          errorMsg.includes("exceeded quota")
+          errorMsg.includes("exceeded quota") ||
+          errorMsg.includes("Failed to fetch") ||
+          errorMsg.includes("NetworkError") ||
+          errorMsg.includes("network") ||
+          errorMsg.includes("abort")
         ) {
-          // Silent fallback for quota issues
+          // Silent fallback for quota and network issues
         } else {
           console.error(
             "Gemini TTS failed, falling back to Web Speech:",

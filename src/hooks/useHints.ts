@@ -1,12 +1,17 @@
-import { useCallback, useRef, useState } from 'react';
-import type { Hint, HintType, UseHintsResult, WordData } from './useHints.types';
+import { useCallback, useRef, useState } from "react";
+import type {
+  Hint,
+  HintType,
+  UseHintsResult,
+  WordData,
+} from "./useHints.types";
 
 /**
  * Generate a hint based on word properties, avoiding previously used hint types.
  */
 function generateHint(
   wordData: WordData | null | undefined,
-  usedHints: HintType[] = []
+  usedHints: HintType[] = [],
 ): Hint | null {
   if (!wordData?.word) return null;
 
@@ -15,8 +20,8 @@ function generateHint(
 
   const startsWithVowel = /^[aeiou]/i.test(word);
   hints.push({
-    type: 'vowel',
-    text: startsWithVowel ? 'Starts with a vowel' : 'Starts with a consonant',
+    type: "vowel",
+    text: startsWithVowel ? "Starts with a vowel" : "Starts with a consonant",
   });
 
   const hasDoubleLetter = /(.)\1/.test(word);
@@ -24,47 +29,47 @@ function generateHint(
     const match = word.match(/(.)\1/);
     if (match) {
       hints.push({
-        type: 'double',
+        type: "double",
         text: `Contains a double letter (${match[1].toUpperCase()})`,
       });
     }
   }
 
   hints.push({
-    type: 'length',
+    type: "length",
     text: `${word.length} letters long`,
   });
 
   hints.push({
-    type: 'first',
+    type: "first",
     text: `Starts with '${word[0].toUpperCase()}'`,
   });
 
   hints.push({
-    type: 'last',
+    type: "last",
     text: `Ends with '${word[word.length - 1].toUpperCase()}'`,
   });
 
   const syllableBreakdown =
-    wordData.syllables && typeof wordData.syllables === 'string'
+    wordData.syllables && typeof wordData.syllables === "string"
       ? wordData.syllables
-      : word.includes('-')
+      : word.includes("-")
         ? word
         : null;
 
   const syllableCount = syllableBreakdown
-    ? syllableBreakdown.split('-').length
+    ? syllableBreakdown.split("-").length
     : 1;
 
+  // Only reveal the count — the syllable breakdown (e.g. "cat-er-pil-lar")
+  // would give away the spelling, so we never surface it in the UI.
   hints.push({
-    type: 'syllables',
-    text: syllableBreakdown
-      ? `Syllables: ${syllableBreakdown} (${syllableCount})`
-      : `${syllableCount} syllable${syllableCount !== 1 ? 's' : ''}`,
-    spokenText: `${syllableCount} syllable${syllableCount !== 1 ? 's' : ''}`,
+    type: "syllables",
+    text: `${syllableCount} syllable${syllableCount !== 1 ? "s" : ""}`,
+    spokenText: `${syllableCount} syllable${syllableCount !== 1 ? "s" : ""}`,
   });
 
-  const availableHints = hints.filter(h => !usedHints.includes(h.type));
+  const availableHints = hints.filter((h) => !usedHints.includes(h.type));
   return availableHints.length > 0 ? availableHints[0] : null;
 }
 
@@ -81,7 +86,7 @@ export function useHints(): UseHintsResult {
     const hint = generateHint(wordData, hintTypesRef.current);
 
     if (hint) {
-      setHints(prev => [...prev, hint]);
+      setHints((prev) => [...prev, hint]);
       hintTypesRef.current = [...hintTypesRef.current, hint.type];
     }
 
@@ -122,4 +127,4 @@ export type {
   Hint,
   WordData,
   UseHintsResult,
-} from './useHints.types';
+} from "./useHints.types";

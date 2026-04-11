@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { toast as sonnerToast } from "sonner";
 import type {
   FeedbackContext,
   FeedbackEvent,
@@ -8,7 +9,6 @@ import type {
   Message,
   MessageType,
   ToastLevel,
-  ToastNotification,
   UseHostMessagesResult,
 } from "./useHostMessages.types";
 import { STREAK_MILESTONES } from "../constants/game";
@@ -131,8 +131,6 @@ export function useHostMessages(): UseHostMessagesResult {
   const [currentMessage, setCurrentMessage] = useState<HostMessage | null>(
     null,
   );
-  const [toast, setToast] = useState<ToastNotification | null>(null);
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const speakTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const addMessage = useCallback((type: MessageType, text: string): void => {
@@ -145,22 +143,25 @@ export function useHostMessages(): UseHostMessagesResult {
 
   const showToast = useCallback(
     (level: ToastLevel, text: string, durationMs = 2000): void => {
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-      setToast({ level, text, durationMs });
-      toastTimerRef.current = setTimeout(() => {
-        setToast(null);
-        toastTimerRef.current = null;
-      }, durationMs);
+      const toastId = sonnerToast[level === "warning" ? "warning" : level](
+        text,
+        {
+          duration: durationMs,
+        },
+      );
+
+      // Auto-dismiss after duration
+      if (durationMs > 0) {
+        setTimeout(() => {
+          sonnerToast.dismiss(toastId);
+        }, durationMs);
+      }
     },
     [],
   );
 
   const dismissToast = useCallback((): void => {
-    if (toastTimerRef.current) {
-      clearTimeout(toastTimerRef.current);
-      toastTimerRef.current = null;
-    }
-    setToast(null);
+    sonnerToast.dismiss();
   }, []);
 
   const triggerMessage = useCallback(
@@ -231,7 +232,6 @@ export function useHostMessages(): UseHostMessagesResult {
     currentMessage,
     triggerMessage,
     clearMessage,
-    toast,
     showToast,
     dismissToast,
     onFeedback,
