@@ -1,459 +1,452 @@
-{
-  "grade": 12,
-  "language": "en-US",
-  "version": "1.0.0",
-  "lastUpdated": "2026-03-03T22:00:53.309Z",
-  "wordCount": 50,
-  "words": [
-    {
-      "word": "accommodate",
-      "definition": "To provide lodging or adjust to",
-      "example": "The hotel can accommodate 200 guests.",
-      "phonetic": "AC-com-mo-date",
-      "syllables": "ac-com-mo-date",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "bureaucracy",
-      "definition": "Administrative government system",
-      "example": "The bureaucracy slowed the process.",
-      "phonetic": "BU-reau-cra-cy",
-      "syllables": "bu-reau-cra-cy",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "conscientious",
-      "definition": "Thorough and careful",
-      "example": "She is a conscientious worker.",
-      "phonetic": "CON-sci-en-tious",
-      "syllables": "con-sci-en-tious",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "entrepreneur",
-      "definition": "A business founder",
-      "example": "The entrepreneur started three companies.",
-      "phonetic": "EN-tre-pre-neur",
-      "syllables": "en-tre-pre-neur",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "fluorescent",
-      "definition": "Emitting bright light",
-      "example": "The fluorescent lights buzzed overhead.",
-      "phonetic": "FLU-o-res-cent",
-      "syllables": "flu-o-res-cent",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "guarantee",
-      "definition": "A formal promise",
-      "example": "The product comes with a guarantee.",
-      "phonetic": "GUAR-an-tee",
-      "syllables": "guar-an-tee",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "hemorrhage",
-      "definition": "Severe bleeding",
-      "example": "The doctor stopped the hemorrhage.",
-      "phonetic": "HEM-or-rhage",
-      "syllables": "hem-or-rhage",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "inconvenience",
-      "definition": "Trouble or difficulty",
-      "example": "Sorry for any inconvenience caused.",
-      "phonetic": "IN-con-ven-ience",
-      "syllables": "in-con-ven-ience",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "jeopardize",
-      "definition": "To put at risk",
-      "example": "Don't jeopardize your future.",
-      "phonetic": "JEOP-ar-dize",
-      "syllables": "jeop-ar-dize",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "knowledgeable",
-      "definition": "Well informed",
-      "example": "The guide was very knowledgeable.",
-      "phonetic": "KNOWL-edge-a-ble",
-      "syllables": "knowl-edge-a-ble",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "liaison",
-      "definition": "A person who links groups",
-      "example": "She serves as liaison between departments.",
-      "phonetic": "LI-ai-son",
-      "syllables": "li-ai-son",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "mischievous",
-      "definition": "Playfully troublesome",
-      "example": "The mischievous child hid the keys.",
-      "phonetic": "MIS-chie-vous",
-      "syllables": "mis-chie-vous",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "onomatopoeia",
-      "definition": "Words that imitate sounds",
-      "example": "Buzz is an example of onomatopoeia.",
-      "phonetic": "ON-o-mat-o-poe-ia",
-      "syllables": "on-o-mat-o-poe-ia",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "pharmaceutical",
-      "definition": "Related to medicinal drugs",
-      "example": "The pharmaceutical company developed a vaccine.",
-      "phonetic": "PHAR-ma-ceu-ti-cal",
-      "syllables": "phar-ma-ceu-ti-cal",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "rendezvous",
-      "definition": "A planned meeting",
-      "example": "They arranged a secret rendezvous.",
-      "phonetic": "REN-dez-vous",
-      "syllables": "ren-dez-vous",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "surveillance",
-      "definition": "Close observation",
-      "example": "The building has surveillance cameras.",
-      "phonetic": "SUR-veil-lance",
-      "syllables": "sur-veil-lance",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "tyranny",
-      "definition": "Cruel oppressive rule",
-      "example": "The people rose against tyranny.",
-      "phonetic": "TYR-an-ny",
-      "syllables": "tyr-an-ny",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "ubiquitous",
-      "definition": "Present everywhere",
-      "example": "Smartphones are now ubiquitous.",
-      "phonetic": "U-biq-ui-tous",
-      "syllables": "u-biq-ui-tous",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "vocabulary",
-      "definition": "Words known or used",
-      "example": "Reading expands your vocabulary.",
-      "phonetic": "VO-cab-u-lar-y",
-      "syllables": "vo-cab-u-lar-y",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "Wednesday",
-      "definition": "The fourth day of the week",
-      "example": "The meeting is on Wednesday.",
-      "phonetic": "WEDNES-day",
-      "syllables": "Wednes-day",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "achievement",
-      "definition": "Something done successfully",
-      "example": "Winning the game was a great achievement.",
-      "phonetic": "A-chieve-ment",
-      "syllables": "a-chieve-ment",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "acoustic",
-      "definition": "Related to sound or hearing",
-      "example": "He played an acoustic guitar.",
-      "phonetic": "A-cous-tic",
-      "syllables": "a-cous-tic",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "algorithm",
-      "definition": "A set of rules for solving a problem",
-      "example": "The computer uses an algorithm to search.",
-      "phonetic": "AL-go-rithm",
-      "syllables": "al-go-rithm",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "amphibian",
-      "definition": "An animal living on land and water",
-      "example": "A frog is a type of amphibian.",
-      "phonetic": "AM-phib-i-an",
-      "syllables": "am-phib-i-an",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "analysis",
-      "definition": "Detailed examination",
-      "example": "The scientist performed an analysis of the data.",
-      "phonetic": "A-nal-y-sis",
-      "syllables": "a-nal-y-sis",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "ancient",
-      "definition": "Belonging to the very distant past",
-      "example": "They visited the ancient ruins.",
-      "phonetic": "AN-cient",
-      "syllables": "an-cient",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "anniversary",
-      "definition": "Date on which an event took place",
-      "example": "They celebrated their wedding anniversary.",
-      "phonetic": "AN-ni-ver-sa-ry",
-      "syllables": "an-ni-ver-sa-ry",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "anonymous",
-      "definition": "Not identified by name",
-      "example": "The donor chose to remain anonymous.",
-      "phonetic": "A-non-y-mous",
-      "syllables": "a-non-y-mous",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "antique",
-      "definition": "A collectible object having a high value",
-      "example": "This chair is a valuable antique.",
-      "phonetic": "AN-tique",
-      "syllables": "an-tique",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "anxiety",
-      "definition": "A feeling of worry or nervousness",
-      "example": "He felt anxiety before the test.",
-      "phonetic": "ANX-i-e-ty",
-      "syllables": "anx-i-e-ty",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "appreciate",
-      "definition": "To recognize the full worth of",
-      "example": "I appreciate your help.",
-      "phonetic": "AP-pre-ci-ate",
-      "syllables": "ap-pre-ci-ate",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "aquarium",
-      "definition": "A tank of water for fish",
-      "example": "We saw sharks at the aquarium.",
-      "phonetic": "A-quar-i-um",
-      "syllables": "a-quar-i-um",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "architecture",
-      "definition": "The art of designing buildings",
-      "example": "The city has beautiful architecture.",
-      "phonetic": "AR-chi-tec-ture",
-      "syllables": "ar-chi-tec-ture",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "arithmetic",
-      "definition": "The branch of math with numbers",
-      "example": "We learned arithmetic in school.",
-      "phonetic": "A-rith-me-tic",
-      "syllables": "a-rith-me-tic",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "artificial",
-      "definition": "Made by humans, not natural",
-      "example": "The flowers are artificial.",
-      "phonetic": "AR-ti-fi-cial",
-      "syllables": "ar-ti-fi-cial",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "atmosphere",
-      "definition": "Gases surrounding a planet",
-      "example": "The atmosphere protects the Earth.",
-      "phonetic": "AT-mos-phere",
-      "syllables": "at-mos-phere",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "audience",
-      "definition": "Spectators at an event",
-      "example": "The audience clapped loudly.",
-      "phonetic": "AU-di-ence",
-      "syllables": "au-di-ence",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "authentic",
-      "definition": "Of undisputed origin; genuine",
-      "example": "This is an authentic painting.",
-      "phonetic": "AU-then-tic",
-      "syllables": "au-then-tic",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "biography",
-      "definition": "An account of someone's life",
-      "example": "I read a biography of Lincoln.",
-      "phonetic": "BI-og-ra-phy",
-      "syllables": "bi-og-ra-phy",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "bizarre",
-      "definition": "Very strange or unusual",
-      "example": "It was a bizarre situation.",
-      "phonetic": "BI-zarre",
-      "syllables": "bi-zarre",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "camouflage",
-      "definition": "Disguise to blend with surroundings",
-      "example": "The soldier wore camouflage.",
-      "phonetic": "CAM-ou-flage",
-      "syllables": "cam-ou-flage",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "campaign",
-      "definition": "A series of actions for a goal",
-      "example": "The election campaign was intense.",
-      "phonetic": "CAM-paign",
-      "syllables": "cam-paign",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "capacity",
-      "definition": "The maximum amount something can hold",
-      "example": "The stadium was filled to capacity.",
-      "phonetic": "CA-pac-i-ty",
-      "syllables": "ca-pac-i-ty",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "catastrophe",
-      "definition": "A sudden great disaster",
-      "example": "The earthquake was a catastrophe.",
-      "phonetic": "CA-tas-tro-phe",
-      "syllables": "ca-tas-tro-phe",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "cemetery",
-      "definition": "A place for burying the dead",
-      "example": "They visited the old cemetery.",
-      "phonetic": "CEM-e-ter-y",
-      "syllables": "cem-e-ter-y",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "ceremony",
-      "definition": "A formal religious or public occasion",
-      "example": "The graduation ceremony is tomorrow.",
-      "phonetic": "CER-e-mo-ny",
-      "syllables": "cer-e-mo-ny",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "chameleon",
-      "definition": "A lizard that changes color",
-      "example": "The chameleon turned green.",
-      "phonetic": "CHA-me-le-on",
-      "syllables": "cha-me-le-on",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "chandelier",
-      "definition": "A decorative hanging light",
-      "example": "A crystal chandelier hung in the hall.",
-      "phonetic": "CHAN-de-lier",
-      "syllables": "chan-de-lier",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "character",
-      "definition": "A person in a novel or movie",
-      "example": "Who is your favorite character?",
-      "phonetic": "CHAR-ac-ter",
-      "syllables": "char-ac-ter",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    },
-    {
-      "word": "chemistry",
-      "definition": "Science of substances and reactions",
-      "example": "We did experiments in chemistry class.",
-      "phonetic": "CHEM-is-try",
-      "syllables": "chem-is-try",
-      "difficulty": "hard",
-      "gradeLevel": "6-8"
-    }
-  ]
-}
+[
+  {
+    "word": "accommodate",
+    "definition": "To provide lodging or adjust to",
+    "sentence": "The hotel can accommodate 200 guests.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "ac-com-mo-date",
+    "phonetic": "AC-com-mo-date"
+  },
+  {
+    "word": "bureaucracy",
+    "definition": "Administrative government system",
+    "sentence": "The bureaucracy slowed the process.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "bu-reau-cra-cy",
+    "phonetic": "BU-reau-cra-cy"
+  },
+  {
+    "word": "conscientious",
+    "definition": "Thorough and careful",
+    "sentence": "She is a conscientious worker.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "con-sci-en-tious",
+    "phonetic": "CON-sci-en-tious"
+  },
+  {
+    "word": "entrepreneur",
+    "definition": "A business founder",
+    "sentence": "The entrepreneur started three companies.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "en-tre-pre-neur",
+    "phonetic": "EN-tre-pre-neur"
+  },
+  {
+    "word": "fluorescent",
+    "definition": "Emitting bright light",
+    "sentence": "The fluorescent lights buzzed overhead.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "flu-o-res-cent",
+    "phonetic": "FLU-o-res-cent"
+  },
+  {
+    "word": "guarantee",
+    "definition": "A formal promise",
+    "sentence": "The product comes with a guarantee.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "guar-an-tee",
+    "phonetic": "GUAR-an-tee"
+  },
+  {
+    "word": "hemorrhage",
+    "definition": "Severe bleeding",
+    "sentence": "The doctor stopped the hemorrhage.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "hem-or-rhage",
+    "phonetic": "HEM-or-rhage"
+  },
+  {
+    "word": "inconvenience",
+    "definition": "Trouble or difficulty",
+    "sentence": "Sorry for any inconvenience caused.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "in-con-ven-ience",
+    "phonetic": "IN-con-ven-ience"
+  },
+  {
+    "word": "jeopardize",
+    "definition": "To put at risk",
+    "sentence": "Don't jeopardize your future.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "jeop-ar-dize",
+    "phonetic": "JEOP-ar-dize"
+  },
+  {
+    "word": "knowledgeable",
+    "definition": "Well informed",
+    "sentence": "The guide was very knowledgeable.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "knowl-edge-a-ble",
+    "phonetic": "KNOWL-edge-a-ble"
+  },
+  {
+    "word": "liaison",
+    "definition": "A person who links groups",
+    "sentence": "She serves as liaison between departments.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "li-ai-son",
+    "phonetic": "LI-ai-son"
+  },
+  {
+    "word": "mischievous",
+    "definition": "Playfully troublesome",
+    "sentence": "The mischievous child hid the keys.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "mis-chie-vous",
+    "phonetic": "MIS-chie-vous"
+  },
+  {
+    "word": "onomatopoeia",
+    "definition": "Words that imitate sounds",
+    "sentence": "Buzz is an example of onomatopoeia.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "on-o-mat-o-poe-ia",
+    "phonetic": "ON-o-mat-o-poe-ia"
+  },
+  {
+    "word": "pharmaceutical",
+    "definition": "Related to medicinal drugs",
+    "sentence": "The pharmaceutical company developed a vaccine.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "phar-ma-ceu-ti-cal",
+    "phonetic": "PHAR-ma-ceu-ti-cal"
+  },
+  {
+    "word": "rendezvous",
+    "definition": "A planned meeting",
+    "sentence": "They arranged a secret rendezvous.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "ren-dez-vous",
+    "phonetic": "REN-dez-vous"
+  },
+  {
+    "word": "surveillance",
+    "definition": "Close observation",
+    "sentence": "The building has surveillance cameras.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "sur-veil-lance",
+    "phonetic": "SUR-veil-lance"
+  },
+  {
+    "word": "tyranny",
+    "definition": "Cruel oppressive rule",
+    "sentence": "The people rose against tyranny.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "tyr-an-ny",
+    "phonetic": "TYR-an-ny"
+  },
+  {
+    "word": "ubiquitous",
+    "definition": "Present everywhere",
+    "sentence": "Smartphones are now ubiquitous.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "u-biq-ui-tous",
+    "phonetic": "U-biq-ui-tous"
+  },
+  {
+    "word": "vocabulary",
+    "definition": "Words known or used",
+    "sentence": "Reading expands your vocabulary.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "vo-cab-u-lar-y",
+    "phonetic": "VO-cab-u-lar-y"
+  },
+  {
+    "word": "Wednesday",
+    "definition": "The fourth day of the week",
+    "sentence": "The meeting is on Wednesday.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "Wednes-day",
+    "phonetic": "WEDNES-day"
+  },
+  {
+    "word": "achievement",
+    "definition": "Something done successfully",
+    "sentence": "Winning the game was a great achievement.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "a-chieve-ment",
+    "phonetic": "A-chieve-ment"
+  },
+  {
+    "word": "acoustic",
+    "definition": "Related to sound or hearing",
+    "sentence": "He played an acoustic guitar.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "a-cous-tic",
+    "phonetic": "A-cous-tic"
+  },
+  {
+    "word": "algorithm",
+    "definition": "A set of rules for solving a problem",
+    "sentence": "The computer uses an algorithm to search.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "al-go-rithm",
+    "phonetic": "AL-go-rithm"
+  },
+  {
+    "word": "amphibian",
+    "definition": "An animal living on land and water",
+    "sentence": "A frog is a type of amphibian.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "am-phib-i-an",
+    "phonetic": "AM-phib-i-an"
+  },
+  {
+    "word": "analysis",
+    "definition": "Detailed examination",
+    "sentence": "The scientist performed an analysis of the data.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "a-nal-y-sis",
+    "phonetic": "A-nal-y-sis"
+  },
+  {
+    "word": "ancient",
+    "definition": "Belonging to the very distant past",
+    "sentence": "They visited the ancient ruins.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "an-cient",
+    "phonetic": "AN-cient"
+  },
+  {
+    "word": "anniversary",
+    "definition": "Date on which an event took place",
+    "sentence": "They celebrated their wedding anniversary.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "an-ni-ver-sa-ry",
+    "phonetic": "AN-ni-ver-sa-ry"
+  },
+  {
+    "word": "anonymous",
+    "definition": "Not identified by name",
+    "sentence": "The donor chose to remain anonymous.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "a-non-y-mous",
+    "phonetic": "A-non-y-mous"
+  },
+  {
+    "word": "antique",
+    "definition": "A collectible object having a high value",
+    "sentence": "This chair is a valuable antique.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "an-tique",
+    "phonetic": "AN-tique"
+  },
+  {
+    "word": "anxiety",
+    "definition": "A feeling of worry or nervousness",
+    "sentence": "He felt anxiety before the test.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "anx-i-e-ty",
+    "phonetic": "ANX-i-e-ty"
+  },
+  {
+    "word": "appreciate",
+    "definition": "To recognize the full worth of",
+    "sentence": "I appreciate your help.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "ap-pre-ci-ate",
+    "phonetic": "AP-pre-ci-ate"
+  },
+  {
+    "word": "aquarium",
+    "definition": "A tank of water for fish",
+    "sentence": "We saw sharks at the aquarium.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "a-quar-i-um",
+    "phonetic": "A-quar-i-um"
+  },
+  {
+    "word": "architecture",
+    "definition": "The art of designing buildings",
+    "sentence": "The city has beautiful architecture.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "ar-chi-tec-ture",
+    "phonetic": "AR-chi-tec-ture"
+  },
+  {
+    "word": "arithmetic",
+    "definition": "The branch of math with numbers",
+    "sentence": "We learned arithmetic in school.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "a-rith-me-tic",
+    "phonetic": "A-rith-me-tic"
+  },
+  {
+    "word": "artificial",
+    "definition": "Made by humans, not natural",
+    "sentence": "The flowers are artificial.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "ar-ti-fi-cial",
+    "phonetic": "AR-ti-fi-cial"
+  },
+  {
+    "word": "atmosphere",
+    "definition": "Gases surrounding a planet",
+    "sentence": "The atmosphere protects the Earth.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "at-mos-phere",
+    "phonetic": "AT-mos-phere"
+  },
+  {
+    "word": "audience",
+    "definition": "Spectators at an event",
+    "sentence": "The audience clapped loudly.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "au-di-ence",
+    "phonetic": "AU-di-ence"
+  },
+  {
+    "word": "authentic",
+    "definition": "Of undisputed origin; genuine",
+    "sentence": "This is an authentic painting.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "au-then-tic",
+    "phonetic": "AU-then-tic"
+  },
+  {
+    "word": "biography",
+    "definition": "An account of someone's life",
+    "sentence": "I read a biography of Lincoln.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "bi-og-ra-phy",
+    "phonetic": "BI-og-ra-phy"
+  },
+  {
+    "word": "bizarre",
+    "definition": "Very strange or unusual",
+    "sentence": "It was a bizarre situation.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "bi-zarre",
+    "phonetic": "BI-zarre"
+  },
+  {
+    "word": "camouflage",
+    "definition": "Disguise to blend with surroundings",
+    "sentence": "The soldier wore camouflage.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "cam-ou-flage",
+    "phonetic": "CAM-ou-flage"
+  },
+  {
+    "word": "campaign",
+    "definition": "A series of actions for a goal",
+    "sentence": "The election campaign was intense.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "cam-paign",
+    "phonetic": "CAM-paign"
+  },
+  {
+    "word": "capacity",
+    "definition": "The maximum amount something can hold",
+    "sentence": "The stadium was filled to capacity.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "ca-pac-i-ty",
+    "phonetic": "CA-pac-i-ty"
+  },
+  {
+    "word": "catastrophe",
+    "definition": "A sudden great disaster",
+    "sentence": "The earthquake was a catastrophe.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "ca-tas-tro-phe",
+    "phonetic": "CA-tas-tro-phe"
+  },
+  {
+    "word": "cemetery",
+    "definition": "A place for burying the dead",
+    "sentence": "They visited the old cemetery.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "cem-e-ter-y",
+    "phonetic": "CEM-e-ter-y"
+  },
+  {
+    "word": "ceremony",
+    "definition": "A formal religious or public occasion",
+    "sentence": "The graduation ceremony is tomorrow.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "cer-e-mo-ny",
+    "phonetic": "CER-e-mo-ny"
+  },
+  {
+    "word": "chameleon",
+    "definition": "A lizard that changes color",
+    "sentence": "The chameleon turned green.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "cha-me-le-on",
+    "phonetic": "CHA-me-le-on"
+  },
+  {
+    "word": "chandelier",
+    "definition": "A decorative hanging light",
+    "sentence": "A crystal chandelier hung in the hall.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "chan-de-lier",
+    "phonetic": "CHAN-de-lier"
+  },
+  {
+    "word": "character",
+    "definition": "A person in a novel or movie",
+    "sentence": "Who is your favorite character?",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "char-ac-ter",
+    "phonetic": "CHAR-ac-ter"
+  },
+  {
+    "word": "chemistry",
+    "definition": "Science of substances and reactions",
+    "sentence": "We did experiments in chemistry class.",
+    "grade": 6,
+    "difficulty": "hard",
+    "syllables": "chem-is-try",
+    "phonetic": "CHEM-is-try"
+  }
+]

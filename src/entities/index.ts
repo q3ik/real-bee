@@ -97,6 +97,7 @@ export function createGameSession(uid: string): GameSession {
     score: 0,
     bestStreak: 0,
     synced: false,
+    rounds: [],
   };
 }
 

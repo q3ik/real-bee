@@ -13,8 +13,31 @@
  *  - session completion (word pool exhausted → idle)
  *  - streak-5: store streak reaches 5, triggerMessage yields celebratory tone
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  afterEach,
+  beforeAll,
+  afterAll,
+} from "vitest";
 import { renderHook, act } from "@testing-library/react";
+
+// ---------------------------------------------------------------------------
+// Deterministic Math.random for consistent test behavior
+// ---------------------------------------------------------------------------
+
+const originalRandom = Math.random;
+
+beforeAll(() => {
+  Math.random = () => 0.5;
+});
+
+afterAll(() => {
+  Math.random = originalRandom;
+});
 
 // ---------------------------------------------------------------------------
 // Module mocks
@@ -114,6 +137,16 @@ vi.mock("../../lib/wordList", () => ({
   WORD_LIST: MOCK_WORDS,
 }));
 
+vi.mock("../../game-engine/difficulty", () => ({
+  getAvailableWords: vi.fn((pool) => ({
+    availableWords: pool || [],
+    shouldResetUsed: false,
+    fallbackReason: null,
+  })),
+  selectRandomWord: vi.fn((words) => (words.length > 0 ? words[0] : null)),
+  getAdjustedDifficulty: vi.fn(),
+}));
+
 vi.mock("sonner", () => ({
   toast: {
     success: vi.fn(),
@@ -147,15 +180,13 @@ async function getStore() {
 
 describe("useGameState", () => {
   beforeEach(async () => {
-    vi.resetModules();
     vi.clearAllMocks();
-    // Reset the debounce guard so tests don't interfere with each other
+    // Reset the store state without resetting modules (which breaks mocks)
     const { useGameStore } = await import("../useGameStore");
     useGameStore.getState().restartGame();
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
     vi.useRealTimers();
   });
 
