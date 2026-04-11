@@ -114,6 +114,15 @@ vi.mock("../../lib/wordList", () => ({
   WORD_LIST: MOCK_WORDS,
 }));
 
+vi.mock("../../game-engine/difficulty", async (importOriginal) => {
+  const mod =
+    await importOriginal<typeof import("../../game-engine/difficulty")>();
+  return {
+    ...mod,
+    selectRandomWord: (words: any[]) => (words.length > 0 ? words[0] : null),
+  };
+});
+
 vi.mock("sonner", () => ({
   toast: {
     success: vi.fn(),
@@ -149,15 +158,12 @@ describe("useGameState", () => {
   beforeEach(async () => {
     vi.resetModules();
     vi.clearAllMocks();
-    // Mock Math.random for deterministic word selection in tests
-    vi.spyOn(Math, "random").mockReturnValue(0.5);
     // Reset the debounce guard so tests don't interfere with each other
     const { useGameStore } = await import("../useGameStore");
     useGameStore.getState().restartGame();
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
     vi.useRealTimers();
   });
 
