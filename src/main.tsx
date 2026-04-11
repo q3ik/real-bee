@@ -1,10 +1,28 @@
-// Initialize Sentry first — before the rest of the app module graph is
-// evaluated — by keeping this file free of static app imports and using
-// a dynamic import for the bootstrap. ESM evaluates all static imports
-// before any top-level code in a module, so interleaving initSentry()
-// with static imports does NOT guarantee early capture. The dynamic
-// import below ensures initSentry() executes synchronously first.
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { AuthProvider } from "./contexts/AuthContext";
+import App from "./App.tsx";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { registerServiceWorker } from "./lib/serviceWorker";
+import "./index.css";
+import "./styles/touch-target-fixes.css";
+import "./styles/mobile-modal-fixes.css";
+
+// Initialize Sentry synchronously before the rest of the app module graph
 import { initSentry } from "./lib/sentry";
 initSentry();
 
-void import("./bootstrap");
+// Register the PWA service worker in production only (avoids HMR conflicts)
+if (import.meta.env.PROD) {
+  void registerServiceWorker();
+}
+
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <ErrorBoundary>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </ErrorBoundary>
+  </StrictMode>,
+);
