@@ -132,9 +132,12 @@ async function getStore() {
 describe("useGameState", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Mock Math.random for deterministic word selection in tests
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.useRealTimers();
   });
 
