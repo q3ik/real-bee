@@ -5,12 +5,7 @@
  * with proper handling for unsupported environments (SSR, Vitest, etc.).
  */
 
-export type SWRegistrationState =
-  | "unsupported"
-  | "registering"
-  | "registered"
-  | "update-available"
-  | "error";
+export type SWRegistrationState = "unsupported" | "registered" | "error";
 
 export interface SWRegistrationResult {
   state: SWRegistrationState;
@@ -28,7 +23,10 @@ export interface SWRegistrationResult {
  * @returns Promise resolving to the registration result
  */
 export async function registerServiceWorker(): Promise<SWRegistrationResult> {
-  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
+  if (
+    typeof navigator === "undefined" ||
+    typeof navigator.serviceWorker === "undefined"
+  ) {
     return { state: "unsupported", registration: null, error: null };
   }
 
@@ -43,8 +41,10 @@ export async function registerServiceWorker(): Promise<SWRegistrationResult> {
       const newWorker = registration.installing;
       if (newWorker) {
         newWorker.addEventListener("statechange", () => {
-          if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-            // A new service worker has been installed and is waiting to activate
+          if (
+            newWorker.state === "installed" &&
+            navigator.serviceWorker.controller
+          ) {
             console.log("[PWA] Update available — new content is available.");
           }
         });
@@ -69,15 +69,23 @@ export async function registerServiceWorker(): Promise<SWRegistrationResult> {
  * @returns true if a service worker was successfully unregistered
  */
 export async function unregisterServiceWorker(): Promise<boolean> {
-  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
+  if (
+    typeof navigator === "undefined" ||
+    typeof navigator.serviceWorker === "undefined" ||
+    typeof navigator.serviceWorker.getRegistration !== "function"
+  ) {
     return false;
   }
 
-  const registration = await navigator.serviceWorker.getRegistration("/");
-  if (registration) {
-    const success = await registration.unregister();
-    console.log("[PWA] Service Worker unregistered:", success);
-    return success;
+  try {
+    const registration = await navigator.serviceWorker.getRegistration("/");
+    if (registration) {
+      const success = await registration.unregister();
+      console.log("[PWA] Service Worker unregistered:", success);
+      return success;
+    }
+  } catch (error) {
+    console.warn("[PWA] Service Worker unregistration failed:", error);
   }
 
   return false;

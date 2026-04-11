@@ -6,27 +6,33 @@ import {
 
 describe("Service Worker Registration Helper", () => {
   let originalServiceWorker: ServiceWorkerContainer | undefined;
+  let hadServiceWorkerProperty: boolean;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Track whether navigator.serviceWorker exists before the test
+    hadServiceWorkerProperty = "serviceWorker" in navigator;
     originalServiceWorker = navigator.serviceWorker;
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    // Restore original navigator.serviceWorker
-    Object.defineProperty(navigator, "serviceWorker", {
-      value: originalServiceWorker,
-      writable: true,
-      configurable: true,
-    });
+    // Properly restore navigator.serviceWorker:
+    // If it didn't exist before, delete it; otherwise restore the original value.
+    if (!hadServiceWorkerProperty) {
+      delete (navigator as unknown as Record<string, unknown>).serviceWorker;
+    } else {
+      Object.defineProperty(navigator, "serviceWorker", {
+        value: originalServiceWorker,
+        writable: true,
+        configurable: true,
+      });
+    }
   });
 
   describe("registerServiceWorker", () => {
     it("returns 'unsupported' when navigator.serviceWorker is undefined", async () => {
-      // Remove serviceWorker from navigator to simulate unsupported environment
-      // @ts-expect-error — intentionally removing serviceWorker
-      delete navigator.serviceWorker;
+      delete (navigator as unknown as Record<string, unknown>).serviceWorker;
 
       const result = await registerServiceWorker();
 
@@ -81,8 +87,19 @@ describe("Service Worker Registration Helper", () => {
 
   describe("unregisterServiceWorker", () => {
     it("returns false when navigator.serviceWorker is undefined", async () => {
-      // @ts-expect-error — intentionally removing serviceWorker
-      delete navigator.serviceWorker;
+      delete (navigator as unknown as Record<string, unknown>).serviceWorker;
+
+      const result = await unregisterServiceWorker();
+
+      expect(result).toBe(false);
+    });
+
+    it("returns false when serviceWorker.getRegistration is not a function", async () => {
+      Object.defineProperty(navigator, "serviceWorker", {
+        value: { getRegistration: undefined },
+        writable: true,
+        configurable: true,
+      });
 
       const result = await unregisterServiceWorker();
 
@@ -122,6 +139,22 @@ describe("Service Worker Registration Helper", () => {
       expect(result).toBe(true);
       expect(mockGetRegistration).toHaveBeenCalledWith("/");
       expect(mockUnregister).toHaveBeenCalled();
+    });
+
+    it("returns false when getRegistration throws", async () => {
+      const mockGetRegistration = vi
+        .fn()
+        .mockRejectedValue(new TypeError("Not available"));
+
+      Object.defineProperty(navigator, "serviceWorker", {
+        value: { getRegistration: mockGetRegistration },
+        writable: true,
+        configurable: true,
+      });
+
+      const result = await unregisterServiceWorker();
+
+      expect(result).toBe(false);
     });
   });
 });
