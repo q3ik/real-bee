@@ -104,13 +104,42 @@ export function useUserPreferences(
 
       setPreferences(mapped);
       setIsLoading(false);
+
+      // Sync loaded preferences to downstream systems so that persisted
+      // settings take effect immediately (not only after the next interaction).
+      const gradeMap: Record<GradeLevel, number> = {
+        "K-2": 1,
+        "3-5": 3,
+        "6-8": 6,
+        "9-12": 9,
+        all: 0,
+      };
+      setStoreMuted(!mapped.soundEnabled);
+      soundManager.setEnabled?.(mapped.soundEnabled);
+      audioManager.setMuted(!mapped.soundEnabled);
+      audioManager.setVoiceQuality(
+        mapped.ttsProvider === "gemini" ? "natural" : "standard",
+      );
+      setStoreVoiceQuality(
+        mapped.ttsProvider === "gemini" ? "natural" : "standard",
+      );
+      setStoreDifficulty(mapped.difficulty);
+      setStoreGradeLevel(gradeMap[mapped.grade] ?? 1);
+      setStoreAutoSubmit(mapped.autoSubmit);
     };
 
     void load();
     return () => {
       cancelled = true;
     };
-  }, [effectiveUid]);
+  }, [
+    effectiveUid,
+    setStoreMuted,
+    setStoreDifficulty,
+    setStoreGradeLevel,
+    setStoreAutoSubmit,
+    setStoreVoiceQuality,
+  ]);
 
   /**
    * Persist current preferences to IndexedDB.

@@ -37,10 +37,14 @@ export class SoundManager {
 
   /**
    * Enable or disable sound playback.
-   * When disabled, `play()` becomes a no-op.
+   * When disabled, `play()`, `playAudioBuffer()`, and `preloadAudio()` become no-ops.
+   * Disabling also stops any currently playing audio immediately.
    */
   setEnabled(enabled: boolean): void {
     this._enabled = enabled;
+    if (!enabled) {
+      this.stopAll();
+    }
   }
 
   /**
@@ -118,7 +122,7 @@ export class SoundManager {
     audioData: ArrayBuffer | Blob | null,
     options: PlayAudioBufferOptions = {},
   ): Promise<void> {
-    if (!this.isSupported) {
+    if (!this.isSupported || !this._enabled) {
       throw new Error("AudioContext not supported");
     }
 
@@ -229,8 +233,8 @@ export class SoundManager {
     audioData: ArrayBuffer | Blob | null,
     cacheKey: string,
   ): Promise<void> {
-    if (!this.isSupported) {
-      throw new Error("AudioContext not supported");
+    if (!this.isSupported || !this._enabled) {
+      return;
     }
 
     if (!cacheKey) {

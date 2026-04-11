@@ -43,7 +43,9 @@ const mockSetMuted = vi.fn();
 const mockSetAutoSubmit = vi.fn();
 const mockSetVoiceQuality = vi.fn();
 
-function mockGameStoreSelector(selector: (state: Record<string, unknown>) => unknown) {
+function mockGameStoreSelector(
+  selector: (state: Record<string, unknown>) => unknown,
+) {
   const selectorStr = selector.toString();
   if (selectorStr.includes("setDifficulty")) return mockSetDifficulty;
   if (selectorStr.includes("setGradeLevel")) return mockSetGradeLevel;
@@ -55,7 +57,9 @@ function mockGameStoreSelector(selector: (state: Record<string, unknown>) => unk
 }
 
 vi.mocked(useGameStore).mockImplementation((selector: unknown) =>
-  mockGameStoreSelector(selector as (state: Record<string, unknown>) => unknown),
+  mockGameStoreSelector(
+    selector as (state: Record<string, unknown>) => unknown,
+  ),
 );
 
 // ---------------------------------------------------------------------------
@@ -198,7 +202,9 @@ describe("useUserPreferences", () => {
 
   it("updatePreference('difficulty') calls store setter and callback", async () => {
     const onDifficultyChange = vi.fn();
-    const { result } = renderHook(() => useUserPreferences({ onDifficultyChange }));
+    const { result } = renderHook(() =>
+      useUserPreferences({ onDifficultyChange }),
+    );
 
     await act(async () => {
       await new Promise((r) => setTimeout(r, 0));
@@ -214,7 +220,9 @@ describe("useUserPreferences", () => {
 
   it("updatePreference('grade') maps to numeric grade level", async () => {
     const onGradeLevelChange = vi.fn();
-    const { result } = renderHook(() => useUserPreferences({ onGradeLevelChange }));
+    const { result } = renderHook(() =>
+      useUserPreferences({ onGradeLevelChange }),
+    );
 
     await act(async () => {
       await new Promise((r) => setTimeout(r, 0));
@@ -312,5 +320,37 @@ describe("useUserPreferences", () => {
     });
 
     expect(result.current.preferences.micEnabled).toBe(false);
+  });
+
+  it("syncs loaded preferences to downstream systems on initial load", async () => {
+    vi.mocked(storageModule.loadUserPreferences).mockResolvedValue({
+      uid: "test-user-123",
+      difficulty: "hard",
+      gradeLevel: "6-8",
+      soundEnabled: false,
+      soundVolume: 0.3,
+      ttsProvider: "gemini",
+      micEnabled: true,
+      theme: "dark",
+      autoSubmit: true,
+      showWelcomeScreen: true,
+      dontShowWelcomeAgain: false,
+    });
+
+    const { result } = renderHook(() => useUserPreferences());
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    // Downstream systems should have been synced
+    expect(soundManager.setEnabled).toHaveBeenCalledWith(false);
+    expect(audioManager.setMuted).toHaveBeenCalledWith(true);
+    expect(mockSetMuted).toHaveBeenCalledWith(true);
+    expect(audioManager.setVoiceQuality).toHaveBeenCalledWith("natural");
+    expect(mockSetVoiceQuality).toHaveBeenCalledWith("natural");
+    expect(mockSetDifficulty).toHaveBeenCalledWith("hard");
+    expect(mockSetGradeLevel).toHaveBeenCalledWith(6);
+    expect(mockSetAutoSubmit).toHaveBeenCalledWith(true);
   });
 });
