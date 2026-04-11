@@ -1,47 +1,35 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
-  mapRawWord,
-  parseGrade,
-  normalizeDifficulty,
   clearWordCache,
   isGradeLoaded,
   getCachedGrades,
   loadWordsForGrade,
   VALID_GRADES,
-} from '../wordLoader';
-import type { GradeWordFile } from '../wordLoader';
+  WordLoaderError,
+} from "../wordLoader";
+import type { Word } from "@/types";
 
 // ---------------------------------------------------------------------------
-// Shared fixture
+// Shared fixture - now in Word[] format (flat array, not wrapped)
 // ---------------------------------------------------------------------------
 
-const GRADE_1_FIXTURE: GradeWordFile = {
-  grade: 1,
-  language: 'en-US',
-  version: '1.0.0',
-  lastUpdated: '2026-01-01T00:00:00.000Z',
-  wordCount: 2,
-  words: [
-    {
-      word: 'apple',
-      definition: 'A round fruit.',
-      example: 'She ate an apple.',
-      phonetic: 'AP-ple',
-      syllables: 'ap-ple',
-      difficulty: 'easy',
-      gradeLevel: 'K-2',
-    },
-    {
-      word: 'book',
-      definition: 'A written work.',
-      example: 'He read a book.',
-      phonetic: 'BOOK',
-      syllables: 'book',
-      difficulty: 'easy',
-      gradeLevel: 'K-2',
-    },
-  ],
-};
+const GRADE_1_WORDS: Word[] = [
+  {
+    word: "apple",
+    definition: "A round fruit.",
+    sentence: "She ate an apple.",
+    grade: 1,
+    difficulty: "easy",
+    syllables: "ap-ple",
+  },
+  {
+    word: "book",
+    definition: "A written work.",
+    sentence: "He read a book.",
+    grade: 1,
+    difficulty: "easy",
+  },
+];
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -49,7 +37,7 @@ const GRADE_1_FIXTURE: GradeWordFile = {
 
 function mockFetchOk(payload: unknown): void {
   vi.stubGlobal(
-    'fetch',
+    "fetch",
     vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(payload),
@@ -59,11 +47,11 @@ function mockFetchOk(payload: unknown): void {
 
 function mockFetchFail(status = 404): void {
   vi.stubGlobal(
-    'fetch',
+    "fetch",
     vi.fn().mockResolvedValue({
       ok: false,
       status,
-      json: () => Promise.reject(new Error('not json')),
+      json: () => Promise.reject(new Error("not json")),
     } as unknown as Response),
   );
 }
@@ -72,7 +60,7 @@ function mockFetchFail(status = 404): void {
 // Suite
 // ---------------------------------------------------------------------------
 
-describe('wordLoader', () => {
+describe("wordLoader", () => {
   beforeEach(() => {
     clearWordCache();
   });
@@ -83,133 +71,55 @@ describe('wordLoader', () => {
   });
 
   // -------------------------------------------------------------------------
-  // Synchronous helpers (pre-existing)
+  // VALID_GRADES
   // -------------------------------------------------------------------------
 
-  describe('VALID_GRADES', () => {
-    it('contains exactly the four range-based grade buckets', () => {
-      expect([...VALID_GRADES]).toEqual([1, 3, 6, 9]);
+  describe("VALID_GRADES", () => {
+    it("contains exactly all twelve grade buckets", () => {
+      expect([...VALID_GRADES]).toEqual([
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+      ]);
     });
   });
 
-  describe('mapRawWord', () => {
-    it('maps raw JSON word to Word type', () => {
-      const raw = {
-        word: 'elephant',
-        definition: 'A large animal.',
-        example: 'The elephant walked.',
-        phonetic: 'EL-e-phant',
-        syllables: 'el-e-phant',
-        difficulty: 'medium',
-        gradeLevel: '3-5',
-      };
+  // -------------------------------------------------------------------------
+  // Cache utilities
+  // -------------------------------------------------------------------------
 
-      const result = mapRawWord(raw);
-
-      expect(result.word).toBe('elephant');
-      expect(result.definition).toBe('A large animal.');
-      expect(result.sentence).toBe('The elephant walked.');
-      expect(result.syllables).toBe('el-e-phant');
-      expect(result.grade).toBe(3);
-      expect(result.difficulty).toBe('medium');
-    });
-  });
-
-  describe('parseGrade', () => {
-    it('maps K-2 to grade 1', () => {
-      expect(parseGrade('K-2')).toBe(1);
-    });
-
-    it('maps 3-5 to grade 3', () => {
-      expect(parseGrade('3-5')).toBe(3);
-    });
-
-    it('maps 6-8 to grade 6', () => {
-      expect(parseGrade('6-8')).toBe(6);
-    });
-
-    it('maps 9-12 to grade 9', () => {
-      expect(parseGrade('9-12')).toBe(9);
-    });
-
-    it('maps all to grade 0', () => {
-      expect(parseGrade('all')).toBe(0);
-    });
-
-    it('maps single grade numbers to their range bucket', () => {
-      expect(parseGrade('1')).toBe(1);
-      expect(parseGrade('2')).toBe(1);
-      expect(parseGrade('4')).toBe(3);
-      expect(parseGrade('5')).toBe(3);
-      expect(parseGrade('7')).toBe(6);
-      expect(parseGrade('8')).toBe(6);
-      expect(parseGrade('9')).toBe(9);
-      expect(parseGrade('10')).toBe(9);
-      expect(parseGrade('11')).toBe(9);
-      expect(parseGrade('12')).toBe(9);
-    });
-  });
-
-  describe('normalizeDifficulty', () => {
-    it('returns easy for easy', () => {
-      expect(normalizeDifficulty('easy')).toBe('easy');
-    });
-
-    it('returns medium for medium', () => {
-      expect(normalizeDifficulty('medium')).toBe('medium');
-    });
-
-    it('returns hard for hard', () => {
-      expect(normalizeDifficulty('hard')).toBe('hard');
-    });
-
-    it('returns all for all', () => {
-      expect(normalizeDifficulty('all')).toBe('all');
-    });
-
-    it('defaults to medium for unknown values', () => {
-      expect(normalizeDifficulty('unknown')).toBe('medium');
-    });
-
-    it('handles case insensitivity', () => {
-      expect(normalizeDifficulty('EASY')).toBe('easy');
-    });
-  });
-
-  describe('cache utilities', () => {
-    it('clearWordCache resets cache', () => {
+  describe("cache utilities", () => {
+    it("clearWordCache resets cache", () => {
       clearWordCache();
       expect(isGradeLoaded(1)).toBe(false);
       expect(isGradeLoaded(0)).toBe(false);
     });
 
-    it('getCachedGrades returns empty array on cold cache', () => {
+    it("getCachedGrades returns empty array on cold cache", () => {
       expect(getCachedGrades()).toEqual([]);
     });
   });
 
   // -------------------------------------------------------------------------
-  // Async: loadWordsForGrade — SUB-03 AC tests
+  // loadWordsForGrade
   // -------------------------------------------------------------------------
 
-  describe('loadWordsForGrade', () => {
-    it('successful load: returns mapped Word[] from fetch', async () => {
-      mockFetchOk(GRADE_1_FIXTURE);
+  describe("loadWordsForGrade", () => {
+    it("successful load: returns Word[] from fetch", async () => {
+      mockFetchOk(GRADE_1_WORDS);
 
       const words = await loadWordsForGrade(1);
 
       expect(words).toHaveLength(2);
-      expect(words[0].word).toBe('apple');
+      expect(words[0].word).toBe("apple");
       expect(words[0].grade).toBe(1);
-      expect(words[1].word).toBe('book');
+      expect(words[1].word).toBe("book");
     });
 
-    it('cache hit: second call for same grade does not re-fetch', async () => {
+    it("cache hit: second call for same grade does not re-fetch", async () => {
       const fetchMock = vi.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve(GRADE_1_FIXTURE),
+        json: () => Promise.resolve(GRADE_1_WORDS),
       } as Response);
-      vi.stubGlobal('fetch', fetchMock);
+      vi.stubGlobal("fetch", fetchMock);
 
       await loadWordsForGrade(1);
       await loadWordsForGrade(1); // second call — must hit cache
@@ -219,30 +129,56 @@ describe('wordLoader', () => {
       expect(getCachedGrades()).toContain(1);
     });
 
-    it('getCachedGrades reflects loaded grades after successful fetch', async () => {
-      mockFetchOk(GRADE_1_FIXTURE);
+    it("getCachedGrades reflects loaded grades after successful fetch", async () => {
+      mockFetchOk(GRADE_1_WORDS);
 
       await loadWordsForGrade(1);
 
       expect(getCachedGrades()).toEqual([1]);
     });
 
-    it('fetch failure: rejects with an Error describing the file and status', async () => {
+    it("fetch failure: rejects with WordLoaderError describing the file and status", async () => {
       mockFetchFail(503);
 
-      await expect(loadWordsForGrade(3)).rejects.toThrow(
-        /grade-3\.json.*503/,
-      );
+      await expect(loadWordsForGrade(3)).rejects.toThrow(WordLoaderError);
+      await expect(loadWordsForGrade(3)).rejects.toThrow(/grade-3\.json.*503/);
     });
 
-    it('invalid grade: throws when no file is configured for the grade', async () => {
+    it("invalid grade: throws WordLoaderError when no file is configured", async () => {
       // Grade 99 has no entry in GRADE_FILE_MAP
       // Stub fetch so it would succeed if reached — the guard must fire first
-      mockFetchOk(GRADE_1_FIXTURE);
+      mockFetchOk(GRADE_1_WORDS);
 
+      await expect(loadWordsForGrade(99)).rejects.toThrow(WordLoaderError);
       await expect(loadWordsForGrade(99)).rejects.toThrow(
         /No word file configured for grade 99/,
       );
+    });
+
+    it("cache-clear refetch: after clearWordCache, reload re-fetches data", async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(GRADE_1_WORDS),
+      } as Response);
+      vi.stubGlobal("fetch", fetchMock);
+
+      // First load
+      const words1 = await loadWordsForGrade(1);
+      expect(words1).toHaveLength(2);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+
+      // Clear cache
+      clearWordCache();
+      expect(isGradeLoaded(1)).toBe(false);
+
+      // Second load should re-fetch
+      const words2 = await loadWordsForGrade(1);
+      expect(words2).toHaveLength(2);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+
+      // Verify data is the same
+      expect(words2[0].word).toBe(words1[0].word);
+      expect(words2[1].word).toBe(words1[1].word);
     });
   });
 });

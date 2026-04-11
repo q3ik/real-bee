@@ -10,7 +10,7 @@
 /**
  * Difficulty levels for words and game configuration.
  */
-export type GameDifficulty = 'easy' | 'medium' | 'hard' | 'all';
+export type GameDifficulty = "easy" | "medium" | "hard" | "all";
 
 /**
  * A single word in the spelling bee word bank.
@@ -22,8 +22,8 @@ export interface Word {
   definition: string;
   /** A sentence using the word (target word replaced with _____ for hints) */
   sentence: string;
-  /** Grade level: 1 (K-2), 3 (3-5), 6 (6-8), 9 (9-12), 0 (all grades) */
-  grade: number;
+  /** Grade level: 1 (K-2), 2 (K-2), 3 (3-5), 4 (3-5), 5 (3-5), 6 (6-8), 7 (6-8), 8 (6-8), 9 (9-12), 10 (9-12), 11 (9-12), 12 (9-12), 0 (all grades) */
+  grade: Grade;
   /** Word difficulty tier */
   difficulty: GameDifficulty;
   /** Part of speech (e.g., "noun", "verb") */
@@ -35,10 +35,10 @@ export interface Word {
 }
 
 /**
- * Convenience alias for the grade field of a Word.
- * Exported so hooks and stores can reference it without re-deriving it.
+ * Valid grade values as a literal union for compile-time enforcement.
+ * Mirrors the grade levels used in the word database (grades 1-12, plus 0 for all).
  */
-export type Grade = Word['grade'];
+export type Grade = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 0;
 
 /**
  * Tracking data for a single word's mastery progress.
@@ -67,7 +67,7 @@ export interface WordProgress {
 /**
  * Phase of the game finite state machine.
  */
-export type GamePhase = 'idle' | 'playing' | 'round_end';
+export type GamePhase = "idle" | "playing" | "round_end";
 
 /**
  * Result of a single spelling submission.
@@ -93,6 +93,22 @@ export interface GameResult {
   normalizedInput: string;
   /** Whether the answer was submitted via voice recognition */
   isVoice: boolean;
+}
+
+/**
+ * Result of a single game round.
+ */
+export interface GameRound {
+  /** The word for this round */
+  word: string;
+  /** Whether the answer was correct */
+  isCorrect: boolean;
+  /** Points awarded */
+  points: number;
+  /** Streak after this round */
+  streak: number;
+  /** Time taken to answer (ms) */
+  timeTaken?: number;
 }
 
 /**
@@ -129,6 +145,8 @@ export interface GameSession {
   bestStreak: number;
   /** Whether this session has been synced to the cloud */
   synced: boolean;
+  /** Individual round results */
+  rounds: GameRound[];
 }
 
 // ---------------------------------------------------------------------------
@@ -138,7 +156,7 @@ export interface GameSession {
 /**
  * Difficulty selector for user-facing settings UI.
  */
-export type PreferenceDifficulty = 'easy' | 'medium' | 'hard' | 'all';
+export type PreferenceDifficulty = "easy" | "medium" | "hard" | "all";
 
 /**
  * Grade level selector for user-facing settings UI.
@@ -146,14 +164,14 @@ export type PreferenceDifficulty = 'easy' | 'medium' | 'hard' | 'all';
  *   'K-2'  → grade 1, '3-5' → grade 3, '6-8' → grade 6,
  *   '9-12' → grade 9, 'all' → grade 0
  */
-export type GradeLevel = 'K-2' | '3-5' | '6-8' | '9-12' | 'all';
+export type GradeLevel = "K-2" | "3-5" | "6-8" | "9-12" | "all";
 
 /**
  * Voice synthesis quality option.
  */
-export type VoiceQuality = 'natural' | 'standard';
+export type VoiceQuality = "natural" | "standard";
 
 /**
  * Listening timeout duration option.
  */
-export type ListeningTimeout = 'normal' | 'longer' | 'off';
+export type ListeningTimeout = "normal" | "longer" | "off";

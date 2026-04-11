@@ -1,963 +1,920 @@
-{
-  "grade": 3,
-  "language": "en-US",
-  "version": "1.0.0",
-  "lastUpdated": "2026-03-03T22:00:53.309Z",
-  "wordCount": 106,
-  "words": [
-    {
-      "word": "elephant",
-      "definition": "A large mammal with a trunk",
-      "example": "The elephant sprayed water with its trunk.",
-      "phonetic": "EL-e-phant",
-      "syllables": "el-e-phant",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "island",
-      "definition": "Land surrounded by water",
-      "example": "They sailed to a small island.",
-      "phonetic": "IS-land",
-      "syllables": "is-land",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "jungle",
-      "definition": "Dense tropical forest",
-      "example": "The explorer ventured into the jungle.",
-      "phonetic": "JUN-gle",
-      "syllables": "jun-gle",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "night",
-      "definition": "The period of darkness",
-      "example": "Stars appeared in the night sky.",
-      "phonetic": "NIGHT",
-      "syllables": "night",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "orange",
-      "definition": "A round citrus fruit",
-      "example": "He peeled an orange for breakfast.",
-      "phonetic": "OR-ange",
-      "syllables": "or-ange",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "beautiful",
-      "definition": "Pleasing to the senses",
-      "example": "The sunset was absolutely beautiful.",
-      "phonetic": "BEAU-ti-ful",
-      "syllables": "beau-ti-ful",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "calendar",
-      "definition": "A system for organizing days",
-      "example": "Mark the date on your calendar.",
-      "phonetic": "CAL-en-dar",
-      "syllables": "cal-en-dar",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "dinosaur",
-      "definition": "An extinct prehistoric reptile",
-      "example": "The museum had a dinosaur skeleton.",
-      "phonetic": "DI-no-saur",
-      "syllables": "di-no-saur",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "emergency",
-      "definition": "A serious unexpected situation",
-      "example": "Call 911 in case of emergency.",
-      "phonetic": "E-mer-gen-cy",
-      "syllables": "e-mer-gen-cy",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "february",
-      "definition": "The second month of the year",
-      "example": "February is the shortest month.",
-      "phonetic": "FEB-ru-ar-y",
-      "syllables": "feb-ru-ar-y",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "government",
-      "definition": "The ruling body of a nation",
-      "example": "The government passed new legislation.",
-      "phonetic": "GOV-ern-ment",
-      "syllables": "gov-ern-ment",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "hamburger",
-      "definition": "A sandwich with a meat patty",
-      "example": "I ordered a hamburger with fries.",
-      "phonetic": "HAM-bur-ger",
-      "syllables": "ham-bur-ger",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "immediately",
-      "definition": "Without delay",
-      "example": "Please respond immediately.",
-      "phonetic": "IM-me-di-ate-ly",
-      "syllables": "im-me-di-ate-ly",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "jealousy",
-      "definition": "Feeling of envy",
-      "example": "Jealousy can damage relationships.",
-      "phonetic": "JEAL-ous-y",
-      "syllables": "jeal-ous-y",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "knowledge",
-      "definition": "Information and understanding",
-      "example": "Knowledge is power.",
-      "phonetic": "KNOWL-edge",
-      "syllables": "knowl-edge",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "lieutenant",
-      "definition": "A military rank",
-      "example": "The lieutenant led the platoon.",
-      "phonetic": "LIEU-ten-ant",
-      "syllables": "lieu-ten-ant",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "mysterious",
-      "definition": "Difficult to understand",
-      "example": "A mysterious package arrived.",
-      "phonetic": "MYS-te-ri-ous",
-      "syllables": "mys-te-ri-ous",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "necessary",
-      "definition": "Required or essential",
-      "example": "Water is necessary for life.",
-      "phonetic": "NEC-es-sar-y",
-      "syllables": "nec-es-sar-y",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "occasion",
-      "definition": "A special event or time",
-      "example": "This is a special occasion.",
-      "phonetic": "OC-ca-sion",
-      "syllables": "oc-ca-sion",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "psychology",
-      "definition": "The study of the mind",
-      "example": "She studied psychology in college.",
-      "phonetic": "PSY-chol-o-gy",
-      "syllables": "psy-chol-o-gy",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "questionnaire",
-      "definition": "A set of written questions",
-      "example": "Please complete this questionnaire.",
-      "phonetic": "QUES-tion-naire",
-      "syllables": "ques-tion-naire",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "restaurant",
-      "definition": "A place to eat meals",
-      "example": "We dined at an Italian restaurant.",
-      "phonetic": "RES-tau-rant",
-      "syllables": "res-tau-rant",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "adventure",
-      "definition": "An exciting or unusual experience",
-      "example": "They went on an adventure in the woods.",
-      "phonetic": "AD-ven-ture",
-      "syllables": "ad-ven-ture",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "alphabet",
-      "definition": "The letters of a language",
-      "example": "She learned to sing the alphabet song.",
-      "phonetic": "AL-pha-bet",
-      "syllables": "al-pha-bet",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "apartment",
-      "definition": "A set of rooms for living in",
-      "example": "We live in an apartment on the third floor.",
-      "phonetic": "A-part-ment",
-      "syllables": "a-part-ment",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "astronaut",
-      "definition": "A person trained to travel in space",
-      "example": "The astronaut walked on the moon.",
-      "phonetic": "AS-tro-naut",
-      "syllables": "as-tro-naut",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "autumn",
-      "definition": "The season after summer",
-      "example": "Leaves turn colors in autumn.",
-      "phonetic": "AU-tumn",
-      "syllables": "au-tumn",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "bakery",
-      "definition": "A place where bread and cakes are made",
-      "example": "We bought fresh donuts at the bakery.",
-      "phonetic": "BAK-er-y",
-      "syllables": "bak-er-y",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "balcony",
-      "definition": "A platform on the outside of a building",
-      "example": "She stood on the balcony to watch the parade.",
-      "phonetic": "BAL-co-ny",
-      "syllables": "bal-co-ny",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "banana",
-      "definition": "A long curved yellow fruit",
-      "example": "Monkeys love to eat a banana.",
-      "phonetic": "BA-nan-a",
-      "syllables": "ba-nan-a",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "basket",
-      "definition": "A container woven from cane or wire",
-      "example": "Put the apples in the basket.",
-      "phonetic": "BAS-ket",
-      "syllables": "bas-ket",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "blanket",
-      "definition": "A soft covering for a bed",
-      "example": "The baby was wrapped in a warm blanket.",
-      "phonetic": "BLAN-ket",
-      "syllables": "blan-ket",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "bottle",
-      "definition": "A container with a narrow neck",
-      "example": "He drank water from a plastic bottle.",
-      "phonetic": "BOT-tle",
-      "syllables": "bot-tle",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "bridge",
-      "definition": "A structure across a river or road",
-      "example": "Cars drove over the bridge.",
-      "phonetic": "BRIDGE",
-      "syllables": "bridge",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "camera",
-      "definition": "A device for taking photos",
-      "example": "Smile for the camera!",
-      "phonetic": "CAM-er-a",
-      "syllables": "cam-er-a",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "candle",
-      "definition": "Wax with a wick that burns",
-      "example": "She blew out the candle on her cake.",
-      "phonetic": "CAN-dle",
-      "syllables": "can-dle",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "castle",
-      "definition": "A large fortified building",
-      "example": "The king lived in a stone castle.",
-      "phonetic": "CAS-tle",
-      "syllables": "cas-tle",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "caterpillar",
-      "definition": "The larva of a butterfly",
-      "example": "The caterpillar will become a butterfly.",
-      "phonetic": "CAT-er-pil-lar",
-      "syllables": "cat-er-pil-lar",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "chocolate",
-      "definition": "A sweet food made from cacao",
-      "example": "I love dark chocolate.",
-      "phonetic": "CHOC-o-late",
-      "syllables": "choc-o-late",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "circle",
-      "definition": "A round shape",
-      "example": "Draw a circle on the paper.",
-      "phonetic": "CIR-cle",
-      "syllables": "cir-cle",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "coffee",
-      "definition": "A hot drink made from roasted beans",
-      "example": "Dad drinks coffee in the morning.",
-      "phonetic": "COF-fee",
-      "syllables": "cof-fee",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "computer",
-      "definition": "An electronic device for processing data",
-      "example": "I use the computer for homework.",
-      "phonetic": "COM-put-er",
-      "syllables": "com-put-er",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "continent",
-      "definition": "A large continuous mass of land",
-      "example": "Africa is a large continent.",
-      "phonetic": "CON-ti-nent",
-      "syllables": "con-ti-nent",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "cucumber",
-      "definition": "A long green vegetable",
-      "example": "She added sliced cucumber to the salad.",
-      "phonetic": "CU-cum-ber",
-      "syllables": "cu-cum-ber",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "curtain",
-      "definition": "Cloth hung to cover a window",
-      "example": "Close the curtain to block the sun.",
-      "phonetic": "CUR-tain",
-      "syllables": "cur-tain",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "dangerous",
-      "definition": "Likely to cause harm",
-      "example": "It is dangerous to play in the street.",
-      "phonetic": "DAN-ger-ous",
-      "syllables": "dan-ger-ous",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "daughter",
-      "definition": "A female child",
-      "example": "She is her mother's daughter.",
-      "phonetic": "DAUGH-ter",
-      "syllables": "daugh-ter",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "dentist",
-      "definition": "A doctor for teeth",
-      "example": "The dentist checked for cavities.",
-      "phonetic": "DEN-tist",
-      "syllables": "den-tist",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "diamond",
-      "definition": "A precious clear stone",
-      "example": "Her ring has a sparkling diamond.",
-      "phonetic": "DI-a-mond",
-      "syllables": "di-a-mond",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "difficult",
-      "definition": "Hard to do or understand",
-      "example": "The math problem was very difficult.",
-      "phonetic": "DIF-fi-cult",
-      "syllables": "dif-fi-cult",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "direction",
-      "definition": "The path something moves along",
-      "example": "Which direction is north?",
-      "phonetic": "DI-rec-tion",
-      "syllables": "di-rec-tion",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "doctor",
-      "definition": "A person who treats sick people",
-      "example": "The doctor gave me medicine.",
-      "phonetic": "DOC-tor",
-      "syllables": "doc-tor",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "dolphin",
-      "definition": "A smart marine mammal",
-      "example": "The dolphin jumped out of the water.",
-      "phonetic": "DOL-phin",
-      "syllables": "dol-phin",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "dragon",
-      "definition": "A mythical fire-breathing monster",
-      "example": "The knight fought the dragon.",
-      "phonetic": "DRAG-on",
-      "syllables": "drag-on",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "elevator",
-      "definition": "A machine for lifting people",
-      "example": "Take the elevator to the tenth floor.",
-      "phonetic": "EL-e-va-tor",
-      "syllables": "el-e-va-tor",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "engine",
-      "definition": "A machine with moving parts",
-      "example": "The car engine is running.",
-      "phonetic": "EN-gine",
-      "syllables": "en-gine",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "envelope",
-      "definition": "A paper container for a letter",
-      "example": "Put the stamp on the envelope.",
-      "phonetic": "EN-ve-lope",
-      "syllables": "en-ve-lope",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "exercise",
-      "definition": "Physical activity",
-      "example": "Running is good exercise.",
-      "phonetic": "EX-er-cise",
-      "syllables": "ex-er-cise",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "factory",
-      "definition": "A place where goods are made",
-      "example": "Cars are built in a factory.",
-      "phonetic": "FAC-to-ry",
-      "syllables": "fac-to-ry",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "family",
-      "definition": "Parents and children",
-      "example": "My family likes to go camping.",
-      "phonetic": "FAM-i-ly",
-      "syllables": "fam-i-ly",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "feather",
-      "definition": "Light growth covering a bird",
-      "example": "The feather floated to the ground.",
-      "phonetic": "FEATH-er",
-      "syllables": "feath-er",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "festival",
-      "definition": "A day or period of celebration",
-      "example": "We danced at the music festival.",
-      "phonetic": "FES-ti-val",
-      "syllables": "fes-ti-val",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "fingerprint",
-      "definition": "The mark left by a finger",
-      "example": "Everyone has a unique fingerprint.",
-      "phonetic": "FIN-ger-print",
-      "syllables": "fin-ger-print",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "fireplace",
-      "definition": "A place for a fire in a house",
-      "example": "We sat by the warm fireplace.",
-      "phonetic": "FIRE-place",
-      "syllables": "fire-place",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "forest",
-      "definition": "A large area of trees",
-      "example": "Animals hide in the forest.",
-      "phonetic": "FOR-est",
-      "syllables": "for-est",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "furniture",
-      "definition": "Movable items like chairs and tables",
-      "example": "We bought new furniture for the living room.",
-      "phonetic": "FUR-ni-ture",
-      "syllables": "fur-ni-ture",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "galaxy",
-      "definition": "A huge system of stars",
-      "example": "The Milky Way is our galaxy.",
-      "phonetic": "GAL-ax-y",
-      "syllables": "gal-ax-y",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "garage",
-      "definition": "A building for parking cars",
-      "example": "Park the car in the garage.",
-      "phonetic": "GA-rage",
-      "syllables": "ga-rage",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "geography",
-      "definition": "Study of the earth's surface",
-      "example": "We learned about maps in geography.",
-      "phonetic": "GE-og-ra-phy",
-      "syllables": "ge-og-ra-phy",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "giraffe",
-      "definition": "A tall animal with a long neck",
-      "example": "The giraffe ate leaves from the tall tree.",
-      "phonetic": "GI-raffe",
-      "syllables": "gi-raffe",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "glasses",
-      "definition": "Lenses worn to help see",
-      "example": "He needs glasses to read.",
-      "phonetic": "GLASS-es",
-      "syllables": "glass-es",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "guitar",
-      "definition": "A stringed musical instrument",
-      "example": "She played a song on her guitar.",
-      "phonetic": "GUI-tar",
-      "syllables": "gui-tar",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "helicopter",
-      "definition": "A type of aircraft",
-      "example": "The helicopter landed on the roof.",
-      "phonetic": "HEL-i-cop-ter",
-      "syllables": "hel-i-cop-ter",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "holiday",
-      "definition": "A day of celebration",
-      "example": "Christmas is my favorite holiday.",
-      "phonetic": "HOL-i-day",
-      "syllables": "hol-i-day",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "hospital",
-      "definition": "A place for medical treatment",
-      "example": "The ambulance went to the hospital.",
-      "phonetic": "HOS-pi-tal",
-      "syllables": "hos-pi-tal",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "hurricane",
-      "definition": "A violent tropical storm",
-      "example": "The hurricane brought strong winds.",
-      "phonetic": "HUR-ri-cane",
-      "syllables": "hur-ri-cane",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "instrument",
-      "definition": "A tool or device for music",
-      "example": "Which musical instrument do you play?",
-      "phonetic": "IN-stru-ment",
-      "syllables": "in-stru-ment",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "backpack",
-      "definition": "A bag carried on the back",
-      "example": "He packed his backpack for school.",
-      "phonetic": "BACK-pack",
-      "syllables": "back-pack",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "celebrate",
-      "definition": "To honor a special event",
-      "example": "We celebrate birthdays with cake.",
-      "phonetic": "CEL-e-brate",
-      "syllables": "cel-e-brate",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "disappear",
-      "definition": "To vanish from sight",
-      "example": "The rabbit seemed to disappear.",
-      "phonetic": "DIS-ap-pear",
-      "syllables": "dis-ap-pear",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "favorite",
-      "definition": "Preferred above all others",
-      "example": "Purple is my favorite color.",
-      "phonetic": "FA-vor-ite",
-      "syllables": "fa-vor-ite",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "horizon",
-      "definition": "The line where earth and sky appear to meet",
-      "example": "The sun sank below the horizon.",
-      "phonetic": "HO-ri-zon",
-      "syllables": "ho-ri-zon",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "laughter",
-      "definition": "The sound of laughing",
-      "example": "The room filled with laughter.",
-      "phonetic": "LAUGH-ter",
-      "syllables": "laugh-ter",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "question",
-      "definition": "A sentence asked to get information",
-      "example": "She raised her hand to ask a question.",
-      "phonetic": "QUES-tion",
-      "syllables": "ques-tion",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "shelter",
-      "definition": "A place that gives protection",
-      "example": "The hikers found shelter from the rain.",
-      "phonetic": "SHEL-ter",
-      "syllables": "shel-ter",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "whisper",
-      "definition": "To speak very softly",
-      "example": "Please whisper in the library.",
-      "phonetic": "WHIS-per",
-      "syllables": "whis-per",
-      "difficulty": "medium",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "breeze",
-      "definition": "A gentle wind",
-      "example": "A cool breeze blew across the field.",
-      "phonetic": "BREE-ze",
-      "syllables": "bree-ze",
-      "difficulty": "easy",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "candle",
-      "definition": "A stick of wax with a wick",
-      "example": "We lit a candle during the power outage.",
-      "phonetic": "CAN-dle",
-      "syllables": "can-dle",
-      "difficulty": "easy",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "forest",
-      "definition": "A large area covered with trees",
-      "example": "We hiked through the forest trail.",
-      "phonetic": "FOR-est",
-      "syllables": "for-est",
-      "difficulty": "easy",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "guitar",
-      "definition": "A stringed musical instrument",
-      "example": "She practiced guitar after school.",
-      "phonetic": "GUI-tar",
-      "syllables": "gui-tar",
-      "difficulty": "easy",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "harbor",
-      "definition": "A sheltered place for ships",
-      "example": "Fishing boats returned to the harbor.",
-      "phonetic": "HAR-bor",
-      "syllables": "har-bor",
-      "difficulty": "easy",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "kitten",
-      "definition": "A young cat",
-      "example": "The kitten chased a ball of yarn.",
-      "phonetic": "KIT-ten",
-      "syllables": "kit-ten",
-      "difficulty": "easy",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "ladder",
-      "definition": "A tool with steps for climbing",
-      "example": "He used a ladder to reach the shelf.",
-      "phonetic": "LAD-der",
-      "syllables": "lad-der",
-      "difficulty": "easy",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "marble",
-      "definition": "A small glass ball used in games",
-      "example": "I found a blue marble on the playground.",
-      "phonetic": "MAR-ble",
-      "syllables": "mar-ble",
-      "difficulty": "easy",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "nectar",
-      "definition": "Sweet liquid in flowers",
-      "example": "Bees collect nectar from bright flowers.",
-      "phonetic": "NEC-tar",
-      "syllables": "nec-tar",
-      "difficulty": "easy",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "ocean",
-      "definition": "A vast body of salt water",
-      "example": "The ocean waves crashed on the shore.",
-      "phonetic": "O-cean",
-      "syllables": "o-cean",
-      "difficulty": "easy",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "pencil",
-      "definition": "A tool for writing or drawing",
-      "example": "Sharpen your pencil before the quiz.",
-      "phonetic": "PEN-cil",
-      "syllables": "pen-cil",
-      "difficulty": "easy",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "quartz",
-      "definition": "A hard mineral found in rocks",
-      "example": "This rock has shiny pieces of quartz.",
-      "phonetic": "QUARTZ",
-      "syllables": "quartz",
-      "difficulty": "easy",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "rocket",
-      "definition": "A vehicle that travels into space",
-      "example": "The rocket launched with a loud roar.",
-      "phonetic": "ROCK-et",
-      "syllables": "rock-et",
-      "difficulty": "easy",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "sunset",
-      "definition": "The daily disappearance of the sun",
-      "example": "We watched the sunset turn the sky orange.",
-      "phonetic": "SUN-set",
-      "syllables": "sun-set",
-      "difficulty": "easy",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "ticket",
-      "definition": "A pass that allows entry",
-      "example": "Keep your ticket for the school play.",
-      "phonetic": "TICK-et",
-      "syllables": "tick-et",
-      "difficulty": "easy",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "vacuum",
-      "definition": "A machine that cleans floors",
-      "example": "Dad used the vacuum in the living room.",
-      "phonetic": "VAC-u-um",
-      "syllables": "vac-u-um",
-      "difficulty": "easy",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "window",
-      "definition": "An opening in a wall with glass",
-      "example": "Please open the window for fresh air.",
-      "phonetic": "WIN-dow",
-      "syllables": "win-dow",
-      "difficulty": "easy",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "yellow",
-      "definition": "A bright color like the sun",
-      "example": "Her backpack is yellow and easy to spot.",
-      "phonetic": "YEL-low",
-      "syllables": "yel-low",
-      "difficulty": "easy",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "zigzag",
-      "definition": "A line with sharp turns",
-      "example": "The skier made a zigzag down the hill.",
-      "phonetic": "ZIG-zag",
-      "syllables": "zig-zag",
-      "difficulty": "easy",
-      "gradeLevel": "3-5"
-    },
-    {
-      "word": "bridge",
-      "definition": "A structure built over water or roads",
-      "example": "We crossed the bridge on our bike ride.",
-      "phonetic": "BRIDGE",
-      "syllables": "bridge",
-      "difficulty": "easy",
-      "gradeLevel": "3-5"
-    }
-  ]
-}
+[
+  {
+    "word": "elephant",
+    "definition": "A large mammal with a trunk",
+    "sentence": "The elephant sprayed water with its trunk.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "el-e-phant",
+    "phonetic": "EL-e-phant"
+  },
+  {
+    "word": "island",
+    "definition": "Land surrounded by water",
+    "sentence": "They sailed to a small island.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "is-land",
+    "phonetic": "IS-land"
+  },
+  {
+    "word": "jungle",
+    "definition": "Dense tropical forest",
+    "sentence": "The explorer ventured into the jungle.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "jun-gle",
+    "phonetic": "JUN-gle"
+  },
+  {
+    "word": "night",
+    "definition": "The period of darkness",
+    "sentence": "Stars appeared in the night sky.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "night",
+    "phonetic": "NIGHT"
+  },
+  {
+    "word": "orange",
+    "definition": "A round citrus fruit",
+    "sentence": "He peeled an orange for breakfast.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "or-ange",
+    "phonetic": "OR-ange"
+  },
+  {
+    "word": "beautiful",
+    "definition": "Pleasing to the senses",
+    "sentence": "The sunset was absolutely beautiful.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "beau-ti-ful",
+    "phonetic": "BEAU-ti-ful"
+  },
+  {
+    "word": "calendar",
+    "definition": "A system for organizing days",
+    "sentence": "Mark the date on your calendar.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "cal-en-dar",
+    "phonetic": "CAL-en-dar"
+  },
+  {
+    "word": "dinosaur",
+    "definition": "An extinct prehistoric reptile",
+    "sentence": "The museum had a dinosaur skeleton.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "di-no-saur",
+    "phonetic": "DI-no-saur"
+  },
+  {
+    "word": "emergency",
+    "definition": "A serious unexpected situation",
+    "sentence": "Call 911 in case of emergency.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "e-mer-gen-cy",
+    "phonetic": "E-mer-gen-cy"
+  },
+  {
+    "word": "february",
+    "definition": "The second month of the year",
+    "sentence": "February is the shortest month.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "feb-ru-ar-y",
+    "phonetic": "FEB-ru-ar-y"
+  },
+  {
+    "word": "government",
+    "definition": "The ruling body of a nation",
+    "sentence": "The government passed new legislation.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "gov-ern-ment",
+    "phonetic": "GOV-ern-ment"
+  },
+  {
+    "word": "hamburger",
+    "definition": "A sandwich with a meat patty",
+    "sentence": "I ordered a hamburger with fries.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "ham-bur-ger",
+    "phonetic": "HAM-bur-ger"
+  },
+  {
+    "word": "immediately",
+    "definition": "Without delay",
+    "sentence": "Please respond immediately.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "im-me-di-ate-ly",
+    "phonetic": "IM-me-di-ate-ly"
+  },
+  {
+    "word": "jealousy",
+    "definition": "Feeling of envy",
+    "sentence": "Jealousy can damage relationships.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "jeal-ous-y",
+    "phonetic": "JEAL-ous-y"
+  },
+  {
+    "word": "knowledge",
+    "definition": "Information and understanding",
+    "sentence": "Knowledge is power.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "knowl-edge",
+    "phonetic": "KNOWL-edge"
+  },
+  {
+    "word": "lieutenant",
+    "definition": "A military rank",
+    "sentence": "The lieutenant led the platoon.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "lieu-ten-ant",
+    "phonetic": "LIEU-ten-ant"
+  },
+  {
+    "word": "mysterious",
+    "definition": "Difficult to understand",
+    "sentence": "A mysterious package arrived.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "mys-te-ri-ous",
+    "phonetic": "MYS-te-ri-ous"
+  },
+  {
+    "word": "necessary",
+    "definition": "Required or essential",
+    "sentence": "Water is necessary for life.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "nec-es-sar-y",
+    "phonetic": "NEC-es-sar-y"
+  },
+  {
+    "word": "occasion",
+    "definition": "A special event or time",
+    "sentence": "This is a special occasion.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "oc-ca-sion",
+    "phonetic": "OC-ca-sion"
+  },
+  {
+    "word": "psychology",
+    "definition": "The study of the mind",
+    "sentence": "She studied psychology in college.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "psy-chol-o-gy",
+    "phonetic": "PSY-chol-o-gy"
+  },
+  {
+    "word": "questionnaire",
+    "definition": "A set of written questions",
+    "sentence": "Please complete this questionnaire.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "ques-tion-naire",
+    "phonetic": "QUES-tion-naire"
+  },
+  {
+    "word": "restaurant",
+    "definition": "A place to eat meals",
+    "sentence": "We dined at an Italian restaurant.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "res-tau-rant",
+    "phonetic": "RES-tau-rant"
+  },
+  {
+    "word": "adventure",
+    "definition": "An exciting or unusual experience",
+    "sentence": "They went on an adventure in the woods.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "ad-ven-ture",
+    "phonetic": "AD-ven-ture"
+  },
+  {
+    "word": "alphabet",
+    "definition": "The letters of a language",
+    "sentence": "She learned to sing the alphabet song.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "al-pha-bet",
+    "phonetic": "AL-pha-bet"
+  },
+  {
+    "word": "apartment",
+    "definition": "A set of rooms for living in",
+    "sentence": "We live in an apartment on the third floor.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "a-part-ment",
+    "phonetic": "A-part-ment"
+  },
+  {
+    "word": "astronaut",
+    "definition": "A person trained to travel in space",
+    "sentence": "The astronaut walked on the moon.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "as-tro-naut",
+    "phonetic": "AS-tro-naut"
+  },
+  {
+    "word": "autumn",
+    "definition": "The season after summer",
+    "sentence": "Leaves turn colors in autumn.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "au-tumn",
+    "phonetic": "AU-tumn"
+  },
+  {
+    "word": "bakery",
+    "definition": "A place where bread and cakes are made",
+    "sentence": "We bought fresh donuts at the bakery.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "bak-er-y",
+    "phonetic": "BAK-er-y"
+  },
+  {
+    "word": "balcony",
+    "definition": "A platform on the outside of a building",
+    "sentence": "She stood on the balcony to watch the parade.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "bal-co-ny",
+    "phonetic": "BAL-co-ny"
+  },
+  {
+    "word": "banana",
+    "definition": "A long curved yellow fruit",
+    "sentence": "Monkeys love to eat a banana.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "ba-nan-a",
+    "phonetic": "BA-nan-a"
+  },
+  {
+    "word": "basket",
+    "definition": "A container woven from cane or wire",
+    "sentence": "Put the apples in the basket.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "bas-ket",
+    "phonetic": "BAS-ket"
+  },
+  {
+    "word": "blanket",
+    "definition": "A soft covering for a bed",
+    "sentence": "The baby was wrapped in a warm blanket.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "blan-ket",
+    "phonetic": "BLAN-ket"
+  },
+  {
+    "word": "bottle",
+    "definition": "A container with a narrow neck",
+    "sentence": "He drank water from a plastic bottle.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "bot-tle",
+    "phonetic": "BOT-tle"
+  },
+  {
+    "word": "bridge",
+    "definition": "A structure across a river or road",
+    "sentence": "Cars drove over the bridge.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "bridge",
+    "phonetic": "BRIDGE"
+  },
+  {
+    "word": "camera",
+    "definition": "A device for taking photos",
+    "sentence": "Smile for the camera!",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "cam-er-a",
+    "phonetic": "CAM-er-a"
+  },
+  {
+    "word": "candle",
+    "definition": "Wax with a wick that burns",
+    "sentence": "She blew out the candle on her cake.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "can-dle",
+    "phonetic": "CAN-dle"
+  },
+  {
+    "word": "castle",
+    "definition": "A large fortified building",
+    "sentence": "The king lived in a stone castle.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "cas-tle",
+    "phonetic": "CAS-tle"
+  },
+  {
+    "word": "caterpillar",
+    "definition": "The larva of a butterfly",
+    "sentence": "The caterpillar will become a butterfly.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "cat-er-pil-lar",
+    "phonetic": "CAT-er-pil-lar"
+  },
+  {
+    "word": "chocolate",
+    "definition": "A sweet food made from cacao",
+    "sentence": "I love dark chocolate.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "choc-o-late",
+    "phonetic": "CHOC-o-late"
+  },
+  {
+    "word": "circle",
+    "definition": "A round shape",
+    "sentence": "Draw a circle on the paper.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "cir-cle",
+    "phonetic": "CIR-cle"
+  },
+  {
+    "word": "coffee",
+    "definition": "A hot drink made from roasted beans",
+    "sentence": "Dad drinks coffee in the morning.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "cof-fee",
+    "phonetic": "COF-fee"
+  },
+  {
+    "word": "computer",
+    "definition": "An electronic device for processing data",
+    "sentence": "I use the computer for homework.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "com-put-er",
+    "phonetic": "COM-put-er"
+  },
+  {
+    "word": "continent",
+    "definition": "A large continuous mass of land",
+    "sentence": "Africa is a large continent.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "con-ti-nent",
+    "phonetic": "CON-ti-nent"
+  },
+  {
+    "word": "cucumber",
+    "definition": "A long green vegetable",
+    "sentence": "She added sliced cucumber to the salad.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "cu-cum-ber",
+    "phonetic": "CU-cum-ber"
+  },
+  {
+    "word": "curtain",
+    "definition": "Cloth hung to cover a window",
+    "sentence": "Close the curtain to block the sun.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "cur-tain",
+    "phonetic": "CUR-tain"
+  },
+  {
+    "word": "dangerous",
+    "definition": "Likely to cause harm",
+    "sentence": "It is dangerous to play in the street.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "dan-ger-ous",
+    "phonetic": "DAN-ger-ous"
+  },
+  {
+    "word": "daughter",
+    "definition": "A female child",
+    "sentence": "She is her mother's daughter.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "daugh-ter",
+    "phonetic": "DAUGH-ter"
+  },
+  {
+    "word": "dentist",
+    "definition": "A doctor for teeth",
+    "sentence": "The dentist checked for cavities.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "den-tist",
+    "phonetic": "DEN-tist"
+  },
+  {
+    "word": "diamond",
+    "definition": "A precious clear stone",
+    "sentence": "Her ring has a sparkling diamond.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "di-a-mond",
+    "phonetic": "DI-a-mond"
+  },
+  {
+    "word": "difficult",
+    "definition": "Hard to do or understand",
+    "sentence": "The math problem was very difficult.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "dif-fi-cult",
+    "phonetic": "DIF-fi-cult"
+  },
+  {
+    "word": "direction",
+    "definition": "The path something moves along",
+    "sentence": "Which direction is north?",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "di-rec-tion",
+    "phonetic": "DI-rec-tion"
+  },
+  {
+    "word": "doctor",
+    "definition": "A person who treats sick people",
+    "sentence": "The doctor gave me medicine.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "doc-tor",
+    "phonetic": "DOC-tor"
+  },
+  {
+    "word": "dolphin",
+    "definition": "A smart marine mammal",
+    "sentence": "The dolphin jumped out of the water.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "dol-phin",
+    "phonetic": "DOL-phin"
+  },
+  {
+    "word": "dragon",
+    "definition": "A mythical fire-breathing monster",
+    "sentence": "The knight fought the dragon.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "drag-on",
+    "phonetic": "DRAG-on"
+  },
+  {
+    "word": "elevator",
+    "definition": "A machine for lifting people",
+    "sentence": "Take the elevator to the tenth floor.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "el-e-va-tor",
+    "phonetic": "EL-e-va-tor"
+  },
+  {
+    "word": "engine",
+    "definition": "A machine with moving parts",
+    "sentence": "The car engine is running.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "en-gine",
+    "phonetic": "EN-gine"
+  },
+  {
+    "word": "envelope",
+    "definition": "A paper container for a letter",
+    "sentence": "Put the stamp on the envelope.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "en-ve-lope",
+    "phonetic": "EN-ve-lope"
+  },
+  {
+    "word": "exercise",
+    "definition": "Physical activity",
+    "sentence": "Running is good exercise.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "ex-er-cise",
+    "phonetic": "EX-er-cise"
+  },
+  {
+    "word": "factory",
+    "definition": "A place where goods are made",
+    "sentence": "Cars are built in a factory.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "fac-to-ry",
+    "phonetic": "FAC-to-ry"
+  },
+  {
+    "word": "family",
+    "definition": "Parents and children",
+    "sentence": "My family likes to go camping.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "fam-i-ly",
+    "phonetic": "FAM-i-ly"
+  },
+  {
+    "word": "feather",
+    "definition": "Light growth covering a bird",
+    "sentence": "The feather floated to the ground.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "feath-er",
+    "phonetic": "FEATH-er"
+  },
+  {
+    "word": "festival",
+    "definition": "A day or period of celebration",
+    "sentence": "We danced at the music festival.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "fes-ti-val",
+    "phonetic": "FES-ti-val"
+  },
+  {
+    "word": "fingerprint",
+    "definition": "The mark left by a finger",
+    "sentence": "Everyone has a unique fingerprint.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "fin-ger-print",
+    "phonetic": "FIN-ger-print"
+  },
+  {
+    "word": "fireplace",
+    "definition": "A place for a fire in a house",
+    "sentence": "We sat by the warm fireplace.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "fire-place",
+    "phonetic": "FIRE-place"
+  },
+  {
+    "word": "forest",
+    "definition": "A large area of trees",
+    "sentence": "Animals hide in the forest.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "for-est",
+    "phonetic": "FOR-est"
+  },
+  {
+    "word": "furniture",
+    "definition": "Movable items like chairs and tables",
+    "sentence": "We bought new furniture for the living room.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "fur-ni-ture",
+    "phonetic": "FUR-ni-ture"
+  },
+  {
+    "word": "galaxy",
+    "definition": "A huge system of stars",
+    "sentence": "The Milky Way is our galaxy.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "gal-ax-y",
+    "phonetic": "GAL-ax-y"
+  },
+  {
+    "word": "garage",
+    "definition": "A building for parking cars",
+    "sentence": "Park the car in the garage.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "ga-rage",
+    "phonetic": "GA-rage"
+  },
+  {
+    "word": "geography",
+    "definition": "Study of the earth's surface",
+    "sentence": "We learned about maps in geography.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "ge-og-ra-phy",
+    "phonetic": "GE-og-ra-phy"
+  },
+  {
+    "word": "giraffe",
+    "definition": "A tall animal with a long neck",
+    "sentence": "The giraffe ate leaves from the tall tree.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "gi-raffe",
+    "phonetic": "GI-raffe"
+  },
+  {
+    "word": "glasses",
+    "definition": "Lenses worn to help see",
+    "sentence": "He needs glasses to read.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "glass-es",
+    "phonetic": "GLASS-es"
+  },
+  {
+    "word": "guitar",
+    "definition": "A stringed musical instrument",
+    "sentence": "She played a song on her guitar.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "gui-tar",
+    "phonetic": "GUI-tar"
+  },
+  {
+    "word": "helicopter",
+    "definition": "A type of aircraft",
+    "sentence": "The helicopter landed on the roof.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "hel-i-cop-ter",
+    "phonetic": "HEL-i-cop-ter"
+  },
+  {
+    "word": "holiday",
+    "definition": "A day of celebration",
+    "sentence": "Christmas is my favorite holiday.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "hol-i-day",
+    "phonetic": "HOL-i-day"
+  },
+  {
+    "word": "hospital",
+    "definition": "A place for medical treatment",
+    "sentence": "The ambulance went to the hospital.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "hos-pi-tal",
+    "phonetic": "HOS-pi-tal"
+  },
+  {
+    "word": "hurricane",
+    "definition": "A violent tropical storm",
+    "sentence": "The hurricane brought strong winds.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "hur-ri-cane",
+    "phonetic": "HUR-ri-cane"
+  },
+  {
+    "word": "instrument",
+    "definition": "A tool or device for music",
+    "sentence": "Which musical instrument do you play?",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "in-stru-ment",
+    "phonetic": "IN-stru-ment"
+  },
+  {
+    "word": "backpack",
+    "definition": "A bag carried on the back",
+    "sentence": "He packed his backpack for school.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "back-pack",
+    "phonetic": "BACK-pack"
+  },
+  {
+    "word": "celebrate",
+    "definition": "To honor a special event",
+    "sentence": "We celebrate birthdays with cake.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "cel-e-brate",
+    "phonetic": "CEL-e-brate"
+  },
+  {
+    "word": "disappear",
+    "definition": "To vanish from sight",
+    "sentence": "The rabbit seemed to disappear.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "dis-ap-pear",
+    "phonetic": "DIS-ap-pear"
+  },
+  {
+    "word": "favorite",
+    "definition": "Preferred above all others",
+    "sentence": "Purple is my favorite color.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "fa-vor-ite",
+    "phonetic": "FA-vor-ite"
+  },
+  {
+    "word": "horizon",
+    "definition": "The line where earth and sky appear to meet",
+    "sentence": "The sun sank below the horizon.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "ho-ri-zon",
+    "phonetic": "HO-ri-zon"
+  },
+  {
+    "word": "laughter",
+    "definition": "The sound of laughing",
+    "sentence": "The room filled with laughter.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "laugh-ter",
+    "phonetic": "LAUGH-ter"
+  },
+  {
+    "word": "question",
+    "definition": "A sentence asked to get information",
+    "sentence": "She raised her hand to ask a question.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "ques-tion",
+    "phonetic": "QUES-tion"
+  },
+  {
+    "word": "shelter",
+    "definition": "A place that gives protection",
+    "sentence": "The hikers found shelter from the rain.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "shel-ter",
+    "phonetic": "SHEL-ter"
+  },
+  {
+    "word": "whisper",
+    "definition": "To speak very softly",
+    "sentence": "Please whisper in the library.",
+    "grade": 3,
+    "difficulty": "medium",
+    "syllables": "whis-per",
+    "phonetic": "WHIS-per"
+  },
+  {
+    "word": "breeze",
+    "definition": "A gentle wind",
+    "sentence": "A cool breeze blew across the field.",
+    "grade": 3,
+    "difficulty": "easy",
+    "syllables": "bree-ze",
+    "phonetic": "BREE-ze"
+  },
+  {
+    "word": "harbor",
+    "definition": "A sheltered place for ships",
+    "sentence": "Fishing boats returned to the harbor.",
+    "grade": 3,
+    "difficulty": "easy",
+    "syllables": "har-bor",
+    "phonetic": "HAR-bor"
+  },
+  {
+    "word": "kitten",
+    "definition": "A young cat",
+    "sentence": "The kitten chased a ball of yarn.",
+    "grade": 3,
+    "difficulty": "easy",
+    "syllables": "kit-ten",
+    "phonetic": "KIT-ten"
+  },
+  {
+    "word": "ladder",
+    "definition": "A tool with steps for climbing",
+    "sentence": "He used a ladder to reach the shelf.",
+    "grade": 3,
+    "difficulty": "easy",
+    "syllables": "lad-der",
+    "phonetic": "LAD-der"
+  },
+  {
+    "word": "marble",
+    "definition": "A small glass ball used in games",
+    "sentence": "I found a blue marble on the playground.",
+    "grade": 3,
+    "difficulty": "easy",
+    "syllables": "mar-ble",
+    "phonetic": "MAR-ble"
+  },
+  {
+    "word": "nectar",
+    "definition": "Sweet liquid in flowers",
+    "sentence": "Bees collect nectar from bright flowers.",
+    "grade": 3,
+    "difficulty": "easy",
+    "syllables": "nec-tar",
+    "phonetic": "NEC-tar"
+  },
+  {
+    "word": "ocean",
+    "definition": "A vast body of salt water",
+    "sentence": "The ocean waves crashed on the shore.",
+    "grade": 3,
+    "difficulty": "easy",
+    "syllables": "o-cean",
+    "phonetic": "O-cean"
+  },
+  {
+    "word": "pencil",
+    "definition": "A tool for writing or drawing",
+    "sentence": "Sharpen your pencil before the quiz.",
+    "grade": 3,
+    "difficulty": "easy",
+    "syllables": "pen-cil",
+    "phonetic": "PEN-cil"
+  },
+  {
+    "word": "quartz",
+    "definition": "A hard mineral found in rocks",
+    "sentence": "This rock has shiny pieces of quartz.",
+    "grade": 3,
+    "difficulty": "easy",
+    "syllables": "quartz",
+    "phonetic": "QUARTZ"
+  },
+  {
+    "word": "rocket",
+    "definition": "A vehicle that travels into space",
+    "sentence": "The rocket launched with a loud roar.",
+    "grade": 3,
+    "difficulty": "easy",
+    "syllables": "rock-et",
+    "phonetic": "ROCK-et"
+  },
+  {
+    "word": "sunset",
+    "definition": "The daily disappearance of the sun",
+    "sentence": "We watched the sunset turn the sky orange.",
+    "grade": 3,
+    "difficulty": "easy",
+    "syllables": "sun-set",
+    "phonetic": "SUN-set"
+  },
+  {
+    "word": "ticket",
+    "definition": "A pass that allows entry",
+    "sentence": "Keep your ticket for the school play.",
+    "grade": 3,
+    "difficulty": "easy",
+    "syllables": "tick-et",
+    "phonetic": "TICK-et"
+  },
+  {
+    "word": "vacuum",
+    "definition": "A machine that cleans floors",
+    "sentence": "Dad used the vacuum in the living room.",
+    "grade": 3,
+    "difficulty": "easy",
+    "syllables": "vac-u-um",
+    "phonetic": "VAC-u-um"
+  },
+  {
+    "word": "window",
+    "definition": "An opening in a wall with glass",
+    "sentence": "Please open the window for fresh air.",
+    "grade": 3,
+    "difficulty": "easy",
+    "syllables": "win-dow",
+    "phonetic": "WIN-dow"
+  },
+  {
+    "word": "yellow",
+    "definition": "A bright color like the sun",
+    "sentence": "Her backpack is yellow and easy to spot.",
+    "grade": 3,
+    "difficulty": "easy",
+    "syllables": "yel-low",
+    "phonetic": "YEL-low"
+  },
+  {
+    "word": "zigzag",
+    "definition": "A line with sharp turns",
+    "sentence": "The skier made a zigzag down the hill.",
+    "grade": 3,
+    "difficulty": "easy",
+    "syllables": "zig-zag",
+    "phonetic": "ZIG-zag"
+  }
+]
