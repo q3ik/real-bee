@@ -114,14 +114,15 @@ vi.mock("../../lib/wordList", () => ({
   WORD_LIST: MOCK_WORDS,
 }));
 
-vi.mock("../../game-engine/difficulty", async (importOriginal) => {
-  const mod =
-    await importOriginal<typeof import("../../game-engine/difficulty")>();
-  return {
-    ...mod,
-    selectRandomWord: (words: any[]) => (words.length > 0 ? words[0] : null),
-  };
-});
+vi.mock("../../game-engine/difficulty", () => ({
+  getAvailableWords: vi.fn((pool) => ({
+    availableWords: pool || [],
+    shouldResetUsed: false,
+    fallbackReason: null,
+  })),
+  selectRandomWord: vi.fn((words) => (words.length > 0 ? words[0] : null)),
+  getAdjustedDifficulty: vi.fn(),
+}));
 
 vi.mock("sonner", () => ({
   toast: {
