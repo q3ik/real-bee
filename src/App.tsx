@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import { Toaster } from "sonner";
 import { useGameStore } from "./hooks/useGameStore";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
 import { useDiagnosticsBugReport } from "./hooks/useDiagnosticsBugReport";
@@ -230,6 +231,9 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Global Toast Notifications */}
+      <Toaster position="top-center" richColors closeButton />
     </div>
   );
 }

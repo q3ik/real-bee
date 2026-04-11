@@ -6,14 +6,14 @@
  * the Sentry integration handles remote delivery.
  */
 
-const STORAGE_KEY = 'real-bee-feedback';
+const STORAGE_KEY = "real-bee-feedback";
 
 export interface FeedbackItem {
   id: string;
-  type: 'bug' | 'feature' | 'feedback';
+  type: "bug" | "feature" | "feedback";
   title: string;
   description: string;
-  status: 'new' | 'reviewing' | 'resolved' | 'wont_fix';
+  status: "new" | "reviewing" | "resolved" | "wont_fix";
   createdAt: string;
   updatedAt: string;
   resolvedAt?: string | null;
@@ -25,7 +25,9 @@ export interface FeedbackItem {
   streak?: number;
 }
 
-export function saveFeedback(item: Omit<FeedbackItem, 'id' | 'createdAt' | 'updatedAt'>): FeedbackItem {
+export function saveFeedback(
+  item: Omit<FeedbackItem, "id" | "createdAt" | "updatedAt">,
+): FeedbackItem {
   const now = new Date().toISOString();
   const newItem: FeedbackItem = {
     ...item,
@@ -36,7 +38,16 @@ export function saveFeedback(item: Omit<FeedbackItem, 'id' | 'createdAt' | 'upda
 
   const items = getFeedbackItems();
   items.unshift(newItem);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  } catch (err) {
+    console.warn(
+      "[feedbackStorage] Failed to save feedback to localStorage:",
+      err,
+    );
+  }
+
   return newItem;
 }
 
@@ -49,23 +60,35 @@ export function getFeedbackItems(): FeedbackItem[] {
   }
 }
 
-export function updateFeedback(id: string, updates: Partial<Pick<FeedbackItem, 'status' | 'resolutionNote'>>): FeedbackItem | null {
+export function updateFeedback(
+  id: string,
+  updates: Partial<Pick<FeedbackItem, "status" | "resolutionNote">>,
+): FeedbackItem | null {
   const items = getFeedbackItems();
-  const index = items.findIndex(i => i.id === id);
+  const index = items.findIndex((i) => i.id === id);
   if (index === -1) return null;
 
   items[index] = {
     ...items[index],
     ...updates,
     updatedAt: new Date().toISOString(),
-    resolvedAt: updates.status === 'resolved' || updates.status === 'wont_fix'
-      ? new Date().toISOString()
-      : updates.status === 'new' || updates.status === 'reviewing'
-        ? null
-        : items[index].resolvedAt,
+    resolvedAt:
+      updates.status === "resolved" || updates.status === "wont_fix"
+        ? new Date().toISOString()
+        : updates.status === "new" || updates.status === "reviewing"
+          ? null
+          : items[index].resolvedAt,
   };
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  } catch (err) {
+    console.warn(
+      "[feedbackStorage] Failed to update feedback in localStorage:",
+      err,
+    );
+  }
+
   return items[index];
 }
 
@@ -73,9 +96,9 @@ export function getFeedbackStats() {
   const items = getFeedbackItems();
   return {
     total: items.length,
-    new: items.filter(i => i.status === 'new').length,
-    reviewing: items.filter(i => i.status === 'reviewing').length,
-    resolved: items.filter(i => i.status === 'resolved').length,
-    wontFix: items.filter(i => i.status === 'wont_fix').length,
+    new: items.filter((i) => i.status === "new").length,
+    reviewing: items.filter((i) => i.status === "reviewing").length,
+    resolved: items.filter((i) => i.status === "resolved").length,
+    wontFix: items.filter((i) => i.status === "wont_fix").length,
   };
 }

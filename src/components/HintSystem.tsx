@@ -37,7 +37,7 @@ export default function HintSystem({
         {hints.length < MAX_HINTS_PER_WORD && (
           <button
             onClick={onGetHint}
-            className="text-xs font-bold text-orange-500 hover:text-orange-600 flex items-center gap-1 bg-orange-50 px-2 py-1 rounded-full transition-all"
+            className="text-xs font-bold text-orange-500 hover:text-orange-600 transition-all"
           >
             Get Hint <ChevronRight className="w-3 h-3" />
           </button>
@@ -52,9 +52,7 @@ export default function HintSystem({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <Card
-                className={cn("p-3 border-orange-100 bg-orange-50/50 text-sm")}
-              >
+              <Card className={cn("p-3 border text-sm")}>
                 <div className="flex items-center gap-2">
                   <Badge
                     variant="outline"

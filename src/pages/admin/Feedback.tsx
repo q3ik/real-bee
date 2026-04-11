@@ -3,9 +3,14 @@
  *
  * Protected by an API key gate stored in sessionStorage.
  * Uses shadcn/ui components (Table, Dialog, Select, Badge, Button, Input, Card).
+ *
+ * ⚠️ SECURITY NOTE: This client-side auth is a convenience feature for local
+ * development only. The API key is visible in the client bundle and should NOT
+ * be relied upon for production security. For production use, implement
+ * server-side authentication via Cloudflare Workers or a backend service.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 import {
   Table,
   TableBody,
@@ -13,19 +18,19 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -33,20 +38,28 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { getFeedbackItems, updateFeedback, type FeedbackItem } from '@/lib/feedbackStorage';
+} from "@/components/ui/dialog";
+import {
+  getFeedbackItems,
+  updateFeedback,
+  type FeedbackItem,
+} from "@/lib/feedbackStorage";
 
-const ADMIN_API_KEY_SESSION_KEY = 'real-bee-admin-api-key';
-const EXPECTED_API_KEY = import.meta.env.VITE_ADMIN_API_KEY || 'admin-dev-key';
+const ADMIN_API_KEY_SESSION_KEY = "real-bee-admin-api-key";
+const EXPECTED_API_KEY = import.meta.env.VITE_ADMIN_API_KEY || "admin-dev-key";
 
 const PAGE_SIZE = 25;
 
-function statusColor(status: FeedbackItem['status']) {
+function statusColor(status: FeedbackItem["status"]) {
   switch (status) {
-    case 'new': return 'bg-blue-100 text-blue-700 hover:bg-blue-100';
-    case 'reviewing': return 'bg-amber-100 text-amber-700 hover:bg-amber-100';
-    case 'resolved': return 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100';
-    case 'wont_fix': return 'bg-gray-100 text-gray-700 hover:bg-gray-100';
+    case "new":
+      return "bg-blue-100 text-blue-700 hover:bg-blue-100";
+    case "reviewing":
+      return "bg-amber-100 text-amber-700 hover:bg-amber-100";
+    case "resolved":
+      return "bg-emerald-100 text-emerald-700 hover:bg-emerald-100";
+    case "wont_fix":
+      return "bg-gray-100 text-gray-700 hover:bg-gray-100";
   }
 }
 
@@ -61,26 +74,27 @@ function relativeTime(dateStr: string) {
 }
 
 export default function AdminFeedback() {
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
   const [items, setItems] = useState<FeedbackItem[]>([]);
   const [page, setPage] = useState(0);
   const [selectedItem, setSelectedItem] = useState<FeedbackItem | null>(null);
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterType, setFilterType] = useState<string>('all');
-  const [search, setSearch] = useState('');
-  const [resolutionNote, setResolutionNote] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterType, setFilterType] = useState<string>("all");
+  const [search, setSearch] = useState("");
+  const [resolutionNote, setResolutionNote] = useState("");
+
+  const loadItems = useCallback(() => {
+    setItems(getFeedbackItems());
+  }, []);
 
   useEffect(() => {
     const savedKey = sessionStorage.getItem(ADMIN_API_KEY_SESSION_KEY);
     if (savedKey === EXPECTED_API_KEY) {
       setAuthenticated(true);
+      loadItems(); // Load feedback items when restoring session
     }
-  }, []);
-
-  const loadItems = useCallback(() => {
-    setItems(getFeedbackItems());
-  }, []);
+  }, [loadItems]);
 
   const handleLogin = () => {
     if (apiKey === EXPECTED_API_KEY) {
@@ -93,13 +107,19 @@ export default function AdminFeedback() {
   const handleLogout = () => {
     sessionStorage.removeItem(ADMIN_API_KEY_SESSION_KEY);
     setAuthenticated(false);
-    setApiKey('');
+    setApiKey("");
   };
 
-  const handleStatusChange = (id: string, newStatus: FeedbackItem['status']) => {
+  const handleStatusChange = (
+    id: string,
+    newStatus: FeedbackItem["status"],
+  ) => {
     const updated = updateFeedback(id, {
       status: newStatus,
-      resolutionNote: newStatus === 'resolved' || newStatus === 'wont_fix' ? resolutionNote || null : null,
+      resolutionNote:
+        newStatus === "resolved" || newStatus === "wont_fix"
+          ? resolutionNote || null
+          : null,
     });
     if (updated) {
       loadItems();
@@ -107,9 +127,9 @@ export default function AdminFeedback() {
     }
   };
 
-  const filteredItems = items.filter(item => {
-    if (filterStatus !== 'all' && item.status !== filterStatus) return false;
-    if (filterType !== 'all' && item.type !== filterType) return false;
+  const filteredItems = items.filter((item) => {
+    if (filterStatus !== "all" && item.status !== filterStatus) return false;
+    if (filterType !== "all" && item.type !== filterType) return false;
     if (search) {
       const q = search.toLowerCase();
       return (
@@ -121,7 +141,10 @@ export default function AdminFeedback() {
   });
 
   const totalPages = Math.ceil(filteredItems.length / PAGE_SIZE);
-  const pagedItems = filteredItems.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const pagedItems = filteredItems.slice(
+    page * PAGE_SIZE,
+    (page + 1) * PAGE_SIZE,
+  );
 
   if (!authenticated) {
     return (
@@ -137,9 +160,9 @@ export default function AdminFeedback() {
                 id="api-key"
                 type="password"
                 value={apiKey}
-                onChange={e => setApiKey(e.target.value)}
+                onChange={(e) => setApiKey(e.target.value)}
                 placeholder="Enter admin API key"
-                onKeyDown={e => e.key === 'Enter' && handleLogin()}
+                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
               />
             </div>
             <Button onClick={handleLogin} className="w-full">
@@ -170,14 +193,25 @@ export default function AdminFeedback() {
                 <Input
                   id="search"
                   value={search}
-                  onChange={e => { setSearch(e.target.value); setPage(0); }}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setPage(0);
+                  }}
                   placeholder="Search title or description..."
                 />
               </div>
               <div className="w-[160px]">
                 <Label>Type</Label>
-                <Select value={filterType} onValueChange={v => { setFilterType(v); setPage(0); }}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={filterType}
+                  onValueChange={(v) => {
+                    setFilterType(v);
+                    setPage(0);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All</SelectItem>
                     <SelectItem value="bug">Bug</SelectItem>
@@ -188,8 +222,16 @@ export default function AdminFeedback() {
               </div>
               <div className="w-[160px]">
                 <Label>Status</Label>
-                <Select value={filterStatus} onValueChange={v => { setFilterStatus(v); setPage(0); }}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={filterStatus}
+                  onValueChange={(v) => {
+                    setFilterStatus(v);
+                    setPage(0);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All</SelectItem>
                     <SelectItem value="new">New</SelectItem>
@@ -207,7 +249,9 @@ export default function AdminFeedback() {
         <Card>
           <CardContent className="pt-6">
             {pagedItems.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">No feedback items found.</p>
+              <p className="text-center text-muted-foreground py-8">
+                No feedback items found.
+              </p>
             ) : (
               <Table>
                 <TableHeader>
@@ -220,20 +264,44 @@ export default function AdminFeedback() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pagedItems.map(item => (
-                    <TableRow key={item.id} className="cursor-pointer hover:bg-slate-50" onClick={() => { setSelectedItem(item); setResolutionNote(item.resolutionNote || ''); }}>
+                  {pagedItems.map((item) => (
+                    <TableRow
+                      key={item.id}
+                      className="cursor-pointer hover:bg-slate-50"
+                      onClick={() => {
+                        setSelectedItem(item);
+                        setResolutionNote(item.resolutionNote || "");
+                      }}
+                    >
                       <TableCell>
-                        <Badge variant="outline" className="capitalize">{item.type}</Badge>
-                      </TableCell>
-                      <TableCell className="max-w-[300px] truncate">{item.title}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={statusColor(item.status)}>
-                          {item.status.replace('_', ' ')}
+                        <Badge variant="outline" className="capitalize">
+                          {item.type}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{relativeTime(item.createdAt)}</TableCell>
+                      <TableCell className="max-w-[300px] truncate">
+                        {item.title}
+                      </TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="sm" onClick={e => { e.stopPropagation(); setSelectedItem(item); setResolutionNote(item.resolutionNote || ''); }}>
+                        <Badge
+                          variant="outline"
+                          className={statusColor(item.status)}
+                        >
+                          {item.status.replace("_", " ")}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {relativeTime(item.createdAt)}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedItem(item);
+                            setResolutionNote(item.resolutionNote || "");
+                          }}
+                        >
                           View
                         </Button>
                       </TableCell>
@@ -247,13 +315,25 @@ export default function AdminFeedback() {
             {totalPages > 1 && (
               <div className="flex items-center justify-between mt-4">
                 <p className="text-sm text-muted-foreground">
-                  Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filteredItems.length)} of {filteredItems.length}
+                  Showing {page * PAGE_SIZE + 1}–
+                  {Math.min((page + 1) * PAGE_SIZE, filteredItems.length)} of{" "}
+                  {filteredItems.length}
                 </p>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page === 0}
+                    onClick={() => setPage((p) => p - 1)}
+                  >
                     Previous
                   </Button>
-                  <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page >= totalPages - 1}
+                    onClick={() => setPage((p) => p + 1)}
+                  >
                     Next
                   </Button>
                 </div>
@@ -263,7 +343,12 @@ export default function AdminFeedback() {
         </Card>
 
         {/* Detail Dialog */}
-        <Dialog open={!!selectedItem} onOpenChange={open => { if (!open) setSelectedItem(null); }}>
+        <Dialog
+          open={!!selectedItem}
+          onOpenChange={(open) => {
+            if (!open) setSelectedItem(null);
+          }}
+        >
           {selectedItem && (
             <DialogContent className="max-w-2xl">
               <DialogHeader>
@@ -279,8 +364,18 @@ export default function AdminFeedback() {
                 </div>
                 <div>
                   <Label>Status</Label>
-                  <Select value={selectedItem.status} onValueChange={v => handleStatusChange(selectedItem.id, v as FeedbackItem['status'])}>
-                    <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+                  <Select
+                    value={selectedItem.status}
+                    onValueChange={(v) =>
+                      handleStatusChange(
+                        selectedItem.id,
+                        v as FeedbackItem["status"],
+                      )
+                    }
+                  >
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="new">New</SelectItem>
                       <SelectItem value="reviewing">Reviewing</SelectItem>
@@ -291,41 +386,63 @@ export default function AdminFeedback() {
                 </div>
                 <div>
                   <Label>Description</Label>
-                  <p className="text-sm whitespace-pre-wrap mt-1">{selectedItem.description}</p>
+                  <p className="text-sm whitespace-pre-wrap mt-1">
+                    {selectedItem.description}
+                  </p>
                 </div>
-                {(selectedItem.gamePhase || selectedItem.score !== undefined) && (
+                {(selectedItem.gamePhase ||
+                  selectedItem.score !== undefined) && (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label>Game Phase</Label>
-                      <p className="text-sm">{selectedItem.gamePhase || '—'}</p>
+                      <p className="text-sm">{selectedItem.gamePhase || "—"}</p>
                     </div>
                     <div>
                       <Label>Score / Streak</Label>
-                      <p className="text-sm">{selectedItem.score ?? '—'} / {selectedItem.streak ?? '—'}</p>
+                      <p className="text-sm">
+                        {selectedItem.score ?? "—"} /{" "}
+                        {selectedItem.streak ?? "—"}
+                      </p>
                     </div>
                   </div>
                 )}
                 <div>
                   <Label>User Agent</Label>
-                  <p className="text-xs text-muted-foreground break-all">{selectedItem.userAgent}</p>
+                  <p className="text-xs text-muted-foreground break-all">
+                    {selectedItem.userAgent}
+                  </p>
                 </div>
-                {(selectedItem.status === 'resolved' || selectedItem.status === 'wont_fix') && (
+                {(selectedItem.status === "resolved" ||
+                  selectedItem.status === "wont_fix") && (
                   <div>
                     <Label>Resolution Note</Label>
-                    <p className="text-sm whitespace-pre-wrap mt-1">{selectedItem.resolutionNote || '—'}</p>
+                    <p className="text-sm whitespace-pre-wrap mt-1">
+                      {selectedItem.resolutionNote || "—"}
+                    </p>
                   </div>
                 )}
-                {(selectedItem.status === 'resolved' || selectedItem.status === 'wont_fix') && (
+                {(selectedItem.status === "resolved" ||
+                  selectedItem.status === "wont_fix") && (
                   <div>
-                    <Label htmlFor="resolution-note">Update Resolution Note</Label>
+                    <Label htmlFor="resolution-note">
+                      Update Resolution Note
+                    </Label>
                     <Input
                       id="resolution-note"
                       value={resolutionNote}
-                      onChange={e => setResolutionNote(e.target.value)}
+                      onChange={(e) => setResolutionNote(e.target.value)}
                       placeholder="Add resolution notes..."
                     />
                     <DialogFooter className="mt-2">
-                      <Button size="sm" onClick={() => handleStatusChange(selectedItem.id, selectedItem.status)}>
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          handleStatusChange(
+                            selectedItem.id,
+                            selectedItem.status,
+                          )
+                        }
+                      >
                         Save Note
                       </Button>
                     </DialogFooter>

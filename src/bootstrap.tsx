@@ -1,6 +1,5 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { Toaster } from "sonner";
 import { AuthProvider } from "./contexts/AuthContext";
 import App from "./App.tsx";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -32,6 +31,5 @@ createRoot(document.getElementById("root")!).render(
         <App />
       </AuthProvider>
     </ErrorBoundary>
-    <Toaster position="top-center" richColors closeButton />
   </StrictMode>,
 );

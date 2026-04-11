@@ -142,21 +142,19 @@ export function useHostMessages(): UseHostMessagesResult {
   }, []);
 
   const showToast = useCallback(
-    (level: ToastLevel, text: string, _durationMs = 2000): void => {
-      switch (level) {
-        case "success":
-          sonnerToast.success(text);
-          break;
-        case "error":
-          sonnerToast.error(text);
-          break;
-        case "warning":
-          sonnerToast.warning(text);
-          break;
-        case "info":
-        default:
-          sonnerToast.info(text);
-          break;
+    (level: ToastLevel, text: string, durationMs = 2000): void => {
+      const toastId = sonnerToast[level === "warning" ? "warning" : level](
+        text,
+        {
+          duration: durationMs,
+        },
+      );
+
+      // Auto-dismiss after duration
+      if (durationMs > 0) {
+        setTimeout(() => {
+          sonnerToast.dismiss(toastId);
+        }, durationMs);
       }
     },
     [],
