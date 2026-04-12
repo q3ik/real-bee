@@ -6,17 +6,4 @@
 import { initSentry } from "./lib/sentry";
 initSentry();
 
-// Register the PWA service worker in production only (avoids HMR conflicts)
-if (import.meta.env.PROD) {
-  void registerServiceWorker();
-}
-
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <ErrorBoundary>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
-    </ErrorBoundary>
-  </StrictMode>,
-);
+void import("./bootstrap");
