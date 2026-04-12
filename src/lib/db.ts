@@ -59,3 +59,17 @@ export class RealBeeDatabase extends Dexie {
 }
 
 export const localDb = new RealBeeDatabase();
+
+/**
+ * Save a completed game session to IndexedDB.
+ * Returns the auto-generated session id.
+ *
+ * This is the required persistence entry-point for session data as specified
+ * by the compliance checklist (PR Compliance ID 9).
+ */
+export async function saveGameSession(
+  session: Omit<LocalSession, "id">,
+): Promise<number> {
+  const id = await localDb.sessions.add(session as LocalSession);
+  return id as number;
+}
