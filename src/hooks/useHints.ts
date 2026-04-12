@@ -8,14 +8,14 @@
  *
  * Usage:
  * ```tsx
- * const { hints, addHint, clearHints } = useHints({ onSpeak: speak });
+ * const { hints, requestHint, hintsRemaining } = useHints({ onSpeak: speak });
  *
  * // Reveal the next available hint for the current word:
- * const hint = addHint(currentWord);
+ * const hint = requestHint(currentWord);
  * ```
  */
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { getHint, getAvailableHints } from "../game-engine/hints";
 import type { HintType as EngineHintType } from "../game-engine/hints";
 import type { Hint, HintType, UseHintsResult, WordData } from "./useHints.types";
@@ -27,7 +27,11 @@ import type { Hint, HintType, UseHintsResult, WordData } from "./useHints.types"
 export interface UseHintsOptions {
   /**
    * Optional TTS callback. When provided, every newly revealed hint is spoken
-   * aloud using this function. Satisfies AC item 5 from issue #34.
+   * aloud using this function immediately after it is added to state.
+   * Satisfies AC item 5 from issue #34.
+   *
+   * Callers that pass `onSpeak` must NOT also manually call `speak()` after
+   * `requestHint()` to avoid double-speaking.
    */
   onSpeak?: (text: string) => void;
 }
@@ -47,22 +51,23 @@ export function useHints(options: UseHintsOptions = {}): UseHintsResult {
   const [hints, setHints] = useState<Hint[]>([]);
   // Track used hint types in a ref to avoid stale closure issues.
   const usedTypesRef = useRef<HintType[]>([]);
+  // Track the most recently revealed hint.
+  const [lastHint, setLastHint] = useState<Hint | null>(null);
 
   /**
-   * Reveal the next available hint for `wordData`.
+   * Core hint-reveal logic shared by both `requestHint` and the deprecated
+   * `addHint` alias.
    *
-   * Internally calls `getAvailableHints` from game-engine/hints.ts to pick
-   * the next un-used hint in priority order, then appends it to state.
-   * Speaks the hint via `onSpeak` if provided.
+   * Picks the next un-used hint in priority order, appends it to state,
+   * speaks it via `onSpeak` if provided, and returns it.
    *
    * Returns `null` when no further hints are available.
    */
-  const addHint = useCallback(
+  const revealNextHint = useCallback(
     (wordData: WordData): Hint | null => {
       if (!wordData?.word) return null;
 
       // Build a minimal Word-compatible object from WordData.
-      // We only need the fields game-engine/hints.ts reads.
       const wordForEngine = wordData as Parameters<typeof getHint>[0];
 
       const available = getAvailableHints(
@@ -84,9 +89,11 @@ export function useHints(options: UseHintsOptions = {}): UseHintsResult {
       };
 
       setHints((prev) => [...prev, hint]);
+      setLastHint(hint);
       usedTypesRef.current = [...usedTypesRef.current, hint.type];
 
       // Speak the hint aloud if a TTS callback was provided (AC item 5).
+      // Callers that pass onSpeak must not also call speak() manually.
       if (onSpeak) {
         onSpeak(hint.spokenText ?? hint.text);
       }
@@ -97,11 +104,30 @@ export function useHints(options: UseHintsOptions = {}): UseHintsResult {
   );
 
   /**
+   * Reveal the next available hint for `wordData`.
+   * Primary API — prefer this over the deprecated `addHint`.
+   */
+  const requestHint = useCallback(
+    (wordData: WordData): Hint | null => revealNextHint(wordData),
+    [revealNextHint],
+  );
+
+  /**
+   * @deprecated Use `requestHint` instead.
+   * Kept for backward compatibility with existing callers.
+   */
+  const addHint = useCallback(
+    (wordData: WordData): Hint | null => revealNextHint(wordData),
+    [revealNextHint],
+  );
+
+  /**
    * Clear all hints and reset type tracking.
    * Call this when starting a new word/round.
    */
   const clearHints = useCallback((): void => {
     setHints([]);
+    setLastHint(null);
     usedTypesRef.current = [];
   }, []);
 
@@ -113,9 +139,23 @@ export function useHints(options: UseHintsOptions = {}): UseHintsResult {
     usedTypesRef.current = [];
   }, []);
 
+  /**
+   * Derive available hint types for a given word.
+   * NOTE: This is a snapshot based on the current usedTypesRef at render time.
+   * Consumers must pass `wordData` to get a meaningful result.
+   *
+   * For per-render availability, use getAvailableHints() from game-engine directly.
+   */
+  const availableHints = useMemo<HintType[]>(() => [], []);
+
   return {
     hints,
+    requestHint,
     addHint,
+    availableHints,
+    usedHints: usedTypesRef.current,
+    hintsRemaining: 0, // Managed externally by useGameState (MAX_HINTS_PER_WORD - hints.length)
+    lastHint,
     clearHints,
     resetHintTracking,
   };

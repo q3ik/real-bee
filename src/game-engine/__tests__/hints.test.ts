@@ -16,7 +16,7 @@ import type { Word } from "../../types";
 const FULL_WORD: Word = {
   word: "elephant",
   definition: "A very large animal with a long trunk.",
-  sentence: "The _____ drank from the river.",
+  sentence: "The elephant drank from the river.",
   usageExample: "We saw an elephant at the zoo.",
   partOfSpeech: "noun",
   syllables: "el-e-phant",
@@ -54,29 +54,28 @@ describe("getHint — definition", () => {
   });
 
   it("returns null when definition is absent", () => {
-    const word: Word = { ...MINIMAL_WORD, definition: "" } as unknown as Word;
-    // definition field typed as string, so pass empty string
-    const result = getHint({ ...FULL_WORD, definition: "" } as unknown as Word, "definition");
+    const result = getHint(
+      { ...FULL_WORD, definition: "" } as unknown as Word,
+      "definition",
+    );
     expect(result).toBeNull();
   });
 });
 
 describe("getHint — use-in-sentence", () => {
-  it("returns content equal to word.usageExample with target blanked", () => {
+  it("returns content === word.usageExample (AC item 1: no blanking)", () => {
     const result = getHint(FULL_WORD, "use-in-sentence");
     expect(result).not.toBeNull();
     expect(result!.type).toBe("use-in-sentence");
-    // Target word should be blanked
-    expect(result!.content).not.toContain("elephant");
-    expect(result!.content).toContain("_____");
+    // AC item 1: content must equal the raw usageExample — no blanking applied.
+    expect(result!.content).toBe(FULL_WORD.usageExample);
+    expect(result!.content).toContain("elephant");
   });
 
   it("falls back to word.sentence when usageExample is absent", () => {
     const result = getHint(MINIMAL_WORD, "use-in-sentence");
     expect(result).not.toBeNull();
-    // sentence for MINIMAL_WORD doesn't contain the word 'cat' in a position
-    // that gets blanked — just verify it returns a result
-    expect(result!.content.length).toBeGreaterThan(0);
+    expect(result!.content).toBe(MINIMAL_WORD.sentence);
   });
 
   it("returns null when both usageExample and sentence are absent", () => {
@@ -111,6 +110,14 @@ describe("getHint — first-letter", () => {
     expect(result!.type).toBe("first-letter");
     expect(result!.content).toContain("E");
   });
+
+  it("returns null for empty word string", () => {
+    const result = getHint(
+      { ...FULL_WORD, word: "" } as unknown as Word,
+      "first-letter",
+    );
+    expect(result).toBeNull();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -142,6 +149,20 @@ describe("getHint — structural hints", () => {
   it("length hint returns correct letter count", () => {
     const result = getHint(FULL_WORD, "length");
     expect(result!.content).toContain("8");
+  });
+
+  it("last hint returns the final letter uppercased", () => {
+    const result = getHint(FULL_WORD, "last");
+    expect(result).not.toBeNull();
+    expect(result!.content).toContain("T");
+  });
+
+  it("last hint returns null for empty word string", () => {
+    const result = getHint(
+      { ...FULL_WORD, word: "" } as unknown as Word,
+      "last",
+    );
+    expect(result).toBeNull();
   });
 
   it("syllables hint returns correct count", () => {
@@ -184,7 +205,6 @@ describe("getAvailableHints", () => {
   });
 
   it("returns empty array when all hints are exhausted", () => {
-    // Use every hint type available for MINIMAL_WORD
     const first = getAvailableHints(MINIMAL_WORD, []);
     const available = getAvailableHints(MINIMAL_WORD, first);
     expect(available).toHaveLength(0);

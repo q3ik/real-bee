@@ -72,6 +72,18 @@ const HINT_PRIORITY: HintType[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Escape regex metacharacters so a word is treated as a literal string.
+ * Mirrors the implementation in src/entities/index.ts to avoid a circular dep.
+ */
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// ---------------------------------------------------------------------------
 // Core functions
 // ---------------------------------------------------------------------------
 
@@ -79,7 +91,8 @@ const HINT_PRIORITY: HintType[] = [
  * Compute a single hint for `word` of the requested `type`.
  *
  * Returns `null` when the requested hint type is not available for the given
- * word (e.g. `use-in-sentence` when `word.usageExample` is absent).
+ * word (e.g. `use-in-sentence` when both `word.usageExample` and
+ * `word.sentence` are absent).
  */
 export function getHint(word: Word, type: HintType): HintResult | null {
   const cost = HINT_COSTS[type];
@@ -91,15 +104,12 @@ export function getHint(word: Word, type: HintType): HintResult | null {
     }
 
     case "use-in-sentence": {
-      // Prefer the dedicated usageExample field; fall back to sentence.
+      // AC item 1: content must equal word.usageExample (or word.sentence as
+      // fallback). The raw sentence is returned — no blanking — so that
+      // HintResult.content === word.usageExample as required.
       const example = word.usageExample ?? word.sentence;
       if (!example) return null;
-      // Replace the target word with a blank so it doesn't give it away.
-      const blanked = example.replace(
-        new RegExp(`\\b${word.word}\\b`, "gi"),
-        "_____",
-      );
-      return { type, content: blanked, costInPoints: cost };
+      return { type, content: example, costInPoints: cost };
     }
 
     case "part-of-speech": {
@@ -132,7 +142,7 @@ export function getHint(word: Word, type: HintType): HintResult | null {
     }
 
     case "double": {
-      const match = word.word.match(/(.)\1/);
+      const match = word.word.match(/(.)(\1)/);
       if (!match) return null;
       return {
         type,
@@ -150,6 +160,8 @@ export function getHint(word: Word, type: HintType): HintResult | null {
     }
 
     case "last": {
+      // Bug fix: guard against empty word string (mirrors first-letter guard).
+      if (!word.word) return null;
       return {
         type,
         content: `Ends with '${word.word[word.word.length - 1].toUpperCase()}'`,
@@ -193,3 +205,6 @@ export function getAvailableHints(
     return getHint(word, type) !== null;
   });
 }
+
+// Keep escapeRegex accessible for tests / future callers within this module.
+export { escapeRegex };

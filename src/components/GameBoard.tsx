@@ -72,8 +72,10 @@ export default function GameBoard() {
     audioManager.setVoiceQuality(voiceQuality);
   }, [isMuted, voiceQuality]);
 
-  // Hints for the current word
-  const { hints, addHint, clearHints } = useHints();
+  // Hints for the current word.
+  // Pass onSpeak so the hook speaks each hint automatically — callers must NOT
+  // call speak() again after requestHint/addHint to avoid double-speaking.
+  const { hints, addHint, clearHints } = useHints({ onSpeak: speak });
 
   const [userInput, setUserInput] = useState("");
   const [showKeyboard, setShowKeyboard] = useState(false);
@@ -207,17 +209,20 @@ export default function GameBoard() {
   // Keyboard shortcuts
   const handleHint = useCallback(() => {
     if (currentWord) {
+      // onSpeak is wired into useHints — the hook speaks automatically.
+      // Do NOT call speak() here to avoid double-speaking.
       const hint = addHint({
         word: currentWord.word,
         definition: currentWord.definition,
         sentence: currentWord.sentence,
+        usageExample: currentWord.usageExample,
+        partOfSpeech: currentWord.partOfSpeech,
       });
       if (hint) {
-        speak(hint.spokenText ?? hint.text);
         addMessage("system", hint.text);
       }
     }
-  }, [currentWord, addHint, addMessage, speak]);
+  }, [currentWord, addHint, addMessage]);
 
   const handleDefinition = useCallback(() => {
     if (currentWord) {
@@ -439,13 +444,16 @@ export default function GameBoard() {
           word={currentWord}
           hints={hints}
           onGetHint={() => {
+            // onSpeak is wired into useHints — the hook speaks automatically.
+            // Do NOT call speak() here to avoid double-speaking.
             const hint = addHint({
               word: currentWord.word,
               definition: currentWord.definition,
               sentence: currentWord.sentence,
+              usageExample: currentWord.usageExample,
+              partOfSpeech: currentWord.partOfSpeech,
             });
             if (hint) {
-              speak(hint.spokenText ?? hint.text);
               addMessage("system", hint.text);
             }
           }}
