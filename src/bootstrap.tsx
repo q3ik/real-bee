@@ -7,23 +7,7 @@ import "./index.css";
 import "./styles/touch-target-fixes.css";
 import "./styles/mobile-modal-fixes.css";
 
-// ---------------------------------------------------------------------------
-
-// PWA Service Worker Registration (production only — avoids HMR conflicts)
-// ---------------------------------------------------------------------------
-if ("serviceWorker" in navigator && import.meta.env.PROD) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("/service-worker.js", { scope: "/" })
-      .then((registration) => {
-        console.log("[PWA] Service Worker registered:", registration.scope);
-      })
-      .catch((error) => {
-        console.warn("[PWA] Service Worker registration failed:", error);
-      });
-  });
-}
-
+// Render the app immediately so that the initial paint is not blocked.
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErrorBoundary>
@@ -33,3 +17,16 @@ createRoot(document.getElementById("root")!).render(
     </ErrorBoundary>
   </StrictMode>,
 );
+
+// Register the PWA service worker in production only (avoids HMR conflicts).
+// Registration is deferred until after the window "load" event so it does
+// not block the initial paint.
+if (import.meta.env.PROD) {
+  window.addEventListener("load", () => {
+    if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+      void import("./lib/serviceWorker").then(({ registerServiceWorker }) => {
+        void registerServiceWorker();
+      });
+    }
+  });
+}
