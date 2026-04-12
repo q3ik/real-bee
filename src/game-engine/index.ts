@@ -31,3 +31,6 @@ export {
 } from './SoundManager';
 
 export type { PlayAudioBufferOptions } from './SoundManager';
+
+export { getHint, getAvailableHints } from './hints';
+export type { HintType, HintResult } from './hints';

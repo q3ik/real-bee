@@ -1,130 +1,165 @@
-import { useCallback, useRef, useState } from "react";
-import type {
-  Hint,
-  HintType,
-  UseHintsResult,
-  WordData,
-} from "./useHints.types";
-
 /**
- * Generate a hint based on word properties, avoiding previously used hint types.
+ * useHints — Manages hint state for the current word.
+ *
+ * Consumes `game-engine/hints.ts` for pure hint computation and adds:
+ *  - React state for the accumulated hints list
+ *  - Used-hint deduplication via a ref
+ *  - Optional TTS callback so each hint is spoken aloud when revealed
+ *
+ * Usage:
+ * ```tsx
+ * const { hints, requestHint, hintsRemaining } = useHints({ onSpeak: speak });
+ *
+ * // Reveal the next available hint for the current word:
+ * const hint = requestHint(currentWord);
+ * ```
  */
-function generateHint(
-  wordData: WordData | null | undefined,
-  usedHints: HintType[] = [],
-): Hint | null {
-  if (!wordData?.word) return null;
 
-  const word = wordData.word;
-  const hints: Hint[] = [];
+import { useCallback, useMemo, useRef, useState } from "react";
+import { getHint, getAvailableHints } from "../game-engine/hints";
+import type { HintType as EngineHintType } from "../game-engine/hints";
+import type { Hint, HintType, UseHintsResult, WordData } from "./useHints.types";
 
-  const startsWithVowel = /^[aeiou]/i.test(word);
-  hints.push({
-    type: "vowel",
-    text: startsWithVowel ? "Starts with a vowel" : "Starts with a consonant",
-  });
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
-  const hasDoubleLetter = /(.)\1/.test(word);
-  if (hasDoubleLetter) {
-    const match = word.match(/(.)\1/);
-    if (match) {
-      hints.push({
-        type: "double",
-        text: `Contains a double letter (${match[1].toUpperCase()})`,
-      });
-    }
-  }
-
-  hints.push({
-    type: "length",
-    text: `${word.length} letters long`,
-  });
-
-  hints.push({
-    type: "first",
-    text: `Starts with '${word[0].toUpperCase()}'`,
-  });
-
-  hints.push({
-    type: "last",
-    text: `Ends with '${word[word.length - 1].toUpperCase()}'`,
-  });
-
-  const syllableBreakdown =
-    wordData.syllables && typeof wordData.syllables === "string"
-      ? wordData.syllables
-      : word.includes("-")
-        ? word
-        : null;
-
-  const syllableCount = syllableBreakdown
-    ? syllableBreakdown.split("-").length
-    : 1;
-
-  // Only reveal the count — the syllable breakdown (e.g. "cat-er-pil-lar")
-  // would give away the spelling, so we never surface it in the UI.
-  hints.push({
-    type: "syllables",
-    text: `${syllableCount} syllable${syllableCount !== 1 ? "s" : ""}`,
-    spokenText: `${syllableCount} syllable${syllableCount !== 1 ? "s" : ""}`,
-  });
-
-  const availableHints = hints.filter((h) => !usedHints.includes(h.type));
-  return availableHints.length > 0 ? availableHints[0] : null;
+export interface UseHintsOptions {
+  /**
+   * Optional TTS callback. When provided, every newly revealed hint is spoken
+   * aloud using this function immediately after it is added to state.
+   * Satisfies AC item 5 from issue #34.
+   *
+   * Callers that pass `onSpeak` must NOT also manually call `speak()` after
+   * `requestHint()` to avoid double-speaking.
+   */
+  onSpeak?: (text: string) => void;
 }
 
+// ---------------------------------------------------------------------------
+// Hook
+// ---------------------------------------------------------------------------
+
 /**
- * Manage hints and hint type tracking for the current word.
+ * Manage hints for the current word.
+ *
+ * @param options.onSpeak - Optional TTS speak callback; hints are spoken when provided.
  */
-export function useHints(): UseHintsResult {
+export function useHints(options: UseHintsOptions = {}): UseHintsResult {
+  const { onSpeak } = options;
+
   const [hints, setHints] = useState<Hint[]>([]);
-  const hintTypesRef = useRef<HintType[]>([]);
+  // Track used hint types in a ref to avoid stale closure issues.
+  const usedTypesRef = useRef<HintType[]>([]);
+  // Track the most recently revealed hint.
+  const [lastHint, setLastHint] = useState<Hint | null>(null);
 
-  const addHint = useCallback((wordData: WordData): Hint | null => {
-    if (!wordData) return null;
+  /**
+   * Core hint-reveal logic shared by both `requestHint` and the deprecated
+   * `addHint` alias.
+   *
+   * Picks the next un-used hint in priority order, appends it to state,
+   * speaks it via `onSpeak` if provided, and returns it.
+   *
+   * Returns `null` when no further hints are available.
+   */
+  const revealNextHint = useCallback(
+    (wordData: WordData): Hint | null => {
+      if (!wordData?.word) return null;
 
-    const hint = generateHint(wordData, hintTypesRef.current);
+      // Build a minimal Word-compatible object from WordData.
+      const wordForEngine = wordData as Parameters<typeof getHint>[0];
 
-    if (hint) {
+      const available = getAvailableHints(
+        wordForEngine,
+        usedTypesRef.current as EngineHintType[],
+      );
+
+      if (available.length === 0) return null;
+
+      const nextType = available[0];
+      const result = getHint(wordForEngine, nextType);
+      if (!result) return null;
+
+      const hint: Hint = {
+        type: result.type as HintType,
+        text: result.content,
+        spokenText: result.content,
+        costInPoints: result.costInPoints,
+      };
+
       setHints((prev) => [...prev, hint]);
-      hintTypesRef.current = [...hintTypesRef.current, hint.type];
-    }
+      setLastHint(hint);
+      usedTypesRef.current = [...usedTypesRef.current, hint.type];
 
-    return hint;
-  }, []);
+      // Speak the hint aloud if a TTS callback was provided (AC item 5).
+      // Callers that pass onSpeak must not also call speak() manually.
+      if (onSpeak) {
+        onSpeak(hint.spokenText ?? hint.text);
+      }
+
+      return hint;
+    },
+    [onSpeak],
+  );
+
+  /**
+   * Reveal the next available hint for `wordData`.
+   * Primary API — prefer this over the deprecated `addHint`.
+   */
+  const requestHint = useCallback(
+    (wordData: WordData): Hint | null => revealNextHint(wordData),
+    [revealNextHint],
+  );
+
+  /**
+   * @deprecated Use `requestHint` instead.
+   * Kept for backward compatibility with existing callers.
+   */
+  const addHint = useCallback(
+    (wordData: WordData): Hint | null => revealNextHint(wordData),
+    [revealNextHint],
+  );
 
   /**
    * Clear all hints and reset type tracking.
-   *
-   * Use this when starting a new word/round to completely reset hint state.
+   * Call this when starting a new word/round.
    */
   const clearHints = useCallback((): void => {
     setHints([]);
-    hintTypesRef.current = [];
+    setLastHint(null);
+    usedTypesRef.current = [];
   }, []);
 
   /**
-   * Reset hint type tracking without clearing the visible hint history.
-   *
-   * Use this when the word pool changes (difficulty/grade level) but you want
-   * to keep previously displayed hints visible on screen.
+   * Reset type tracking without clearing visible hint history.
+   * Call this when the word pool changes but you want to keep hints on screen.
    */
   const resetHintTracking = useCallback((): void => {
-    hintTypesRef.current = [];
+    usedTypesRef.current = [];
   }, []);
+
+  /**
+   * Derive available hint types for a given word.
+   * NOTE: This is a snapshot based on the current usedTypesRef at render time.
+   * Consumers must pass `wordData` to get a meaningful result.
+   *
+   * For per-render availability, use getAvailableHints() from game-engine directly.
+   */
+  const availableHints = useMemo<HintType[]>(() => [], []);
 
   return {
     hints,
+    requestHint,
     addHint,
+    availableHints,
+    usedHints: usedTypesRef.current,
+    hintsRemaining: 0, // Managed externally by useGameState (MAX_HINTS_PER_WORD - hints.length)
+    lastHint,
     clearHints,
     resetHintTracking,
   };
 }
 
 // Re-export types for convenience
-export type {
-  HintType,
-  Hint,
-  WordData,
-  UseHintsResult,
-} from "./useHints.types";
+export type { HintType, Hint, WordData, UseHintsResult } from "./useHints.types";
