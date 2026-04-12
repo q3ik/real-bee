@@ -7,6 +7,10 @@ export interface LocalUserPreferences {
   difficulty: string;
   gradeLevel: string;
   soundEnabled: boolean;
+  soundVolume: number;
+  ttsProvider: string;
+  micEnabled: boolean;
+  theme: string;
   autoSubmit: boolean;
   showWelcomeScreen: boolean;
   dontShowWelcomeAgain: boolean;
