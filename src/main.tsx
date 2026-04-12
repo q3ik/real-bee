@@ -1,14 +1,8 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import { AuthProvider } from "./contexts/AuthContext";
-import App from "./App.tsx";
-import { ErrorBoundary } from "./components/ErrorBoundary";
-import { registerServiceWorker } from "./lib/serviceWorker";
-import "./index.css";
-import "./styles/touch-target-fixes.css";
-import "./styles/mobile-modal-fixes.css";
-
-// Initialize Sentry synchronously before the rest of the app module graph
+// Initialize Sentry synchronously BEFORE any other module is evaluated.
+// ESM evaluates all static imports before running top-level code, so
+// keeping this file free of static app imports ensures that any import-time
+// errors or side effects are captured by Sentry. The dynamic import below
+// loads the rest of the app only after Sentry is active.
 import { initSentry } from "./lib/sentry";
 initSentry();
 

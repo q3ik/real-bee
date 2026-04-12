@@ -5,7 +5,10 @@
  * with proper handling for unsupported environments (SSR, Vitest, etc.).
  */
 
-export type SWRegistrationState = "unsupported" | "registered" | "error";
+export type SWRegistrationState =
+  | "unsupported"
+  | "registered"
+  | "error";
 
 export interface SWRegistrationResult {
   state: SWRegistrationState;

@@ -20,7 +20,8 @@ describe("Service Worker Registration Helper", () => {
     // Properly restore navigator.serviceWorker:
     // If it didn't exist before, delete it; otherwise restore the original value.
     if (!hadServiceWorkerProperty) {
-      delete (navigator as unknown as Record<string, unknown>).serviceWorker;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (navigator as any).serviceWorker;
     } else {
       Object.defineProperty(navigator, "serviceWorker", {
         value: originalServiceWorker,
@@ -32,7 +33,8 @@ describe("Service Worker Registration Helper", () => {
 
   describe("registerServiceWorker", () => {
     it("returns 'unsupported' when navigator.serviceWorker is undefined", async () => {
-      delete (navigator as unknown as Record<string, unknown>).serviceWorker;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (navigator as any).serviceWorker;
 
       const result = await registerServiceWorker();
 
@@ -87,7 +89,8 @@ describe("Service Worker Registration Helper", () => {
 
   describe("unregisterServiceWorker", () => {
     it("returns false when navigator.serviceWorker is undefined", async () => {
-      delete (navigator as unknown as Record<string, unknown>).serviceWorker;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (navigator as any).serviceWorker;
 
       const result = await unregisterServiceWorker();
 

@@ -8,10 +8,8 @@ import "./index.css";
 import "./styles/touch-target-fixes.css";
 import "./styles/mobile-modal-fixes.css";
 
-// Render the app first so that the initial paint is not blocked by
-// service worker registration or any other bootstrap side effects.
-const root = createRoot(document.getElementById("root")!);
-root.render(
+// Render the app immediately so that the initial paint is not blocked.
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErrorBoundary>
       <AuthProvider>
@@ -22,9 +20,14 @@ root.render(
 );
 
 // Register the PWA service worker in production only (avoids HMR conflicts).
-// Registration happens AFTER render to avoid blocking the initial paint.
-if (import.meta.env.PROD && typeof navigator !== "undefined") {
+// Registration is deferred until after the window "load" event so it does
+// not block the initial paint.
+if (import.meta.env.PROD) {
   window.addEventListener("load", () => {
-    void registerServiceWorker();
+    if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+      void import("./lib/serviceWorker").then(({ registerServiceWorker }) => {
+        void registerServiceWorker();
+      });
+    }
   });
 }
