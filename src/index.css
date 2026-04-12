@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "./styles/touch-target-fixes.css";
+@import "./styles/mobile-modal-fixes.css";
 
 @theme {
     --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
