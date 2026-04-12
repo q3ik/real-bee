@@ -102,160 +102,97 @@
 
 /* Fade in (opacity only) */
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
+    from { opacity: 0; }
+    to   { opacity: 1; }
 }
 
 /* Fade in + slide up */
 @keyframes slideUpFadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 /* Slide in from right */
 @keyframes slideInRight {
-    from {
-        opacity: 0;
-        transform: translateX(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
+    from { opacity: 0; transform: translateX(30px); }
+    to   { opacity: 1; transform: translateX(0); }
 }
 
 /* Slide in from left */
 @keyframes slideInLeft {
-    from {
-        opacity: 0;
-        transform: translateX(-30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
+    from { opacity: 0; transform: translateX(-30px); }
+    to   { opacity: 1; transform: translateX(0); }
 }
 
 /* Bounce (subtle scale) */
 @keyframes bounceSubtle {
-    0%,
-    100% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.05);
-    }
+    0%, 100% { transform: scale(1); }
+    50%       { transform: scale(1.05); }
+}
+
+/* Bounce in (correct answer celebration — SUB-16 recovery) */
+@keyframes bounceIn {
+    0%   { transform: scale(0.8); opacity: 0; }
+    60%  { transform: scale(1.1); opacity: 1; }
+    80%  { transform: scale(0.95); }
+    100% { transform: scale(1); }
 }
 
 /* Shake (for incorrect answers) */
 @keyframes shake {
-    0%,
-    100% {
-        transform: translateX(0);
-    }
-    10%,
-    30%,
-    50%,
-    70%,
-    90% {
-        transform: translateX(-6px);
-    }
-    20%,
-    40%,
-    60%,
-    80% {
-        transform: translateX(6px);
-    }
+    0%, 100%                         { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90%          { transform: translateX(-6px); }
+    20%, 40%, 60%, 80%               { transform: translateX(6px); }
 }
 
 /* Card reveal (word card entrance) */
 @keyframes cardReveal {
-    from {
-        opacity: 0;
-        transform: scale(0.95);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
+    from { opacity: 0; transform: scale(0.95); }
+    to   { opacity: 1; transform: scale(1); }
 }
 
 /* Modal slide-in */
 @keyframes modalSlideIn {
-    from {
-        opacity: 0;
-        transform: scale(0.9) translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-    }
+    from { opacity: 0; transform: scale(0.9) translateY(20px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 /* Tile pop (letter tile stagger) */
 @keyframes tilePop {
-    from {
-        opacity: 0;
-        transform: scale(0.8);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
+    from { opacity: 0; transform: scale(0.8); }
+    to   { opacity: 1; transform: scale(1); }
 }
 
 /* Pulse glow (for listening button) */
 @keyframes pulseGlow {
-    0%,
-    100% {
-        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
-    }
-    50% {
-        box-shadow: 0 0 0 12px rgba(239, 68, 68, 0);
-    }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    50%       { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
 }
 
 /* Confetti burst (for celebration) */
 @keyframes confettiBurst {
-    0% {
-        transform: scale(0) rotate(0deg);
-        opacity: 1;
-    }
-    100% {
-        transform: scale(1) rotate(720deg);
-        opacity: 0;
-    }
+    0%   { transform: scale(0) rotate(0deg); opacity: 1; }
+    100% { transform: scale(1) rotate(720deg); opacity: 0; }
 }
 
 /* Streak flame (fire emoji replacement animation) */
 @keyframes flameFlicker {
-    0%,
-    100% {
-        transform: scale(1) rotate(-2deg);
-    }
-    50% {
-        transform: scale(1.1) rotate(2deg);
-    }
+    0%, 100% { transform: scale(1) rotate(-2deg); }
+    50%       { transform: scale(1.1) rotate(2deg); }
+}
+
+/* Streak pop — badge scale burst on milestone (SUB-16 recovery) */
+@keyframes streakPop {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.35) rotate(-4deg); }
+    70%  { transform: scale(0.9) rotate(2deg); }
+    100% { transform: scale(1) rotate(0deg); }
 }
 
 /* Countdown bar (time remaining) */
 @keyframes countdownBar {
-    from {
-        width: 100%;
-    }
-    to {
-        width: 0%;
-    }
+    from { width: 100%; }
+    to   { width: 0%; }
 }
 
 /* ========================================================================= */
@@ -263,73 +200,186 @@
 /* ========================================================================= */
 
 /* General entrance animations */
-.animate-fade-in {
-    animation: fadeIn 0.3s ease-out both;
-}
-.animate-slide-in {
-    animation: slideUpFadeIn 0.3s ease-out both;
-}
-.animate-slide-in-right {
-    animation: slideInRight 0.3s ease-out both;
-}
-.animate-slide-in-left {
-    animation: slideInLeft 0.3s ease-out both;
-}
-.animate-bounce-subtle {
-    animation: bounceSubtle 0.6s ease-in-out both;
-}
+.animate-fade-in        { animation: fadeIn 0.3s ease-out both; }
+.animate-slide-in       { animation: slideUpFadeIn 0.3s ease-out both; }
+.animate-slide-in-right { animation: slideInRight 0.3s ease-out both; }
+.animate-slide-in-left  { animation: slideInLeft 0.3s ease-out both; }
+.animate-bounce-subtle  { animation: bounceSubtle 0.6s ease-in-out both; }
 
 /* Feedback animations */
-.animate-shake {
-    animation: shake 0.5s ease-in-out;
-}
-.animate-card-reveal {
-    animation: cardReveal 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-.animate-modal-slide-in {
-    animation: modalSlideIn 0.3s ease-out;
-}
+.animate-shake          { animation: shake 0.5s ease-in-out; }
+.animate-card-reveal    { animation: cardReveal 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.animate-modal-slide-in { animation: modalSlideIn 0.3s ease-out; }
 
 /* Letter tile staggering — apply via inline style for delay */
-.animate-tile-pop {
-    animation: tilePop 0.2s ease-out both;
-}
+.animate-tile-pop    { animation: tilePop 0.2s ease-out both; }
 
 /* State-specific */
-.animate-listening {
+.animate-listening     { animation: pulseGlow 1.5s ease-in-out infinite; }
+.animate-celebration   { animation: confettiBurst 1s ease-out forwards; }
+.animate-streak-flame  { animation: flameFlicker 0.8s ease-in-out infinite; }
+.animate-countdown     { animation: countdownBar linear both; }
+.animate-bounce-in     { animation: bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.animate-streak-pop    { animation: streakPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+/* ========================================================================= */
+/*  State-driven classes (SUB-16 — toggled by game logic on a root element)  */
+/*                                                                           */
+/*  Applied as data-round-phase="correct" etc. on <main> or the game root.   */
+/*  Alternatively use the class directly: <div class="state-correct">        */
+/* ========================================================================= */
+
+/* Correct answer — green overlay + bounce-in on children */
+.state-correct {
+    --state-color: var(--color-game-correct, #22c55e);
+    animation: bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    background-color: color-mix(in srgb, var(--state-color) 8%, transparent);
+}
+.state-correct .game-card,
+.state-correct .letter-tile {
+    border-color: var(--color-game-correct, #22c55e);
+    box-shadow: 0 0 0 2px color-mix(in srgb, #22c55e 30%, transparent);
+}
+
+/* Incorrect answer — red tint + shake */
+.state-incorrect {
+    --state-color: var(--color-game-incorrect, #ef4444);
+    animation: shake 0.5s ease-in-out;
+    background-color: color-mix(in srgb, var(--state-color) 8%, transparent);
+}
+.state-incorrect .game-card,
+.state-incorrect .letter-tile {
+    border-color: var(--color-game-incorrect, #ef4444);
+    box-shadow: 0 0 0 2px color-mix(in srgb, #ef4444 30%, transparent);
+}
+
+/* Listening — pulsing orange ring on interactive targets */
+.state-listening {
+    --state-color: var(--color-game-primary, #f97316);
+}
+.state-listening .game-card {
+    box-shadow: 0 0 0 3px color-mix(in srgb, #f97316 40%, transparent);
+    transition: box-shadow 0.3s ease;
+}
+/* The mic button gets the pulseGlow animation */
+.state-listening .animate-listening-target {
     animation: pulseGlow 1.5s ease-in-out infinite;
 }
-.animate-celebration {
-    animation: confettiBurst 1s ease-out forwards;
-}
-.animate-streak-flame {
-    animation: flameFlicker 0.8s ease-in-out infinite;
-}
-.animate-countdown {
-    animation: countdownBar linear both;
+
+/* Evaluating — neutral, disabled-feel fade */
+.state-evaluating {
+    opacity: 0.85;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
 }
 
-/* Game-state visibility toggles */
-.game-state-idle .game-round {
-    display: none;
-}
-.game-state-idle .game-result {
-    display: none;
-}
-.game-state-playing .game-start {
-    display: none;
-}
-.game-state-playing .game-result {
-    display: none;
-}
-.game-state-round_end .game-start {
-    display: none;
-}
-.game-state-round_end .game-round {
-    display: none;
+/* ========================================================================= */
+/*  Letter-box components (SUB-16 recovery)                                  */
+/*                                                                           */
+/*  Used on individual letter input boxes in the word input component.       */
+/* ========================================================================= */
+
+.letter-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;       /* 40px */
+    height: 3rem;        /* 48px */
+    border-bottom: 4px solid #e5e7eb; /* gray-200 */
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: #9ca3af;      /* gray-400 */
+    transition:
+        border-color 0.2s ease,
+        background-color 0.2s ease,
+        color 0.2s ease;
 }
 
-/* Reduced-motion: disable all animations */
+.letter-box--filled {
+    border-bottom-color: var(--color-game-primary, #f97316);
+    color: #1f2937;      /* gray-800 */
+    animation: tilePop 0.15s ease-out both;
+}
+
+.letter-box--correct {
+    border-bottom-color: var(--color-game-correct, #22c55e);
+    color: var(--color-game-correct, #22c55e);
+    background-color: color-mix(in srgb, #22c55e 10%, transparent);
+    animation: bounceIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.letter-box--incorrect {
+    border-bottom-color: var(--color-game-incorrect, #ef4444);
+    color: var(--color-game-incorrect, #ef4444);
+    background-color: color-mix(in srgb, #ef4444 10%, transparent);
+    animation: shake 0.4s ease-in-out;
+}
+
+/* ========================================================================= */
+/*  Streak badge (SUB-16 recovery)                                           */
+/* ========================================================================= */
+
+.streak-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    background-color: #fff7ed;   /* orange-50 */
+    color: #ea580c;              /* orange-600 */
+    font-size: 0.875rem;
+    font-weight: 700;
+    transition: transform 0.2s ease;
+}
+
+.streak-badge--milestone {
+    background-color: #fff7ed;
+    color: #ea580c;
+    animation: streakPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    box-shadow: 0 0 0 2px color-mix(in srgb, #f97316 30%, transparent);
+}
+
+/* ========================================================================= */
+/*  Host message transitions (SUB-16 recovery, used by useHostMessages)      */
+/* ========================================================================= */
+
+.host-message {
+    overflow: hidden;
+    transition:
+        opacity 0.25s ease,
+        transform 0.25s ease,
+        max-height 0.3s ease;
+    max-height: 10rem;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.host-message--enter {
+    animation: slideUpFadeIn 0.3s ease-out both;
+}
+
+.host-message--exit {
+    opacity: 0;
+    transform: translateY(-8px);
+    max-height: 0;
+    pointer-events: none;
+}
+
+/* ========================================================================= */
+/*  Game-state visibility toggles                                            */
+/* ========================================================================= */
+
+.game-state-idle .game-round   { display: none; }
+.game-state-idle .game-result  { display: none; }
+.game-state-playing .game-start  { display: none; }
+.game-state-playing .game-result { display: none; }
+.game-state-round_end .game-start { display: none; }
+.game-state-round_end .game-round { display: none; }
+
+/* ========================================================================= */
+/*  Reduced-motion: disable all animations                                   */
+/* ========================================================================= */
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
