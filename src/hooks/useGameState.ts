@@ -10,7 +10,7 @@
  *  - `GameStatus` session-level status (lobby / active / paused / session-complete)
  *  - Hint management via useHints
  *  - TTS word announcement and feedback via useSpeechSynthesis
- *  - Session save on end via storage.ts
+ *  - Session save on end via saveGameSession() from src/lib/db.ts
  *
  * @example
  * ```tsx
@@ -34,7 +34,7 @@ import { useGameStore } from "./useGameStore";
 import { useSpeechSynthesis } from "./useSpeechSynthesis";
 import { useHints } from "./useHints";
 import { useHostMessages } from "./useHostMessages";
-import { saveSession } from "../game-engine/storage";
+import { saveGameSession } from "../lib/db";
 import { MAX_HINTS_PER_WORD } from "../constants/game";
 import { normalizeSpelling } from "../game-engine/normalization";
 import { loadWordsForGrade } from "../lib/wordLoader";
@@ -351,7 +351,7 @@ export function useGameState(): UseGameStateReturn {
     setGameStatus("active");
   }, []);
 
-  // --- End session — save to IndexedDB (fix #1, #10) ---
+  // --- End session — save to IndexedDB via saveGameSession() from db.ts (fix #1) ---
   const endSession = useCallback(async () => {
     if (userId && roundsPlayed > 0) {
       try {
@@ -361,7 +361,7 @@ export function useGameState(): UseGameStateReturn {
         const sessionCorrect =
           correctAnswers - (sessionBaseline?.correctAnswers ?? 0);
 
-        await saveSession({
+        await saveGameSession({
           uid: userId,
           startTime: sessionStartTime
             ? new Date(sessionStartTime).toISOString()
