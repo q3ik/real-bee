@@ -1,7 +1,6 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { SettingsPanel } from "../SettingsPanel";
 import { DEFAULT_PREFERENCES } from "../../constants/preferences";
 import type { UserPreferences } from "../../hooks/useUserPreferences.types";
@@ -349,70 +348,64 @@ describe("SettingsPanel", () => {
     );
   });
 
-  it("calls updatePreference when sound toggle is clicked", async () => {
-    const user = userEvent.setup();
+  it("calls updatePreference when sound toggle is clicked", () => {
     renderSettings();
 
     const soundToggle = screen.getByRole("switch", {
       name: /toggle sound effects/i,
     });
-    await user.click(soundToggle);
+    soundToggle.click();
 
     expect(mockUpdatePreference).toHaveBeenCalledWith("soundEnabled", false);
   });
 
-  it("calls updatePreference when mic toggle is clicked", async () => {
-    const user = userEvent.setup();
+  it("calls updatePreference when mic toggle is clicked", () => {
     renderSettings();
 
     const micToggle = screen.getByRole("switch", {
       name: /toggle microphone input/i,
     });
-    await user.click(micToggle);
+    micToggle.click();
 
     expect(mockUpdatePreference).toHaveBeenCalledWith("micEnabled", false);
   });
 
-  it("calls updatePreference when auto submit toggle is clicked", async () => {
-    const user = userEvent.setup();
+  it("calls updatePreference when auto submit toggle is clicked", () => {
     renderSettings();
 
     const autoSubmitToggle = screen.getByRole("switch", {
       name: /toggle auto submit/i,
     });
-    await user.click(autoSubmitToggle);
+    autoSubmitToggle.click();
 
     expect(mockUpdatePreference).toHaveBeenCalledWith("autoSubmit", true);
   });
 
-  it("calls updatePreference when volume slider changes", async () => {
-    const user = userEvent.setup();
+  it("calls updatePreference when volume slider changes", () => {
     renderSettings();
 
     const volumeSlider = screen.getByRole("slider", { name: /sound volume/i });
-    await user.click(volumeSlider);
+    volumeSlider.click();
 
     expect(mockUpdatePreference).toHaveBeenCalledWith("soundVolume", 0.5);
   });
 
-  it("calls resetPreferences when reset button is clicked", async () => {
-    const user = userEvent.setup();
+  it("calls resetPreferences when reset button is clicked", () => {
     renderSettings();
 
     const resetButton = screen.getByRole("button", {
       name: /reset to defaults/i,
     });
-    await user.click(resetButton);
+    resetButton.click();
 
     expect(mockResetPreferences).toHaveBeenCalled();
   });
 
-  it("calls onClose when close button is clicked", async () => {
-    const user = userEvent.setup();
+  it("calls onClose when close button is clicked", () => {
     renderSettings();
 
     const closeButton = screen.getByRole("button", { name: /^close$/i });
-    await user.click(closeButton);
+    closeButton.click();
 
     expect(mockOnClose).toHaveBeenCalled();
   });

@@ -1,9 +1,8 @@
-// Initialize Sentry first — before the rest of the app module graph is
-// evaluated — by keeping this file free of static app imports and using
-// a dynamic import for the bootstrap. ESM evaluates all static imports
-// before any top-level code in a module, so interleaving initSentry()
-// with static imports does NOT guarantee early capture. The dynamic
-// import below ensures initSentry() executes synchronously first.
+// Initialize Sentry synchronously BEFORE any other module is evaluated.
+// ESM evaluates all static imports before running top-level code, so
+// keeping this file free of static app imports ensures that any import-time
+// errors or side effects are captured by Sentry. The dynamic import below
+// loads the rest of the app only after Sentry is active.
 import { initSentry } from "./lib/sentry";
 initSentry();
 
