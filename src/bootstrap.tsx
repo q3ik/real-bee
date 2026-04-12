@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { AuthProvider } from "./contexts/AuthContext";
 import App from "./App.tsx";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { registerServiceWorker } from "./lib/serviceWorker";
 import "./index.css";
 import "./styles/touch-target-fixes.css";
 import "./styles/mobile-modal-fixes.css";
