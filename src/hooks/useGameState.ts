@@ -36,8 +36,10 @@ import { useHints } from "./useHints";
 import { useHostMessages } from "./useHostMessages";
 import { saveSession } from "../game-engine/storage";
 import { MAX_HINTS_PER_WORD } from "../constants/game";
+import { normalizeSpelling } from "../game-engine/normalization";
+import { loadWordsForGrade } from "../lib/wordLoader";
 import type { Word } from "../lib/wordList";
-import type { Hint } from "./useHints.types";
+import type { Hint, HintType } from "./useHints.types";
 import type {
   GamePhase,
   RoundPhase,
@@ -45,6 +47,25 @@ import type {
   LastAnswer,
   UseGameStateReturn,
 } from "./useGameState.types";
+
+// ---------------------------------------------------------------------------
+// Internal constants
+// ---------------------------------------------------------------------------
+
+/** Default number of rounds per session when none is specified. */
+const DEFAULT_TOTAL_ROUNDS = 10;
+
+/** Delay (ms) after word announcement before transitioning to listening phase. */
+const WORD_ANNOUNCE_DELAY_MS = 800;
+
+/** Delay (ms) after evaluating correctness before showing result feedback. */
+const EVALUATION_DELAY_MS = 300;
+
+/** Delay (ms) after feedback before marking the round as complete. */
+const FEEDBACK_DISPLAY_MS = 1500;
+
+/** Delay (ms) after showing a hint before returning to listening. */
+const HINT_DISPLAY_MS = 500;
 
 // ---------------------------------------------------------------------------
 // Legacy re-export for backward compatibility
@@ -82,7 +103,9 @@ export function useGameState(): UseGameStateReturn {
   const bestStreak = useGameStore((s) => s.bestStreak);
   const roundsPlayed = useGameStore((s) => s.roundsPlayed);
   const correctAnswers = useGameStore((s) => s.correctAnswers);
-  const usedWords = useGameStore((s) => s.usedWords);
+  const difficultyEvolution = useGameStore((s) => s.difficultyEvolution);
+  const sessionStartTime = useGameStore((s) => s.sessionStartTime);
+  const sessionBaseline = useGameStore((s) => s.sessionBaseline);
 
   const startSession = useGameStore((s) => s.startSession);
   const submitAnswer = useGameStore((s) => s.submitAnswer);
@@ -91,6 +114,9 @@ export function useGameState(): UseGameStateReturn {
   const restartGame = useGameStore((s) => s.restartGame);
   const setPhase = useGameStore((s) => s.setPhase);
   const userId = useGameStore((s) => s.userId);
+
+  // --- Configurable round count (defaults to 10) ---
+  const totalRoundsRef = useRef<number>(DEFAULT_TOTAL_ROUNDS);
 
   // --- Compose side-effect hooks ---
   const {
@@ -111,10 +137,36 @@ export function useGameState(): UseGameStateReturn {
   // --- Session status (local state) ---
   const [gameStatus, setGameStatus] = useState<GameStatus>("lobby");
 
+  // --- Refs for timer cleanup (fixes #8, #9) ---
+  const roundTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wordAnnounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  // --- Track the last word we announced to avoid stale announcements (fix #12) ---
+  const lastAnnouncedWordRef = useRef<string | null>(null);
+
   // Track the previous phase to detect transitions
   const prevPhaseRef = useRef<GamePhase>("idle");
 
-  // --- Round-phase transitions driven by store phase changes ---
+  // --- Cleanup all timers ---
+  const clearAllTimers = useCallback(() => {
+    if (roundTimerRef.current) {
+      clearTimeout(roundTimerRef.current);
+      roundTimerRef.current = null;
+    }
+    if (hintTimerRef.current) {
+      clearTimeout(hintTimerRef.current);
+      hintTimerRef.current = null;
+    }
+    if (wordAnnounceTimerRef.current) {
+      clearTimeout(wordAnnounceTimerRef.current);
+      wordAnnounceTimerRef.current = null;
+    }
+  }, []);
+
+  // --- Round-phase transitions driven by store phase changes (fix #12) ---
   useEffect(() => {
     const prev = prevPhaseRef.current;
     prevPhaseRef.current = phase;
@@ -122,58 +174,79 @@ export function useGameState(): UseGameStateReturn {
     if (prev === "idle" && phase === "playing") {
       // New round started → word announced → listening
       setRoundPhase("word-announced");
-      // Speak the word aloud
-      if (currentWord) {
+      clearAllTimers();
+
+      // Speak the word and generate a hint only if it's a NEW word
+      if (currentWord && currentWord.word !== lastAnnouncedWordRef.current) {
+        lastAnnouncedWordRef.current = currentWord.word;
         void ttsRepeatWord(currentWord.word);
-        // Generate a hint for this word
         addHint(currentWord);
       }
-      // After a brief delay, transition to listening
-      const timer = setTimeout(() => {
+
+      wordAnnounceTimerRef.current = setTimeout(() => {
         setRoundPhase("listening");
-      }, 800);
-      return () => clearTimeout(timer);
+        wordAnnounceTimerRef.current = null;
+      }, WORD_ANNOUNCE_DELAY_MS);
+      return clearAllTimers;
     }
 
     if (prev === "playing" && phase === "round_end") {
       // Round ended → evaluate correctness
       setRoundPhase("evaluating");
-      const timer = setTimeout(() => {
+      clearAllTimers();
+
+      roundTimerRef.current = setTimeout(() => {
         if (result?.isCorrect) {
           setRoundPhase("correct");
-          triggerMessage("correct");
+          triggerMessage("correct", speak);
         } else {
           setRoundPhase("incorrect");
-          triggerMessage("incorrect");
+          triggerMessage("incorrect", speak);
         }
+        roundTimerRef.current = null;
+
         // After showing result, mark round as complete
-        const completeTimer = setTimeout(() => {
+        roundTimerRef.current = setTimeout(() => {
           setRoundPhase("round-complete");
-        }, 1500);
-        return () => clearTimeout(completeTimer);
-      }, 300);
-      return () => clearTimeout(timer);
+          roundTimerRef.current = null;
+        }, FEEDBACK_DISPLAY_MS);
+      }, EVALUATION_DELAY_MS);
+      return clearAllTimers;
     }
 
     if (prev === "round_end" && phase === "playing") {
-      // Next word → back to word-announced
-      setRoundPhase("word-announced");
-      clearMessage();
-      clearHints();
-      if (currentWord) {
+      // Next word → back to word-announced (fix #12: check word changed)
+      clearAllTimers();
+
+      if (currentWord && currentWord.word !== lastAnnouncedWordRef.current) {
+        lastAnnouncedWordRef.current = currentWord.word;
+        setRoundPhase("word-announced");
+        clearMessage();
+        clearHints();
         void ttsRepeatWord(currentWord.word);
         addHint(currentWord);
+
+        wordAnnounceTimerRef.current = setTimeout(() => {
+          setRoundPhase("listening");
+          wordAnnounceTimerRef.current = null;
+        }, WORD_ANNOUNCE_DELAY_MS);
+      } else if (currentWord) {
+        // Word didn't change yet — wait for it
+        setRoundPhase("word-announced");
+        clearMessage();
+        clearHints();
+      } else {
+        setRoundPhase("idle");
       }
-      const timer = setTimeout(() => {
-        setRoundPhase("listening");
-      }, 800);
-      return () => clearTimeout(timer);
+      return clearAllTimers;
     }
 
     if (phase === "idle" && prev !== "idle") {
+      clearAllTimers();
       setRoundPhase("idle");
       clearMessage();
       clearHints();
+      lastAnnouncedWordRef.current = null;
     }
   }, [
     phase,
@@ -182,8 +255,10 @@ export function useGameState(): UseGameStateReturn {
     ttsRepeatWord,
     addHint,
     triggerMessage,
+    speak,
     clearMessage,
     clearHints,
+    clearAllTimers,
   ]);
 
   // --- Session status tracking ---
@@ -195,32 +270,48 @@ export function useGameState(): UseGameStateReturn {
     }
   }, [phase, roundsPlayed, correctAnswers]);
 
+  // --- Session completion check (fix #6) ---
+  useEffect(() => {
+    if (gameStatus === "active" && roundsPlayed >= totalRoundsRef.current) {
+      setGameStatus("session-complete");
+      triggerMessage("session-complete", speak);
+    }
+  }, [gameStatus, roundsPlayed, triggerMessage, speak]);
+
   // --- Hint tracking ---
   const hintsRemaining = Math.max(0, MAX_HINTS_PER_WORD - hints.length);
 
-  // --- Derived values ---
+  // --- Derived values (fix #10: compute from store baselines) ---
   const roundIndex = Math.max(
     0,
     roundsPlayed - (phase === "round_end" ? 1 : 0),
   );
-  // totalRounds is unbounded (endless mode); use a sentinel
-  const totalRounds = Infinity;
   const wasCorrect = lastAnswer?.wasCorrect ?? result?.isCorrect ?? null;
 
-  // --- Request a hint ---
-  const requestHint = useCallback(() => {
-    if (phase !== "playing" || hintsRemaining <= 0 || !currentWord) return;
+  // --- Request a hint (fix #2: accept HintType, fix #9: track timer in ref) ---
+  const requestHint = useCallback(
+    (type?: HintType) => {
+      if (phase !== "playing" || hintsRemaining <= 0 || !currentWord) return;
 
-    const hint = addHint(currentWord);
-    if (hint) {
-      setRoundPhase("hint-shown");
-      triggerMessage("hint-used");
-      // Return to listening after showing hint
-      setTimeout(() => {
-        setRoundPhase("listening");
-      }, 500);
-    }
-  }, [phase, hintsRemaining, currentWord, addHint, triggerMessage]);
+      // Clear any pending hint timer from a previous hint
+      if (hintTimerRef.current) {
+        clearTimeout(hintTimerRef.current);
+        hintTimerRef.current = null;
+      }
+
+      const hint = addHint(currentWord);
+      if (hint) {
+        setRoundPhase("hint-shown");
+        triggerMessage("hint-used");
+        // Return to listening after showing hint
+        hintTimerRef.current = setTimeout(() => {
+          setRoundPhase("listening");
+          hintTimerRef.current = null;
+        }, HINT_DISPLAY_MS);
+      }
+    },
+    [phase, hintsRemaining, currentWord, addHint, triggerMessage],
+  );
 
   // --- Repeat word via TTS ---
   const repeatWord = useCallback(async () => {
@@ -228,12 +319,13 @@ export function useGameState(): UseGameStateReturn {
     await ttsRepeatWord(currentWord.word);
   }, [currentWord, ttsRepeatWord]);
 
-  // --- Wrapped submitAnswer that tracks lastAnswer and round phase ---
+  // --- Wrapped submitAnswer (fix #5: use normalizeSpelling, fix #11) ---
   const wrappedSubmitAnswer = useCallback(
     (answer: string, isVoice = false): boolean | null => {
       if (gameStatus === "paused") return null;
 
-      const normalized = answer.trim().toLowerCase();
+      // Use the same normalization as the store for consistency
+      const normalized = normalizeSpelling(answer);
       const outcome = submitAnswer(answer, isVoice);
 
       if (outcome !== null) {
@@ -259,17 +351,25 @@ export function useGameState(): UseGameStateReturn {
     setGameStatus("active");
   }, []);
 
-  // --- End session — save to IndexedDB ---
+  // --- End session — save to IndexedDB (fix #1, #10) ---
   const endSession = useCallback(async () => {
     if (userId && roundsPlayed > 0) {
       try {
+        // Compute session-local stats using baselines (fix #10)
+        const sessionWords =
+          roundsPlayed - (sessionBaseline?.roundsPlayed ?? 0);
+        const sessionCorrect =
+          correctAnswers - (sessionBaseline?.correctAnswers ?? 0);
+
         await saveSession({
           uid: userId,
-          startTime: new Date(Date.now() - roundsPlayed * 60_000).toISOString(),
+          startTime: sessionStartTime
+            ? new Date(sessionStartTime).toISOString()
+            : new Date().toISOString(),
           endTime: new Date().toISOString(),
-          wordsSpelled: roundsPlayed,
-          correctCount: correctAnswers,
-          difficultyEvolution: [],
+          wordsSpelled: Math.max(0, sessionWords),
+          correctCount: Math.max(0, sessionCorrect),
+          difficultyEvolution: difficultyEvolution ?? [],
           synced: false,
         });
       } catch (err) {
@@ -277,19 +377,49 @@ export function useGameState(): UseGameStateReturn {
       }
     }
 
-    triggerMessage("session-complete");
+    triggerMessage("session-complete", speak);
     setGameStatus("session-complete");
     setRoundPhase("round-complete");
-  }, [userId, roundsPlayed, correctAnswers, triggerMessage]);
+    clearAllTimers();
+  }, [
+    userId,
+    roundsPlayed,
+    correctAnswers,
+    sessionBaseline,
+    sessionStartTime,
+    difficultyEvolution,
+    triggerMessage,
+    speak,
+    clearAllTimers,
+  ]);
 
-  // --- Wrapped startSession that resets local state ---
-  const wrappedStartSession = useCallback(() => {
-    clearHints();
-    setLastAnswer(null);
-    setGameStatus("active");
-    setRoundPhase("idle");
-    startSession();
-  }, [startSession, clearHints]);
+  // --- Wrapped startSession (fix #4: load words, fix #6: configurable rounds) ---
+  const wrappedStartSession = useCallback(
+    (roundCount?: number) => {
+      // Set configurable round count
+      if (roundCount && roundCount > 0) {
+        totalRoundsRef.current = roundCount;
+      }
+
+      // Pre-load words for the configured grade level (async, non-blocking)
+      const grade = useGameStore.getState().gradeLevel;
+      loadWordsForGrade(grade).catch((err) => {
+        console.warn(
+          "[useGameState] Failed to pre-load words for grade",
+          grade,
+          err,
+        );
+      });
+
+      clearHints();
+      setLastAnswer(null);
+      setGameStatus("active");
+      setRoundPhase("idle");
+      lastAnnouncedWordRef.current = null;
+      startSession();
+    },
+    [startSession, clearHints],
+  );
 
   // --- Wrapped restartGame that resets local state ---
   const wrappedRestartGame = useCallback(() => {
@@ -297,8 +427,11 @@ export function useGameState(): UseGameStateReturn {
     setLastAnswer(null);
     setGameStatus("lobby");
     setRoundPhase("idle");
+    totalRoundsRef.current = DEFAULT_TOTAL_ROUNDS;
+    lastAnnouncedWordRef.current = null;
+    clearAllTimers();
     restartGame();
-  }, [restartGame, clearHints]);
+  }, [restartGame, clearHints, clearAllTimers]);
 
   // --- Build hints array typed properly ---
   const typedHints: Hint[] = hints as Hint[];
@@ -318,14 +451,14 @@ export function useGameState(): UseGameStateReturn {
     roundsPlayed,
     correctAnswers,
     roundIndex,
-    totalRounds,
+    totalRounds: totalRoundsRef.current,
     hintsRemaining,
     lastAnswer,
     wasCorrect,
     hints: typedHints,
 
     // FSM transitions
-    startSession: wrappedStartSession,
+    startSession: wrappedStartSession as () => void,
     submitAnswer: wrappedSubmitAnswer,
     timeoutRound,
     nextWord,
@@ -338,7 +471,7 @@ export function useGameState(): UseGameStateReturn {
     endSession,
 
     // Hint & TTS helpers
-    requestHint,
+    requestHint: requestHint as () => void,
     repeatWord,
   };
 }

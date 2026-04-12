@@ -98,7 +98,7 @@ export type GameStatus = "lobby" | "active" | "paused" | "session-complete";
 export interface LastAnswer {
   /** The raw input the player submitted */
   raw: string;
-  /** The normalized (lowercased, trimmed) version used for comparison */
+  /** The normalized version used for comparison (via normalizeSpelling) */
   normalized: string;
   /** Whether the submission came from voice recognition */
   isVoice: boolean;
@@ -178,8 +178,12 @@ export interface UseGameStateReturn {
   hints: import("./useHints.types").Hint[];
 
   // --- FSM transitions ---
-  /** Transition: idle → playing. Resets session stats and picks the first word. */
-  startSession: () => void;
+  /**
+   * Transition: idle → playing.
+   * Pre-loads words for the configured grade level and picks the first word.
+   * @param roundCount — Optional total rounds for the session (default: 10).
+   */
+  startSession: (roundCount?: number) => void;
   /**
    * Transition: playing → round_end.
    * Returns true (correct), false (incorrect), or null (invalid/empty input).
@@ -203,8 +207,11 @@ export interface UseGameStateReturn {
   endSession: () => Promise<void>;
 
   // --- Hint & TTS helpers ---
-  /** Request a hint for the current word. Decrements hintsRemaining. */
-  requestHint: () => void;
+  /**
+   * Request a hint for the current word. Decrements hintsRemaining.
+   * @param type — Optional hint type discriminator (e.g., 'vowel', 'length').
+   */
+  requestHint: (type?: import("./useHints.types").HintType) => void;
   /** Repeat the current word aloud via TTS. */
   repeatWord: () => Promise<void>;
 }
