@@ -7,7 +7,7 @@
  * integration path through triggerMessage's speak parameter.
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useHostMessages } from "../useHostMessages";
 
@@ -48,9 +48,7 @@ describe("useHostMessages — TTS speak integration (AC item 6)", () => {
       vi.advanceTimersByTime(300);
     });
     expect(speak).toHaveBeenCalledTimes(1);
-    expect(speak).toHaveBeenCalledWith(
-      expect.stringContaining("Correct"),
-    );
+    expect(speak).toHaveBeenCalledWith(expect.stringContaining("Correct"));
   });
 
   it("does not call speak when trigger has speakAloud:false", () => {
@@ -88,9 +86,7 @@ describe("useHostMessages — TTS speak integration (AC item 6)", () => {
 
     // Only the second trigger's speak should have fired
     expect(speak).toHaveBeenCalledTimes(1);
-    expect(speak).toHaveBeenCalledWith(
-      expect.stringContaining("3 in a row"),
-    );
+    expect(speak).toHaveBeenCalledWith(expect.stringContaining("3 in a row"));
   });
 
   it("sets currentMessage with correct tone for 'correct' trigger", () => {
