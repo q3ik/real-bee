@@ -38,7 +38,7 @@ import { saveGameSession } from "../lib/db";
 import { MAX_HINTS_PER_WORD } from "../constants/game";
 import { normalizeSpelling } from "../game-engine/normalization";
 import { loadWordsForGrade } from "../lib/wordLoader";
-import type { Word } from "../lib/wordList";
+import type { Word } from "../types";
 import type { Hint, HintType } from "./useHints.types";
 import type {
   GamePhase,
@@ -77,7 +77,7 @@ const HINT_DISPLAY_MS = 500;
 export interface UseGameStateResult {
   phase: GamePhase;
   result: import("./useGameStore").GameResult | null;
-  startSession: () => void;
+  startSession: () => Promise<void>;
   submitAnswer: (answer: string, isVoice?: boolean) => boolean | null;
   timeoutRound: () => void;
   nextWord: () => void;
@@ -395,28 +395,22 @@ export function useGameState(): UseGameStateReturn {
 
   // --- Wrapped startSession (fix #4: load words, fix #6: configurable rounds) ---
   const wrappedStartSession = useCallback(
-    (roundCount?: number) => {
+    async (roundCount?: number) => {
       // Set configurable round count
       if (roundCount && roundCount > 0) {
         totalRoundsRef.current = roundCount;
       }
 
-      // Pre-load words for the configured grade level (async, non-blocking)
+      // Pre-load words for the configured grade level
       const grade = useGameStore.getState().gradeLevel;
-      loadWordsForGrade(grade).catch((err) => {
-        console.warn(
-          "[useGameState] Failed to pre-load words for grade",
-          grade,
-          err,
-        );
-      });
+      await loadWordsForGrade(grade);
 
       clearHints();
       setLastAnswer(null);
       setGameStatus("active");
       setRoundPhase("idle");
       lastAnnouncedWordRef.current = null;
-      startSession();
+      await startSession();
     },
     [startSession, clearHints],
   );
@@ -458,7 +452,7 @@ export function useGameState(): UseGameStateReturn {
     hints: typedHints,
 
     // FSM transitions
-    startSession: wrappedStartSession as () => void,
+    startSession: wrappedStartSession as (roundCount?: number) => Promise<void>,
     submitAnswer: wrappedSubmitAnswer,
     timeoutRound,
     nextWord,

@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { type Word, getWordsForConfig } from "../lib/wordList";
+import type { Word } from "../types";
+import { getWordsForConfigAsync, loadWordsForGrade } from "../lib/wordLoader";
 import { localDb } from "../lib/db";
 import { supabase } from "../lib/supabase";
 import type {
@@ -93,8 +94,8 @@ interface GameState {
   setPhase: (phase: GamePhase) => void;
 
   // --- Actions: Session ---
-  startSession: () => void;
-  startNewRound: () => void;
+  startSession: () => Promise<void>;
+  startNewRound: () => Promise<void>;
   nextWord: () => void;
   restartGame: () => void;
 
@@ -182,7 +183,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   setPhase: (phase) =>
     set({ phase, result: phase === "idle" ? null : get().result }),
 
-  startSession: () => {
+  startSession: async () => {
     usedWordsSet.clear();
     masteredWordsSet.clear();
     // Capture baseline so sessionStats reflects only this session's progress.
@@ -202,10 +203,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       masteredWords: [],
       masteredCount: 0,
     });
-    get().startNewRound();
+    await get().startNewRound();
   },
 
-  startNewRound: () => {
+  startNewRound: async () => {
     const {
       gradeLevel,
       difficulty,
@@ -221,8 +222,9 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     let pool = sessionWords;
     if (pool.length === 0 || sessionIndex >= pool.length) {
-      pool = getWordsForConfig(gradeLevel, difficulty);
-      pool = [...pool].sort(() => Math.random() - 0.5);
+      // Load words asynchronously from the grade JSON files
+      const words = await getWordsForConfigAsync(gradeLevel, difficulty);
+      pool = [...words].sort(() => Math.random() - 0.5);
     }
 
     // Rebuild masteredWordsSet from authoritative Zustand state on every call.
