@@ -265,22 +265,29 @@ export default function GameBoard() {
           enable microphone access in your browser settings and try again.
         </p>
         <button
-          onClick={async () => {
+          onClick={() => {
             // Request mic access first so the browser re-prompts the user
             // if the permission was soft-denied. Hard-denied permissions
             // require the user to update browser site settings manually.
-            try {
-              const stream = await navigator.mediaDevices.getUserMedia({
-                audio: true,
+            void (async () => {
+              try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                  audio: true,
+                });
+                // Release the track immediately — we only needed the prompt.
+                stream.getTracks().forEach((t) => t.stop());
+              } catch {
+                // User still denied — keep the error screen; do not start session.
+                return;
+              }
+              resetPermission();
+              void startSession().catch((err: unknown) => {
+                console.warn(
+                  "[GameBoard] startSession after permission grant failed",
+                  err,
+                );
               });
-              // Release the track immediately — we only needed the prompt.
-              stream.getTracks().forEach((t) => t.stop());
-            } catch {
-              // User still denied — keep the error screen; do not start session.
-              return;
-            }
-            resetPermission();
-            startSession();
+            })();
           }}
           className="px-8 py-4 bg-orange-500 text-white rounded-2xl font-bold shadow-lg hover:bg-orange-600 transition-all"
         >
@@ -318,7 +325,11 @@ export default function GameBoard() {
 
         <div className="flex gap-3">
           <button
-            onClick={startSession}
+            onClick={() => {
+              void startSession().catch((err: unknown) => {
+                console.warn("[GameBoard] Play Again: startSession failed", err);
+              });
+            }}
             className="px-8 py-4 bg-orange-500 text-white rounded-2xl font-bold shadow-lg hover:bg-orange-600 transition-all"
           >
             Play Again
@@ -338,7 +349,11 @@ export default function GameBoard() {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center">
         <button
-          onClick={startSession}
+          onClick={() => {
+            void startSession().catch((err: unknown) => {
+              console.warn("[GameBoard] Start Session failed", err);
+            });
+          }}
           className="px-8 py-4 bg-orange-500 text-white rounded-2xl font-bold shadow-lg hover:bg-orange-600 transition-all"
         >
           Start Session

@@ -153,7 +153,7 @@ export interface UseGameStateReturn {
 
   // --- Gameplay state (mirrored from useGameStore) ---
   /** The word currently being spelled, or null. */
-  currentWord: import("../lib/wordList").Word | null;
+  currentWord: import("../types").Word | null;
   /** Current score for the session. */
   score: number;
   /** Consecutive correct answer count. */
@@ -183,7 +183,7 @@ export interface UseGameStateReturn {
    * Pre-loads words for the configured grade level and picks the first word.
    * @param roundCount — Optional total rounds for the session (default: 10).
    */
-  startSession: (roundCount?: number) => void;
+  startSession: (roundCount?: number) => Promise<void>;
   /**
    * Transition: playing → round_end.
    * Returns true (correct), false (incorrect), or null (invalid/empty input).

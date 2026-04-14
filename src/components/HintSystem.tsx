@@ -1,4 +1,4 @@
-import { type Word } from "../lib/wordList";
+import { type Word } from "../types";
 import { type Hint } from "../hooks/useHints.types";
 import { HelpCircle, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";

@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { type Word, getWordsForConfig } from "../lib/wordList";
+import type { Word } from "../types";
+import { getWordsForConfigAsync, loadWordsForGrade } from "../lib/wordLoader";
 import { localDb } from "../lib/db";
 import { supabase } from "../lib/supabase";
 import type {
@@ -93,8 +94,8 @@ interface GameState {
   setPhase: (phase: GamePhase) => void;
 
   // --- Actions: Session ---
-  startSession: () => void;
-  startNewRound: () => void;
+  startSession: () => Promise<void>;
+  startNewRound: () => Promise<void>;
   nextWord: () => void;
   restartGame: () => void;
 
@@ -136,11 +137,11 @@ interface GameState {
 
 // Keep track of used words during a session
 const usedWordsSet = new Set<string>();
-// NOTE: masteredWordsSet is kept in sync with state.masteredWords in
-// toggleMastery/loadProgress to prevent desync after startSession/loadProgress.
+// masteredWordsSet is kept in sync with state.masteredWords in
+// toggleMastery and loadProgress to prevent desync after restarts.
+// startNewRound updates this set in-place from authoritative Zustand state
+// on every call instead of shadowing it with a local const (QA fix #2).
 const masteredWordsSet = new Set<string>();
-/** Debounce guard: timestamp of last successful submission. */
-/** Re-entrancy guard: true while a submission is being processed. */
 
 export const useGameStore = create<GameState>((set, get) => ({
   // --- FSM ---
@@ -182,7 +183,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   setPhase: (phase) =>
     set({ phase, result: phase === "idle" ? null : get().result }),
 
-  startSession: () => {
+  startSession: async () => {
     usedWordsSet.clear();
     masteredWordsSet.clear();
     // Capture baseline so sessionStats reflects only this session's progress.
@@ -202,10 +203,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       masteredWords: [],
       masteredCount: 0,
     });
-    get().startNewRound();
+    await get().startNewRound();
   },
 
-  startNewRound: () => {
+  startNewRound: async () => {
     const {
       gradeLevel,
       difficulty,
@@ -221,14 +222,17 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     let pool = sessionWords;
     if (pool.length === 0 || sessionIndex >= pool.length) {
-      pool = getWordsForConfig(gradeLevel, difficulty);
-      pool = [...pool].sort(() => Math.random() - 0.5);
+      // Load words asynchronously from the grade JSON files
+      const words = await getWordsForConfigAsync(gradeLevel, difficulty);
+      pool = [...words].sort(() => Math.random() - 0.5);
     }
 
-    // Rebuild masteredWordsSet from authoritative Zustand state on every call.
-    // This prevents desync when startSession() or loadProgress() ran between
-    // rounds without explicitly updating the old module-level Set.
-    const masteredWordsSet = new Set<string>(masteredWords);
+    // Rebuild the module-level masteredWordsSet from authoritative Zustand state
+    // on every call. Assigning in-place (clear + add) keeps the reference stable
+    // so toggleMastery and restartGame still operate on the same set object.
+    // Previously this was a shadowed local `const` which silently diverged (QA fix #2).
+    masteredWordsSet.clear();
+    for (const w of masteredWords) masteredWordsSet.add(w);
 
     // Use game-engine difficulty filtering with mastered-word re-allowance
     const gradeLevelStr = gradeLevel === 0 ? "all" : gradeLevel.toString();
@@ -264,6 +268,8 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     usedWordsSet.add(word.word);
 
+    // Set currentWord and phase atomically so useGameState's phase-transition
+    // effect always sees the new word when it observes phase === 'playing'.
     set({
       currentWord: word,
       sessionWords: pool,
@@ -378,8 +384,6 @@ export const useGameStore = create<GameState>((set, get) => ({
       },
     });
 
-    // Update debounce timestamp
-
     return submissionResult.isCorrect;
   },
 
@@ -411,8 +415,15 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   nextWord: () => {
-    set({ phase: "playing" });
-    get().startNewRound();
+    // Do NOT eagerly set phase to 'playing' here. startNewRound() sets both
+    // currentWord and phase atomically, so useGameState's phase-transition
+    // effect will always see the new word when it observes phase === 'playing'.
+    void get()
+      .startNewRound()
+      .catch((err: unknown) => {
+        console.warn("[useGameStore] nextWord: startNewRound failed", err);
+        set({ phase: "idle", currentWord: null });
+      });
   },
 
   restartGame: () => {
@@ -476,9 +487,6 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   // --- Auth ---
-  // Accepts null to clear the authenticated identity on sign-out so that
-  // subsequent reads/writes fall back to the offline UID rather than
-  // continuing to use a stale authenticated user's ID.
   setUserId: (uid) => set({ userId: uid }),
 
   setGradeLevel: (grade) => {
@@ -512,8 +520,6 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
 
     const uid = get().userId!;
-    // uid is the primary key — get() is an O(1) lookup and always returns
-    // the single canonical row (no stale duplicates possible).
     const local = await localDb.progress.get(uid);
     if (local) {
       set({
