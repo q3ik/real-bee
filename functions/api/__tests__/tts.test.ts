@@ -297,4 +297,84 @@ describe("POST /api/tts", () => {
 
     vi.unstubAllGlobals();
   });
+
+  it("encodes large ElevenLabs buffer without RangeError (chunked base64)", async () => {
+    // Simulate a buffer larger than the 0x8000-byte chunk threshold.
+    // The spread-based encoder would throw RangeError; the chunked one must not.
+    const LARGE_SIZE = 0x8000 * 4; // 4 × chunk size = 131 072 bytes
+    const largeBuf = new ArrayBuffer(LARGE_SIZE);
+    new Uint8Array(largeBuf).fill(0xab); // non-zero fill to exercise encoding
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      arrayBuffer: async () => largeBuf,
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const context = makeContext({ word: "elephant" });
+    (context as unknown as { env: Env }).env = {
+      ...mockEnv,
+      TTS_PROVIDER: "elevenlabs",
+      ELEVENLABS_API_KEY: "key",
+    };
+
+    const res = await onRequestPost(context);
+    expect(res.status).toBe(200);
+
+    const body = (await res.json()) as { audio: string; mimeType: string };
+    // Result must be valid base64 (no padding errors, decodable)
+    expect(() => atob(body.audio)).not.toThrow();
+    expect(body.mimeType).toBe("audio/mpeg");
+
+    vi.unstubAllGlobals();
+  });
+
+  // ── env.TTS_PROVIDER validation tests ────────────────────────────────────
+
+  it("returns 503 when env.TTS_PROVIDER is set to an unrecognised value", async () => {
+    const context = makeContext({ word: "apple" });
+    (context as unknown as { env: Env }).env = {
+      ...mockEnv,
+      TTS_PROVIDER: "unknown-provider",
+    };
+    const res = await onRequestPost(context);
+    expect(res.status).toBe(503);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toMatch(/misconfiguration/i);
+    expect(body.error).toMatch(/TTS_PROVIDER/i);
+  });
+
+  it("falls through to client hint when env.TTS_PROVIDER is an empty string", async () => {
+    // Empty env value → treat as unset → client hint 'gemini' takes effect.
+    // GEMINI_API_KEY is present so the Gemini path will be exercised.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          candidates: [
+            {
+              content: {
+                parts: [{ inlineData: { data: "AAAA", mimeType: "audio/pcm" } }],
+              },
+            },
+          ],
+        }),
+      }),
+    );
+
+    const context = makeContext({ word: "apple", provider: "gemini" });
+    (context as unknown as { env: Env }).env = {
+      ...mockEnv,
+      TTS_PROVIDER: "", // empty — must be treated as unset
+      GEMINI_API_KEY: "test-key",
+    };
+
+    const res = await onRequestPost(context);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { mimeType: string };
+    expect(body.mimeType).toBe("audio/pcm");
+
+    vi.unstubAllGlobals();
+  });
 });

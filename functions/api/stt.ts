@@ -13,9 +13,14 @@
  *   2. request body 'provider' field — client hint, honoured only if env is unset
  *   3. 'gemini' — hard default
  *
+ * env.STT_PROVIDER is validated against VALID_PROVIDERS at runtime.
+ * An empty or unrecognised env value is treated as unset so the client
+ * hint / default can apply as intended. A non-empty but invalid env value
+ * returns 503 (misconfigured) immediately — it is never silently ignored.
+ *
  * The client-supplied provider field is validated but cannot override the
- * operator's env setting. This prevents a client from forcing a more expensive
- * or restricted provider against operator intent.
+ * operator's env setting. This prevents a client from forcing a more
+ * expensive or restricted provider against operator intent.
  *
  * System prompt and generation config are hardcoded server-side.
  * The client cannot influence model selection or transcription behavior.
@@ -51,6 +56,66 @@ type Provider = (typeof VALID_PROVIDERS)[number];
 const STT_SYSTEM_PROMPT =
   "You are a spelling bee judge. The user has spoken a word. " +
   "Transcribe exactly the word you hear — return only the single word, lowercase, no punctuation, nothing else.";
+
+/**
+ * Safely decode a base64 string to a Uint8Array.
+ *
+ * `atob()` throws a `DOMException` (or `InvalidCharacterError`) for invalid
+ * input. Wrapping it here means callers receive `null` for bad input rather
+ * than having the error bubble up to the outer `catch` and become a 500.
+ *
+ * Client-supplied base64 that fails to decode is a 400 (bad request), not
+ * a 500 (server error), so it must be distinguished from runtime failures.
+ *
+ * @returns Decoded bytes, or `null` if the string is not valid base64.
+ */
+function decodeBase64Audio(base64: string): Uint8Array | null {
+  try {
+    return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolve and validate the STT provider from env + request body.
+ *
+ * Validation order:
+ *  1. env.STT_PROVIDER (trimmed) — if set and valid, use it.
+ *  2. env.STT_PROVIDER is set but invalid → return 503 immediately.
+ *  3. requestedProvider (client hint) — already validated before this call.
+ *  4. Fall back to 'gemini'.
+ *
+ * Returns either the resolved Provider string, or a Response (error).
+ */
+function resolveProvider(
+  envValue: string | undefined,
+  requestedProvider: unknown,
+  origin: string,
+): Provider | Response {
+  const trimmedEnv = typeof envValue === "string" ? envValue.trim() : "";
+  if (trimmedEnv) {
+    if (VALID_PROVIDERS.includes(trimmedEnv as Provider)) {
+      return trimmedEnv as Provider;
+    }
+    return json(
+      {
+        error: `Server misconfiguration: STT_PROVIDER "${trimmedEnv}" is not one of: ${VALID_PROVIDERS.join(", ")}`,
+      },
+      503,
+      origin,
+    );
+  }
+
+  if (
+    requestedProvider !== undefined &&
+    VALID_PROVIDERS.includes(requestedProvider as Provider)
+  ) {
+    return requestedProvider as Provider;
+  }
+
+  return "gemini";
+}
 
 export async function onRequestPost(context: PagesContext): Promise<Response> {
   const { request, env } = context;
@@ -107,11 +172,14 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
     );
   }
 
-  // Provider selection: server env takes priority over client hint (QA fix #6).
-  const selectedProvider: Provider =
-    (env.STT_PROVIDER as Provider) ??
-    (requestedProvider as Provider) ??
-    "gemini";
+  // Resolve and validate the provider (env > client hint > default).
+  const providerOrError = resolveProvider(
+    env.STT_PROVIDER,
+    requestedProvider,
+    origin,
+  );
+  if (providerOrError instanceof Response) return providerOrError;
+  const selectedProvider = providerOrError;
 
   try {
     // Route to the selected provider
@@ -157,8 +225,13 @@ async function handleCloudflareWhisper(
     return json({ error: "Cloudflare AI binding not configured" }, 503, origin);
   }
 
-  // Decode base64 audio to Uint8Array for Cloudflare AI
-  const audioBytes = Uint8Array.from(atob(audio), (c) => c.charCodeAt(0));
+  // Decode base64 audio to Uint8Array for Cloudflare AI.
+  // Use decodeBase64Audio() so invalid base64 yields 400 instead of
+  // falling through to the outer catch (which would return 500).
+  const audioBytes = decodeBase64Audio(audio);
+  if (audioBytes === null) {
+    return json({ error: "Invalid base64 audio encoding" }, 400, origin);
+  }
 
   const result = (await env.AI.run("@cf/openai/whisper-large-v3-turbo", {
     audio: audioBytes as unknown as string,
@@ -184,7 +257,13 @@ async function handleDeepgram(
     return json({ error: "Deepgram STT not configured" }, 503, origin);
   }
 
-  const audioBuffer = Uint8Array.from(atob(audio), (c) => c.charCodeAt(0));
+  // Decode base64 audio to Uint8Array for Deepgram.
+  // Use decodeBase64Audio() so invalid base64 yields 400 instead of
+  // falling through to the outer catch (which would return 500).
+  const audioBuffer = decodeBase64Audio(audio);
+  if (audioBuffer === null) {
+    return json({ error: "Invalid base64 audio encoding" }, 400, origin);
+  }
 
   const url = new URL("https://api.deepgram.com/v1/listen");
   url.searchParams.set("model", "nova-3");

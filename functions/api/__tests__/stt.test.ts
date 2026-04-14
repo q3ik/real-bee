@@ -198,6 +198,29 @@ describe("POST /api/stt", () => {
     expect(body.transcript).toBe("hello");
   });
 
+  it("returns 400 for invalid base64 audio (Cloudflare Whisper path)", async () => {
+    const mockRun = vi.fn();
+    const mockAI = { run: mockRun } as unknown as Ai;
+
+    // "!!!invalid!!!" contains characters not in the base64 alphabet
+    const context = makeContext({
+      audio: "!!!invalid!!!",
+      mimeType: "audio/webm",
+    });
+    (context as unknown as { env: Env }).env = {
+      ...mockEnv,
+      STT_PROVIDER: "cloudflare-whisper",
+      AI: mockAI,
+    };
+
+    const res = await onRequestPost(context);
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toMatch(/base64/i);
+    // AI.run must NOT have been called
+    expect(mockRun).not.toHaveBeenCalled();
+  });
+
   // ── Deepgram provider tests ──────────────────────────────────────────────
 
   it("returns 503 when DEEPGRAM_API_KEY is missing for Deepgram", async () => {
@@ -253,6 +276,31 @@ describe("POST /api/stt", () => {
     vi.unstubAllGlobals();
   });
 
+  it("returns 400 for invalid base64 audio (Deepgram path)", async () => {
+    const mockFetch = vi.fn();
+    vi.stubGlobal("fetch", mockFetch);
+
+    // "!!!invalid!!!" contains characters not in the base64 alphabet
+    const context = makeContext({
+      audio: "!!!invalid!!!",
+      mimeType: "audio/webm",
+    });
+    (context as unknown as { env: Env }).env = {
+      ...mockEnv,
+      STT_PROVIDER: "deepgram",
+      DEEPGRAM_API_KEY: "key",
+    };
+
+    const res = await onRequestPost(context);
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toMatch(/base64/i);
+    // fetch must NOT have been called — decode failure short-circuits before network
+    expect(mockFetch).not.toHaveBeenCalled();
+
+    vi.unstubAllGlobals();
+  });
+
   it("returns 500 when Deepgram API returns non-ok response", async () => {
     vi.stubGlobal(
       "fetch",
@@ -296,6 +344,52 @@ describe("POST /api/stt", () => {
 
     const res = await onRequestPost(context);
     expect(res.status).toBe(500);
+
+    vi.unstubAllGlobals();
+  });
+
+  // ── env.STT_PROVIDER validation tests ────────────────────────────────────
+
+  it("returns 503 when env.STT_PROVIDER is set to an unrecognised value", async () => {
+    const context = makeContext({ audio: "AAAA", mimeType: "audio/webm" });
+    (context as unknown as { env: Env }).env = {
+      ...mockEnv,
+      STT_PROVIDER: "unknown-provider",
+    };
+    const res = await onRequestPost(context);
+    expect(res.status).toBe(503);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toMatch(/misconfiguration/i);
+    expect(body.error).toMatch(/STT_PROVIDER/i);
+  });
+
+  it("falls through to client hint when env.STT_PROVIDER is an empty string", async () => {
+    // Empty env value → treat as unset → client hint 'gemini' takes effect.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          candidates: [{ content: { parts: [{ text: "banana" }] } }],
+        }),
+      }),
+    );
+
+    const context = makeContext({
+      audio: "AAAA",
+      mimeType: "audio/webm",
+      provider: "gemini",
+    });
+    (context as unknown as { env: Env }).env = {
+      ...mockEnv,
+      STT_PROVIDER: "", // empty — must be treated as unset
+      GEMINI_API_KEY: "test-key",
+    };
+
+    const res = await onRequestPost(context);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { transcript: string };
+    expect(body.transcript).toBe("banana");
 
     vi.unstubAllGlobals();
   });

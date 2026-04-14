@@ -5,16 +5,21 @@
  * Method: POST
  *
  * Request body: { word: string, voice?: string, provider?: string }
- * Response: { audio: string (base64 PCM), mimeType: 'audio/pcm', sampleRate: 24000 }
+ * Response: { audio: string (base64), mimeType: 'audio/pcm'|'audio/mpeg', sampleRate: number }
  *
  * Provider selection precedence (most → least authoritative):
  *   1. env.TTS_PROVIDER  — operator configuration, always wins
  *   2. request body 'provider' field — client hint, honoured only if env is unset
  *   3. 'gemini' — hard default
  *
+ * env.TTS_PROVIDER is validated against VALID_PROVIDERS at runtime.
+ * An empty or unrecognised env value is treated as unset so the client
+ * hint / default can apply as intended. A non-empty but invalid env value
+ * returns 503 (misconfigured) immediately — it is never silently ignored.
+ *
  * The client-supplied provider field is validated but cannot override the
- * operator's env setting. This prevents a client from forcing a more expensive
- * or restricted provider against operator intent.
+ * operator's env setting. This prevents a client from forcing a more
+ * expensive or restricted provider against operator intent.
  *
  * Model, voice defaults, and generation config are hardcoded server-side.
  * The client cannot influence model selection or audio parameters.
@@ -42,6 +47,81 @@ type Provider = (typeof VALID_PROVIDERS)[number];
 /** Maximum allowed word length for ElevenLabs (chars) */
 const MAX_WORD_LENGTH = 500;
 
+/**
+ * Chunk size for base64 encoding. Must be a multiple of 3 so that each
+ * chunk encodes cleanly without padding spilling into the next chunk.
+ * 0x8000 (32 768) is well below the typical JS engine argument-count
+ * limit and is evenly divisible by 3.
+ */
+const BASE64_CHUNK_SIZE = 0x8000; // 32 768 bytes
+
+/**
+ * Safely encode a Uint8Array to a base64 string without spreading bytes
+ * into function arguments (which would throw RangeError for large buffers).
+ *
+ * Processes the array in fixed-size chunks so the call-stack depth is
+ * bounded regardless of buffer size.
+ */
+function uint8ArrayToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += BASE64_CHUNK_SIZE) {
+    // subarray() is a zero-copy view — no extra allocation per chunk.
+    binary += String.fromCharCode(...bytes.subarray(i, i + BASE64_CHUNK_SIZE));
+  }
+  return btoa(binary);
+}
+
+/**
+ * Resolve and validate the TTS provider from env + request body.
+ *
+ * Validation order:
+ *  1. env.TTS_PROVIDER (trimmed) — if set and valid, use it.
+ *  2. env.TTS_PROVIDER is set but invalid → return 503 immediately.
+ *  3. requestedProvider (client hint) — validated against VALID_PROVIDERS.
+ *  4. Fall back to 'gemini'.
+ *
+ * Returns either the resolved Provider string, or a Response (error).
+ */
+function resolveProvider(
+  envValue: string | undefined,
+  requestedProvider: unknown,
+  origin: string,
+): Provider | Response {
+  // --- Validate env value ---
+  const trimmedEnv = typeof envValue === "string" ? envValue.trim() : "";
+  if (trimmedEnv) {
+    if (VALID_PROVIDERS.includes(trimmedEnv as Provider)) {
+      return trimmedEnv as Provider;
+    }
+    // Non-empty but unrecognised: operator misconfiguration — fail loudly.
+    return json(
+      {
+        error: `Server misconfiguration: TTS_PROVIDER "${trimmedEnv}" is not one of: ${VALID_PROVIDERS.join(", ")}`,
+      },
+      503,
+      origin,
+    );
+  }
+
+  // --- Fall through to client hint ---
+  if (requestedProvider !== undefined) {
+    if (VALID_PROVIDERS.includes(requestedProvider as Provider)) {
+      return requestedProvider as Provider;
+    }
+    // Invalid client value is already rejected before this function is called,
+    // but guard here for safety.
+    return json(
+      {
+        error: `Invalid "provider" — must be one of: ${VALID_PROVIDERS.join(", ")}`,
+      },
+      400,
+      origin,
+    );
+  }
+
+  return "gemini";
+}
+
 export async function onRequestPost(context: PagesContext): Promise<Response> {
   const { request, env } = context;
   const origin = request.headers.get("origin") || "";
@@ -64,11 +144,29 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
     return json({ error: 'Missing or invalid "word" field' }, 400, origin);
   }
 
-  // Provider selection: server env takes priority over client hint (QA fix #6).
-  const selectedProvider: Provider =
-    (env.TTS_PROVIDER as Provider) ??
-    (requestedProvider as Provider) ??
-    "gemini";
+  // Validate client-supplied provider before resolving the final provider.
+  // (env-supplied provider validation happens inside resolveProvider.)
+  if (
+    requestedProvider !== undefined &&
+    !VALID_PROVIDERS.includes(requestedProvider as Provider)
+  ) {
+    return json(
+      {
+        error: `Invalid "provider" — must be one of: ${VALID_PROVIDERS.join(", ")}`,
+      },
+      400,
+      origin,
+    );
+  }
+
+  // Resolve and validate the provider (env > client hint > default).
+  const providerOrError = resolveProvider(
+    env.TTS_PROVIDER,
+    requestedProvider,
+    origin,
+  );
+  if (providerOrError instanceof Response) return providerOrError;
+  const selectedProvider = providerOrError;
 
   // Word length limit: ElevenLabs has a 500-char limit; Gemini has no hard
   // limit but we enforce the same cap for consistency.
@@ -90,19 +188,6 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
   ) {
     return json(
       { error: `Invalid "voice" — must be one of: ${VALID_VOICES.join(", ")}` },
-      400,
-      origin,
-    );
-  }
-
-  if (
-    requestedProvider !== undefined &&
-    !VALID_PROVIDERS.includes(requestedProvider as Provider)
-  ) {
-    return json(
-      {
-        error: `Invalid "provider" — must be one of: ${VALID_PROVIDERS.join(", ")}`,
-      },
       400,
       origin,
     );
@@ -162,9 +247,12 @@ async function handleElevenLabs(
     throw new Error(`ElevenLabs TTS error: ${res.status}`);
   }
 
-  // ElevenLabs returns MP3 audio directly — convert to base64
+  // ElevenLabs returns MP3 audio directly — convert to base64.
+  // Use chunked encoding (uint8ArrayToBase64) instead of spreading the
+  // entire Uint8Array into String.fromCharCode(), which throws RangeError
+  // for buffers large enough to exceed the JS engine's argument-count limit.
   const arrayBuffer = await res.arrayBuffer();
-  const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+  const base64Audio = uint8ArrayToBase64(new Uint8Array(arrayBuffer));
 
   return json(
     { audio: base64Audio, mimeType: "audio/mpeg", sampleRate: 44100 },
