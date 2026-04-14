@@ -94,21 +94,35 @@ export function usePwaInstall(): UsePwaInstallResult {
     const deferredPrompt = deferredPromptRef.current;
     if (!deferredPrompt) return;
 
-    // Show the native install prompt
-    deferredPrompt.prompt();
+    // Clear the deferred event immediately to prevent re-entrant calls
+    deferredPromptRef.current = null;
+    setIsInstallable(false);
 
-    // Wait for the user to respond to the prompt
-    deferredPrompt.userChoice.then((choiceResult) => {
-      if (choiceResult.outcome === "accepted") {
-        console.log("[PWA] User accepted the install prompt");
-        setIsInstalled(true);
-      } else {
-        console.log("[PWA] User dismissed the install prompt");
+    // Use an async IIFE to handle prompt()/userChoice without changing the
+    // public `() => void` signature, while still catching rejections.
+    void (async () => {
+      try {
+        // Show the native install prompt
+        await deferredPrompt.prompt();
+
+        // Wait for the user to respond to the prompt
+        const choiceResult = await deferredPrompt.userChoice;
+        if (choiceResult.outcome === "accepted") {
+          console.log("[PWA] User accepted the install prompt");
+          setIsInstalled(true);
+        } else {
+          console.log("[PWA] User dismissed the install prompt");
+        }
+      } catch (error) {
+        // The browser may reject `prompt()` in unexpected states (e.g. if
+        // called without a genuine user gesture or if the prompt is already
+        // showing). Log at warn level — the UI has already been updated.
+        console.warn(
+          "[PWA] Install prompt failed:",
+          error instanceof Error ? error.message : String(error),
+        );
       }
-      // Clear the deferred prompt so it can't be used again
-      deferredPromptRef.current = null;
-      setIsInstallable(false);
-    });
+    })();
   }, []);
 
   return { isInstallable, isInstalled, promptInstall };
