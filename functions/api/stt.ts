@@ -7,9 +7,14 @@
  * Request body: { audio: string (base64), mimeType: string, provider?: string }
  * Response: { transcript: string }
  *
- * Provider selection is driven by env.STT_PROVIDER (server-side) or
- * the 'provider' field in the request body (client override).
- * Supported providers: 'gemini' (default), 'cloudflare-whisper'.
+ * Provider selection precedence (most → least authoritative):
+ *   1. env.STT_PROVIDER  — operator configuration, always wins
+ *   2. request body 'provider' field — client hint, honoured only if env is unset
+ *   3. 'gemini' — hard default
+ *
+ * The client-supplied provider field is validated but cannot override the
+ * operator's env setting. This prevents a client from forcing a more expensive
+ * or restricted provider against operator intent.
  *
  * System prompt and generation config are hardcoded server-side.
  * The client cannot influence model selection or transcription behavior.
@@ -101,10 +106,13 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
     );
   }
 
-  // Provider selection: request body > server-side env var > default ('gemini')
+  // Provider selection: server env takes priority over client hint (QA fix #6).
+  // A client-supplied provider is only honoured when the operator has not
+  // configured STT_PROVIDER, preventing privilege escalation to a restricted
+  // or more expensive backend.
   const selectedProvider: Provider =
-    (requestedProvider as Provider) ??
     (env.STT_PROVIDER as Provider) ??
+    (requestedProvider as Provider) ??
     "gemini";
 
   if (!env.GEMINI_API_KEY) {

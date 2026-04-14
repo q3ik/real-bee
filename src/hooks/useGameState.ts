@@ -393,9 +393,10 @@ export function useGameState(): UseGameStateReturn {
     clearAllTimers,
   ]);
 
-  // --- Wrapped startSession: pre-load words, then start ---
-  // On any failure: restore gameStatus to 'lobby' to avoid leaving the UI in
-  // a broken 'active' state where the game view is shown but no session exists.
+  // --- Wrapped startSession: pre-load words, then start, THEN mark active ---
+  // setGameStatus('active') is intentionally placed AFTER both awaits succeed
+  // so the UI is never left in an 'active' state with no current word if word
+  // loading or session initialisation fails (QA fix #3).
   const wrappedStartSession = useCallback(
     async (roundCount?: number) => {
       // Set configurable round count
@@ -405,7 +406,6 @@ export function useGameState(): UseGameStateReturn {
 
       clearHints();
       setLastAnswer(null);
-      setGameStatus("active");
       setRoundPhase("idle");
       lastAnnouncedWordRef.current = null;
 
@@ -414,6 +414,8 @@ export function useGameState(): UseGameStateReturn {
         const grade = useGameStore.getState().gradeLevel;
         await loadWordsForGrade(grade);
         await startSession();
+        // Only mark active after both operations succeed
+        setGameStatus("active");
       } catch (err) {
         console.warn(
           "[useGameState] wrappedStartSession: failed to start session",
