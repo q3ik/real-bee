@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { MAX_HINTS_PER_WORD } from "../constants/game";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface HintSystemProps {
@@ -35,12 +36,16 @@ export default function HintSystem({
           Hints
         </h3>
         {hints.length < MAX_HINTS_PER_WORD && (
-          <button
+          <Button
+            variant="link"
+            size="sm"
             onClick={onGetHint}
-            className="text-xs font-bold text-orange-500 hover:text-orange-600 transition-all"
+            className={cn(
+              "text-xs font-bold text-primary hover:text-primary/80 p-0 h-auto",
+            )}
           >
-            Get Hint <ChevronRight className="w-3 h-3" />
-          </button>
+            Get Hint <ChevronRight className="w-3 h-3 ml-0.5" />
+          </Button>
         )}
       </div>
 
