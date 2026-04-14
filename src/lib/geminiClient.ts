@@ -12,6 +12,8 @@
  *   const hint  = await gemini.hint({ word: 'elephant', type: 'definition' });
  */
 
+import { Sentry } from './sentry';
+
 const PROXY_URL = '/api/gemini';
 
 // ---------------------------------------------------------------------------
@@ -76,7 +78,16 @@ async function post<TReq, TRes>(
     } catch {
       // ignore parse failures — the status code is enough
     }
-    throw new Error(message);
+    const error = new Error(message);
+    // Report to Sentry so proxy failures are visible in production.
+    // Network-level failures (status 0) are tagged as warnings because
+    // they are expected when the worker is offline or the user is on a
+    // flaky connection.  4xx/5xx are genuine server errors.
+    Sentry.captureException(error, {
+      level: res.status === 0 ? 'warning' : 'error',
+      tags: { 'gemini.action': action, 'gemini.status': String(res.status) },
+    });
+    throw error;
   }
 
   return res.json() as Promise<TRes>;

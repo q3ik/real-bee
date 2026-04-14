@@ -6,9 +6,11 @@
  *  - Retry logic with exponential backoff (configurable)
  *  - Typed ApiError / TimeoutError on failures
  *  - JSON request/response serialization
+ *  - Automatic Sentry error capture on final failure (after all retries)
  */
 
 import { ApiError, TimeoutError } from "./types";
+import { Sentry } from "../lib/sentry";
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -93,6 +95,11 @@ async function fetchWithTimeout<T>(
 /**
  * Make an API request with timeout, optional retries, and typed errors.
  *
+ * Errors are reported to Sentry only on the final attempt so that
+ * transient failures that resolve within the retry window do not create
+ * noise. Network errors (status 0) and timeouts are reported at `warning`
+ * level; server-side errors (4xx/5xx) at `error` level.
+ *
  * @param endpoint - The URL to fetch (e.g., '/api/tts')
  * @param body - The request body (will be JSON-serialized)
  * @param options - Timeout, retries, and retry delay configuration
@@ -129,6 +136,19 @@ export async function apiRequest<T>(
     }
   }
 
-  // Should never reach here, but satisfy TypeScript
+  // All attempts exhausted — report to Sentry before re-throwing.
+  // Network/timeout errors are expected in offline scenarios; use `warning`
+  // so they don't inflate the error rate. Server errors (4xx/5xx) use
+  // `error` as they indicate a real problem on the server side.
+  const isNetworkOrTimeout =
+    lastError instanceof TimeoutError ||
+    (lastError instanceof ApiError && lastError.status === 0);
+
+  Sentry.captureException(lastError, {
+    level: isNetworkOrTimeout ? 'warning' : 'error',
+    tags: { 'api.endpoint': endpoint },
+    extra: { retries, timeoutMs },
+  });
+
   throw lastError ?? new ApiError("Unknown error", 0, endpoint);
 }

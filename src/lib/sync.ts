@@ -20,6 +20,7 @@ import {
   markSessionsSynced,
 } from "../game-engine/storage";
 import type { LocalUserProgress, LocalSession } from "./db";
+import { Sentry } from "./sentry";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -101,6 +102,14 @@ async function uploadProgressToSupabase(
       progress.uid,
       error.message,
     );
+    // Report upload failure to Sentry at warning level — a single failure
+    // is expected when offline; persistent failures will surface via the
+    // max-retries event below.
+    Sentry.captureMessage('Sync upload failed', {
+      level: 'warning',
+      tags: { 'sync.type': 'progress' },
+      extra: { uid: progress.uid, error: error.message },
+    });
     return false;
   }
 
@@ -150,6 +159,13 @@ export async function syncPending(): Promise<number> {
     // Skip if max retries exceeded
     if (retry && retry.retryCount >= MAX_SYNC_RETRIES) {
       console.warn("[sync] Max retries exceeded for", record.uid, "— skipping");
+      // Report max-retries-exceeded at error level — this means the user's
+      // progress will remain unsynced indefinitely and requires investigation.
+      Sentry.captureMessage('Sync max retries exceeded', {
+        level: 'error',
+        tags: { 'sync.type': 'progress' },
+        extra: { uid: record.uid, retryCount: retry.retryCount },
+      });
       continue;
     }
 
