@@ -89,10 +89,13 @@ function notifyTtsUnavailable(provider: string, reason: string): void {
  * Request text-to-speech synthesis.
  *
  * @param request - The TTS request containing word and optional voice
- * @returns ArrayBuffer containing the synthesized audio (empty for browser fallback)
+ * @returns Object containing the audio ArrayBuffer and its mimeType
  * @throws ApiError if the primary provider fails and browser fallback is unavailable
  */
-export async function requestTTS(request: TtsRequest): Promise<ArrayBuffer> {
+export async function requestTTS(request: TtsRequest): Promise<{
+  audioBuffer: ArrayBuffer;
+  mimeType: string;
+}> {
   const provider = getTtsProvider();
 
   try {
@@ -106,7 +109,7 @@ export async function requestTTS(request: TtsRequest): Promise<ArrayBuffer> {
     const audioData = Uint8Array.from(atob(response.audio), (c) =>
       c.charCodeAt(0),
     );
-    return audioData.buffer;
+    return { audioBuffer: audioData.buffer, mimeType: response.mimeType };
   } catch (error) {
     // Log the primary provider failure for debugging
     const errorMsg = (error as Error)?.message ?? String(error);
@@ -126,6 +129,7 @@ export async function requestTTS(request: TtsRequest): Promise<ArrayBuffer> {
     notifyTtsUnavailable(provider, errorMsg);
 
     // Fall back to browser speechSynthesis
-    return speakBrowserFallback(request.word);
+    const fallbackBuffer = await speakBrowserFallback(request.word);
+    return { audioBuffer: fallbackBuffer, mimeType: "audio/pcm" };
   }
 }

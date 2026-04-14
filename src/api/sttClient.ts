@@ -4,6 +4,7 @@
  * Provider selection is driven by VITE_STT_PROVIDER env var:
  *  - 'gemini' (default) → POST /api/stt (Gemini STT via Cloudflare Worker)
  *  - 'cloudflare-whisper' → POST /api/stt (Cloudflare Whisper via Worker)
+ *  - 'deepgram' → POST /api/stt (Deepgram Nova-3 via Worker)
  *
  * If the primary provider fails, falls back to browser SpeechRecognition
  * which is handled entirely client-side.

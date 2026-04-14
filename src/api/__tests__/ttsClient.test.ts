@@ -44,10 +44,19 @@ describe("ttsClient", () => {
   });
 
   describe("requestTTS", () => {
-    it("returns ArrayBuffer on successful TTS response", async () => {
+    it("returns { audioBuffer, mimeType } on successful TTS response", async () => {
       mockTtsResponse();
       const result = await requestTTS({ word: "apple" });
-      expect(result).toBeInstanceOf(ArrayBuffer);
+      expect(result).toHaveProperty("audioBuffer");
+      expect(result).toHaveProperty("mimeType");
+      expect(result.audioBuffer).toBeInstanceOf(ArrayBuffer);
+      expect(result.mimeType).toBe("audio/pcm");
+    });
+
+    it("returns audio/mpeg mimeType for ElevenLabs responses", async () => {
+      mockTtsResponse("AAAA", "audio/mpeg");
+      const result = await requestTTS({ word: "hello" });
+      expect(result.mimeType).toBe("audio/mpeg");
     });
 
     it("sends word and provider in request body", async () => {
