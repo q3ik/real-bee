@@ -79,8 +79,13 @@ export default function App() {
   );
 
   const handleStart = () => {
-    startSession();
+    // Transition to game view immediately for responsiveness, then start the
+    // session. Any word-loading failure is handled inside startSession() itself
+    // (useGameState.wrappedStartSession restores to lobby on error).
     setView("game");
+    void startSession().catch((err: unknown) => {
+      console.warn("[App] handleStart: startSession failed", err);
+    });
   };
 
   const handleDebugSubmit = useCallback(async () => {

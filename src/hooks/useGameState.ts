@@ -393,7 +393,9 @@ export function useGameState(): UseGameStateReturn {
     clearAllTimers,
   ]);
 
-  // --- Wrapped startSession (fix #4: load words, fix #6: configurable rounds) ---
+  // --- Wrapped startSession: pre-load words, then start ---
+  // On any failure: restore gameStatus to 'lobby' to avoid leaving the UI in
+  // a broken 'active' state where the game view is shown but no session exists.
   const wrappedStartSession = useCallback(
     async (roundCount?: number) => {
       // Set configurable round count
@@ -401,16 +403,26 @@ export function useGameState(): UseGameStateReturn {
         totalRoundsRef.current = roundCount;
       }
 
-      // Pre-load words for the configured grade level
-      const grade = useGameStore.getState().gradeLevel;
-      await loadWordsForGrade(grade);
-
       clearHints();
       setLastAnswer(null);
       setGameStatus("active");
       setRoundPhase("idle");
       lastAnnouncedWordRef.current = null;
-      await startSession();
+
+      try {
+        // Pre-load words for the configured grade level
+        const grade = useGameStore.getState().gradeLevel;
+        await loadWordsForGrade(grade);
+        await startSession();
+      } catch (err) {
+        console.warn(
+          "[useGameState] wrappedStartSession: failed to start session",
+          err,
+        );
+        // Restore lobby state so the UI doesn't show an empty active game
+        setGameStatus("lobby");
+        setRoundPhase("idle");
+      }
     },
     [startSession, clearHints],
   );

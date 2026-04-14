@@ -266,6 +266,8 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     usedWordsSet.add(word.word);
 
+    // Set currentWord and phase atomically so useGameState's phase-transition
+    // effect always sees the new word when it observes phase === 'playing'.
     set({
       currentWord: word,
       sessionWords: pool,
@@ -413,8 +415,15 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   nextWord: () => {
-    set({ phase: "playing" });
-    get().startNewRound();
+    // Do NOT eagerly set phase to 'playing' here. startNewRound() sets both
+    // currentWord and phase atomically, so useGameState's phase-transition
+    // effect will always see the new word when it observes phase === 'playing'.
+    void get()
+      .startNewRound()
+      .catch((err: unknown) => {
+        console.warn("[useGameStore] nextWord: startNewRound failed", err);
+        set({ phase: "idle", currentWord: null });
+      });
   },
 
   restartGame: () => {
