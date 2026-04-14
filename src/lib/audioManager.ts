@@ -81,9 +81,15 @@ class AudioManager {
     if (!ctx) throw new Error("AudioContext not available");
 
     // Use the new typed API client which handles provider routing and fallbacks
-    const audioBuffer = await requestTTS({ word: text });
+    const { audioBuffer, mimeType } = await requestTTS({ word: text });
 
-    if (audioBuffer.byteLength > 0) {
+    if (audioBuffer.byteLength === 0) return;
+
+    if (mimeType === "audio/mpeg") {
+      // ElevenLabs returns MP3 — decode via AudioContext
+      await this.playDecodedAudio(ctx, audioBuffer);
+    } else {
+      // Default: raw PCM (audio/pcm) — Int16 → Float32 conversion
       const int16Buffer = new Int16Array(audioBuffer);
       const float32Buffer = new Float32Array(int16Buffer.length);
       for (let i = 0; i < int16Buffer.length; i++) {
@@ -105,6 +111,21 @@ class AudioManager {
         source.start();
       });
     }
+  }
+
+  /** Decode and play an audio buffer (MP3, etc.) via AudioContext */
+  private async playDecodedAudio(
+    ctx: AudioContext,
+    buffer: ArrayBuffer,
+  ): Promise<void> {
+    const decoded = await ctx.decodeAudioData(buffer);
+    return new Promise((resolve) => {
+      const source = ctx.createBufferSource();
+      source.buffer = decoded;
+      source.connect(ctx.destination);
+      source.onended = () => resolve();
+      source.start();
+    });
   }
 
   private speakWebSpeech(text: string): Promise<void> {

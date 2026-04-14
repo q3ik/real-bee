@@ -29,11 +29,7 @@ export class ApiError extends Error {
  * Timeout error — a specialization of ApiError for request timeouts.
  */
 export class TimeoutError extends ApiError {
-  constructor(
-    endpoint: string,
-    timeoutMs: number,
-    cause?: unknown,
-  ) {
+  constructor(endpoint: string, timeoutMs: number, cause?: unknown) {
     super(`Request timed out after ${timeoutMs}ms`, 408, endpoint, cause);
     this.name = "TimeoutError";
   }
@@ -69,7 +65,7 @@ export interface TtsResponse {
 // ---------------------------------------------------------------------------
 
 /** STT provider identifiers. Driven by VITE_STT_PROVIDER env var. */
-export type SttProvider = "gemini" | "cloudflare-whisper";
+export type SttProvider = "gemini" | "cloudflare-whisper" | "deepgram";
 
 /** Request shape for STT endpoints */
 export interface SttRequest {
