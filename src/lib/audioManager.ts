@@ -9,6 +9,7 @@ import {
 } from "../constants/audio";
 import { audioSessionManager } from "./audioSessionManager";
 import { requestTTS } from "../api/ttsClient";
+import { Sentry } from "./sentry";
 
 /**
  * Audio playback manager for TTS and sound effects.
@@ -47,7 +48,7 @@ class AudioManager {
         // Quota errors and network errors (offline, DNS, worker not running)
         // are expected conditions — silently fall back to Web Speech without
         // console noise.  Only truly unexpected errors (e.g. audio decode
-        // failures) should be logged.
+        // failures) should be logged and sent to Sentry.
         if (
           errorMsg.includes("429") ||
           errorMsg.includes("RESOURCE_EXHAUSTED") ||
@@ -64,6 +65,13 @@ class AudioManager {
             "Gemini TTS failed, falling back to Web Speech:",
             error,
           );
+          // Report unexpected TTS failures (e.g. audio decode errors) to
+          // Sentry so they are visible in production without being noise from
+          // routine quota/offline scenarios handled above.
+          Sentry.captureException(error, {
+            tags: { 'audio.source': 'gemini-tts', 'audio.action': 'speak' },
+            extra: { text },
+          });
         }
       }
     }

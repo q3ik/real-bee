@@ -6,9 +6,11 @@
  *  - Retry logic with exponential backoff (configurable)
  *  - Typed ApiError / TimeoutError on failures
  *  - JSON request/response serialization
+ *  - Automatic Sentry error capture on final failure (after all retries)
  */
 
 import { ApiError, TimeoutError } from "./types";
+import { Sentry } from "../lib/sentry";
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -93,6 +95,18 @@ async function fetchWithTimeout<T>(
 /**
  * Make an API request with timeout, optional retries, and typed errors.
  *
+ * Errors are reported to Sentry only on the final attempt so that
+ * transient failures that resolve within the retry window do not create
+ * noise. Network errors (status 0) and timeouts are reported at `warning`
+ * level; server-side errors (4xx/5xx) at `error` level.
+ *
+ * The Sentry `extra` payload includes:
+ *  - `retries`   — the configured maximum retry count
+ *  - `attempt`   — total attempts made (retries + 1), useful for
+ *                  distinguishing first-attempt failures from
+ *                  retry-exhausted failures in production dashboards
+ *  - `timeoutMs` — per-request timeout
+ *
  * @param endpoint - The URL to fetch (e.g., '/api/tts')
  * @param body - The request body (will be JSON-serialized)
  * @param options - Timeout, retries, and retry delay configuration
@@ -116,8 +130,9 @@ export async function apiRequest<T>(
   };
 
   let lastError: unknown;
+  let attempt = 0;
 
-  for (let attempt = 0; attempt <= retries; attempt++) {
+  for (; attempt <= retries; attempt++) {
     try {
       return await fetchWithTimeout<T>(endpoint, init, timeoutMs);
     } catch (error) {
@@ -129,6 +144,26 @@ export async function apiRequest<T>(
     }
   }
 
-  // Should never reach here, but satisfy TypeScript
+  // All attempts exhausted — report to Sentry before re-throwing.
+  // Network/timeout errors are expected in offline scenarios; use `warning`
+  // so they don't inflate the error rate. Server errors (4xx/5xx) use
+  // `error` as they indicate a real problem on the server side.
+  const isNetworkOrTimeout =
+    lastError instanceof TimeoutError ||
+    (lastError instanceof ApiError && lastError.status === 0);
+
+  Sentry.captureException(lastError, {
+    level: isNetworkOrTimeout ? 'warning' : 'error',
+    tags: { 'api.endpoint': endpoint },
+    extra: {
+      retries,
+      // `attempt` is the total number of attempts made (retries + 1).
+      // Including this lets engineers distinguish first-attempt failures
+      // from retry-exhausted failures in Sentry's issue detail view.
+      attempt,
+      timeoutMs,
+    },
+  });
+
   throw lastError ?? new ApiError("Unknown error", 0, endpoint);
 }
