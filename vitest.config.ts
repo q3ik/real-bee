@@ -28,8 +28,8 @@ export default defineConfig({
       // Exclude E2E spec files (integration tests) but allow helper unit tests
       "tests/e2e/**/*.spec.js",
       "**/*.e2e.{test,spec}.{js,jsx}",
-      // Phase 1: offline-sync imports idb/@/lib/sync/@/services/progressSync which don't exist yet
-      "src/test/integration/offline-sync.test.ts",
+      // offline-sync.test.ts is now re-enabled: it has been rewritten to use
+      // the real Dexie-based sync API surface and mocks Supabase/storage.
     ],
     // Fix #668: Use forks pool for process-level isolation between test files.
     // vmForks shares the vi.mock() registry within a worker, causing cross-file
