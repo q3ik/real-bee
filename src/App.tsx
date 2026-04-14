@@ -9,6 +9,7 @@ import Onboarding from "./components/Onboarding";
 import GameBoard from "./components/GameBoard";
 import MetricsBar from "./components/MetricsBar";
 import Settings from "./components/Settings";
+import PwaInstallPrompt from "./components/PwaInstallPrompt";
 import AdminFeedback from "./pages/admin/Feedback";
 
 export default function App() {
@@ -148,6 +149,9 @@ export default function App() {
           ⚠️ You&apos;re offline — game features may be limited
         </div>
       )}
+
+      {/* PWA Install Prompt */}
+      <PwaInstallPrompt />
 
       {view === "game" && (
         <MetricsBar onOpenSettings={() => setIsSettingsOpen(true)} />
