@@ -38,6 +38,13 @@ interface RetryEntry {
   uid: string;
   retryCount: number;
   lastAttempt: number;
+  /**
+   * Set to `true` after the first 'Sync max retries exceeded' Sentry event
+   * has been fired for this entry.  Prevents the same message from being
+   * re-emitted on every subsequent `syncPending()` call for records that
+   * are permanently stuck in the retry queue.
+   */
+  reportedMaxRetries?: boolean;
 }
 
 const RETRY_STORAGE_KEY = "real-bee-sync-retries";
@@ -156,16 +163,21 @@ export async function syncPending(): Promise<number> {
   for (const record of unsynced) {
     const retry = retryQueue.get(record.uid);
 
-    // Skip if max retries exceeded
+    // Skip if max retries exceeded.
+    // Only emit the Sentry event once per stuck record (reportedMaxRetries
+    // flag) to avoid flooding Sentry on every subsequent syncPending() call.
     if (retry && retry.retryCount >= MAX_SYNC_RETRIES) {
       console.warn("[sync] Max retries exceeded for", record.uid, "— skipping");
-      // Report max-retries-exceeded at error level — this means the user's
-      // progress will remain unsynced indefinitely and requires investigation.
-      Sentry.captureMessage('Sync max retries exceeded', {
-        level: 'error',
-        tags: { 'sync.type': 'progress' },
-        extra: { uid: record.uid, retryCount: retry.retryCount },
-      });
+      if (!retry.reportedMaxRetries) {
+        Sentry.captureMessage('Sync max retries exceeded', {
+          level: 'error',
+          tags: { 'sync.type': 'progress' },
+          extra: { uid: record.uid, retryCount: retry.retryCount },
+        });
+        // Persist the flag so future runs know the event was already sent.
+        retryQueue.set(record.uid, { ...retry, reportedMaxRetries: true });
+        saveRetryQueue(retryQueue);
+      }
       continue;
     }
 
@@ -184,10 +196,15 @@ export async function syncPending(): Promise<number> {
       retryQueue.delete(record.uid);
       syncedCount++;
     } else {
+      const newRetryCount = (retry?.retryCount ?? 0) + 1;
       retryQueue.set(record.uid, {
         uid: record.uid,
-        retryCount: (retry?.retryCount ?? 0) + 1,
+        retryCount: newRetryCount,
         lastAttempt: Date.now(),
+        // Preserve the reported flag if it was already set (shouldn't happen
+        // here since we only reach this branch when retryCount < MAX, but
+        // defensive programming).
+        reportedMaxRetries: retry?.reportedMaxRetries,
       });
     }
   }

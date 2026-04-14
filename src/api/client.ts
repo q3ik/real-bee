@@ -100,6 +100,13 @@ async function fetchWithTimeout<T>(
  * noise. Network errors (status 0) and timeouts are reported at `warning`
  * level; server-side errors (4xx/5xx) at `error` level.
  *
+ * The Sentry `extra` payload includes:
+ *  - `retries`   — the configured maximum retry count
+ *  - `attempt`   — total attempts made (retries + 1), useful for
+ *                  distinguishing first-attempt failures from
+ *                  retry-exhausted failures in production dashboards
+ *  - `timeoutMs` — per-request timeout
+ *
  * @param endpoint - The URL to fetch (e.g., '/api/tts')
  * @param body - The request body (will be JSON-serialized)
  * @param options - Timeout, retries, and retry delay configuration
@@ -123,8 +130,9 @@ export async function apiRequest<T>(
   };
 
   let lastError: unknown;
+  let attempt = 0;
 
-  for (let attempt = 0; attempt <= retries; attempt++) {
+  for (; attempt <= retries; attempt++) {
     try {
       return await fetchWithTimeout<T>(endpoint, init, timeoutMs);
     } catch (error) {
@@ -147,7 +155,14 @@ export async function apiRequest<T>(
   Sentry.captureException(lastError, {
     level: isNetworkOrTimeout ? 'warning' : 'error',
     tags: { 'api.endpoint': endpoint },
-    extra: { retries, timeoutMs },
+    extra: {
+      retries,
+      // `attempt` is the total number of attempts made (retries + 1).
+      // Including this lets engineers distinguish first-attempt failures
+      // from retry-exhausted failures in Sentry's issue detail view.
+      attempt,
+      timeoutMs,
+    },
   });
 
   throw lastError ?? new ApiError("Unknown error", 0, endpoint);
