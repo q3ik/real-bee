@@ -8,6 +8,7 @@ import {
   type SoundEffectType,
 } from "../constants/audio";
 import { audioSessionManager } from "./audioSessionManager";
+import { requestTTS } from "../api/ttsClient";
 
 /**
  * Audio playback manager for TTS and sound effects.
@@ -79,51 +80,52 @@ class AudioManager {
     const ctx = audioSessionManager.getContext();
     if (!ctx) throw new Error("AudioContext not available");
 
-    const response = await fetch("/api/gemini", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "tts", word: text }),
-    });
+    // Use the new typed API client which handles provider routing and fallbacks
+    const { audioBuffer, mimeType } = await requestTTS({ word: text });
 
-    if (!response.ok) {
-      throw new Error(`TTS worker responded with ${response.status}`);
-    }
+    if (audioBuffer.byteLength === 0) return;
 
-    const {
-      audio: base64Audio,
-      mimeType,
-      sampleRate = TTS_SAMPLE_RATE,
-    } = (await response.json()) as {
-      audio: string;
-      mimeType: string;
-      sampleRate?: number;
-    };
-
-    if (mimeType !== "audio/pcm") {
-      throw new Error(`Unexpected TTS audio format: ${mimeType}`);
-    }
-
-    if (base64Audio) {
-      const audioData = Uint8Array.from(atob(base64Audio), (c) =>
-        c.charCodeAt(0),
-      );
-      const int16Buffer = new Int16Array(audioData.buffer);
+    if (mimeType === "audio/mpeg") {
+      // ElevenLabs returns MP3 — decode via AudioContext
+      await this.playDecodedAudio(ctx, audioBuffer);
+    } else {
+      // Default: raw PCM (audio/pcm) — Int16 → Float32 conversion
+      const int16Buffer = new Int16Array(audioBuffer);
       const float32Buffer = new Float32Array(int16Buffer.length);
       for (let i = 0; i < int16Buffer.length; i++) {
         float32Buffer[i] = int16Buffer[i] / 32768;
       }
 
-      const audioBuffer = ctx.createBuffer(1, float32Buffer.length, sampleRate);
-      audioBuffer.getChannelData(0).set(float32Buffer);
+      const audioBufferObj = ctx.createBuffer(
+        1,
+        float32Buffer.length,
+        TTS_SAMPLE_RATE,
+      );
+      audioBufferObj.getChannelData(0).set(float32Buffer);
 
       return new Promise((resolve) => {
         const source = ctx.createBufferSource();
-        source.buffer = audioBuffer;
+        source.buffer = audioBufferObj;
         source.connect(ctx.destination);
         source.onended = () => resolve();
         source.start();
       });
     }
+  }
+
+  /** Decode and play an audio buffer (MP3, etc.) via AudioContext */
+  private async playDecodedAudio(
+    ctx: AudioContext,
+    buffer: ArrayBuffer,
+  ): Promise<void> {
+    const decoded = await ctx.decodeAudioData(buffer);
+    return new Promise((resolve) => {
+      const source = ctx.createBufferSource();
+      source.buffer = decoded;
+      source.connect(ctx.destination);
+      source.onended = () => resolve();
+      source.start();
+    });
   }
 
   private speakWebSpeech(text: string): Promise<void> {

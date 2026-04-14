@@ -1,0 +1,134 @@
+/**
+ * Base HTTP client with AbortController timeout, retries, and typed errors.
+ *
+ * All API requests should use `apiRequest` to benefit from:
+ *  - Automatic timeout via AbortController (configurable per-request)
+ *  - Retry logic with exponential backoff (configurable)
+ *  - Typed ApiError / TimeoutError on failures
+ *  - JSON request/response serialization
+ */
+
+import { ApiError, TimeoutError } from "./types";
+
+// ---------------------------------------------------------------------------
+// Configuration
+// ---------------------------------------------------------------------------
+
+export interface ApiRequestOptions {
+  /** Request timeout in milliseconds (default: 10_000) */
+  timeoutMs?: number;
+  /** Number of retry attempts on failure (default: 0) */
+  retries?: number;
+  /** Base delay between retries in ms (default: 1_000, doubled each retry) */
+  retryDelayMs?: number;
+}
+
+const DEFAULT_TIMEOUT_MS = 10_000;
+const DEFAULT_RETRIES = 0;
+const DEFAULT_RETRY_DELAY_MS = 1_000;
+
+// ---------------------------------------------------------------------------
+// Internal Helpers
+// ---------------------------------------------------------------------------
+
+/** Sleep for a given number of milliseconds */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Execute a single fetch request with an AbortController timeout.
+ * Throws TimeoutError if the request exceeds the timeout.
+ * Throws ApiError for non-2xx responses.
+ */
+async function fetchWithTimeout<T>(
+  endpoint: string,
+  init: RequestInit,
+  timeoutMs: number,
+): Promise<T> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(endpoint, {
+      ...init,
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      let message = `API error: ${response.status}`;
+      try {
+        const body = (await response.json()) as { error?: string };
+        if (body.error) message = body.error;
+      } catch {
+        // Ignore JSON parse failures — status code is enough
+      }
+      throw new ApiError(message, response.status, endpoint);
+    }
+
+    return response.json() as Promise<T>;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new TimeoutError(endpoint, timeoutMs, error);
+    }
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    // Network errors, DNS failures, etc.
+    throw new ApiError(
+      `Network error: ${(error as Error).message}`,
+      0,
+      endpoint,
+      error,
+    );
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+/**
+ * Make an API request with timeout, optional retries, and typed errors.
+ *
+ * @param endpoint - The URL to fetch (e.g., '/api/tts')
+ * @param body - The request body (will be JSON-serialized)
+ * @param options - Timeout, retries, and retry delay configuration
+ * @returns Parsed JSON response
+ * @throws {ApiError} On non-2xx responses or network failures
+ * @throws {TimeoutError} When the request exceeds the timeout
+ */
+export async function apiRequest<T>(
+  endpoint: string,
+  body: unknown,
+  options: ApiRequestOptions = {},
+): Promise<T> {
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const retries = options.retries ?? DEFAULT_RETRIES;
+  const retryDelayMs = options.retryDelayMs ?? DEFAULT_RETRY_DELAY_MS;
+
+  const init: RequestInit = {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  };
+
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fetchWithTimeout<T>(endpoint, init, timeoutMs);
+    } catch (error) {
+      lastError = error;
+      if (attempt < retries) {
+        const delay = retryDelayMs * 2 ** attempt;
+        await sleep(delay);
+      }
+    }
+  }
+
+  // Should never reach here, but satisfy TypeScript
+  throw lastError ?? new ApiError("Unknown error", 0, endpoint);
+}
