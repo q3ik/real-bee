@@ -79,13 +79,17 @@ export default function App() {
   );
 
   const handleStart = () => {
-    // Transition to game view immediately for responsiveness, then start the
-    // session. Any word-loading failure is handled inside startSession() itself
-    // (useGameState.wrappedStartSession restores to lobby on error).
-    setView("game");
-    void startSession().catch((err: unknown) => {
-      console.warn("[App] handleStart: startSession failed", err);
-    });
+    // setView('game') is intentionally placed inside .then() so the view
+    // transition only happens after the session is ready (currentWord set).
+    // On failure, wrappedStartSession restores gameStatus to 'lobby' and we
+    // stay on the onboarding screen — no broken empty-game view (QA fix #4).
+    void startSession()
+      .then(() => {
+        setView("game");
+      })
+      .catch((err: unknown) => {
+        console.warn("[App] handleStart: startSession failed", err);
+      });
   };
 
   const handleDebugSubmit = useCallback(async () => {

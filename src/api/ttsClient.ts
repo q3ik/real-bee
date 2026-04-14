@@ -7,6 +7,8 @@
  *
  * If the primary provider fails, falls back to browser speechSynthesis
  * which returns an empty ArrayBuffer (audio is played natively).
+ * A 'tts-unavailable' CustomEvent is dispatched on window so the UI can
+ * surface a visible indicator rather than silently producing no audio (QA fix #5).
  */
 
 import { apiRequest } from "./client";
@@ -64,6 +66,21 @@ function speakBrowserFallback(text: string): Promise<ArrayBuffer> {
   });
 }
 
+/**
+ * Dispatch a 'tts-unavailable' event on window so UI components can
+ * react (e.g. show a banner) without polling or prop-drilling.
+ * No-op in non-browser environments.
+ */
+function notifyTtsUnavailable(provider: string, reason: string): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent("tts-unavailable", {
+      detail: { provider, reason },
+      bubbles: false,
+    }),
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -94,10 +111,19 @@ export async function requestTTS(request: TtsRequest): Promise<ArrayBuffer> {
     // Log the primary provider failure for debugging
     const errorMsg = (error as Error)?.message ?? String(error);
     if (
-      !(errorMsg.includes("429") || errorMsg.includes("quota") || errorMsg.includes("Failed to fetch") || errorMsg.includes("NetworkError"))
+      !(
+        errorMsg.includes("429") ||
+        errorMsg.includes("quota") ||
+        errorMsg.includes("Failed to fetch") ||
+        errorMsg.includes("NetworkError")
+      )
     ) {
       console.warn(`[TTS] Primary provider (${provider}) failed:`, errorMsg);
     }
+
+    // Notify the UI that TTS is unavailable so it can surface a visible
+    // indicator instead of silently playing nothing (QA fix #5).
+    notifyTtsUnavailable(provider, errorMsg);
 
     // Fall back to browser speechSynthesis
     return speakBrowserFallback(request.word);
