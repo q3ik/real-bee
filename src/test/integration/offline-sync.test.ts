@@ -66,7 +66,16 @@ function makeProgress(uid: string, overrides?: Partial<LocalUserProgress>): Loca
 // ---------------------------------------------------------------------------
 describe("Integration: Offline Sync Flow", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    // vi.resetAllMocks() drains mockResolvedValueOnce queues in addition to
+    // clearing call history. Using clearAllMocks() alone allows unconsumed
+    // queued return values to bleed into the next test (QA fix #5 / #1).
+    vi.resetAllMocks();
+
+    // lib/sync.ts persists a retry queue to localStorage under
+    // RETRY_STORAGE_KEY. Stale entries carry over between tests and cause
+    // syncPending to skip records that are still within the backoff window,
+    // making tests pass for the wrong reason (QA fix #2).
+    localStorage.clear();
   });
 
   describe("getPendingCount", () => {
@@ -111,7 +120,12 @@ describe("Integration: Offline Sync Flow", () => {
 
       expect(mockUpsert).toHaveBeenCalledOnce();
       expect(mockMarkProgressSynced).toHaveBeenCalledWith([uid]);
+      // getUnsyncedProgress must have been called exactly twice:
+      // once inside syncPending and once inside syncUserProgress after sync.
+      // If the call count changes this assertion will catch the ordering regression (QA fix #1).
+      expect(mockGetUnsyncedProgress).toHaveBeenCalledTimes(2);
       expect(result.progressSynced).toBe(1);
+      expect(result.sessionsSynced).toBe(0); // hardcoded no-op — assert so regressions are caught (QA fix #4)
       expect(result.totalPending).toBe(0);
     });
 
@@ -130,6 +144,7 @@ describe("Integration: Offline Sync Flow", () => {
       expect(mockUpsert).not.toHaveBeenCalled();
       expect(mockMarkProgressSynced).not.toHaveBeenCalled();
       expect(result.progressSynced).toBe(0);
+      expect(result.sessionsSynced).toBe(0);
       // The offline row is still pending
       expect(result.totalPending).toBe(1);
     });
@@ -144,6 +159,27 @@ describe("Integration: Offline Sync Flow", () => {
 
       expect(mockUpsert).not.toHaveBeenCalled();
       expect(result.progressSynced).toBe(0);
+      expect(result.sessionsSynced).toBe(0);
+    });
+
+    it("returns zero synced when getUser returns an error (QA fix #3)", async () => {
+      // Covers the path where auth check itself fails — distinct from user: null.
+      // syncPending destructures only `data.user`, so an error object in the
+      // response must not cause a throw; user will be undefined/null and the
+      // function must exit cleanly with progressSynced: 0.
+      mockGetUser.mockResolvedValue({
+        data: { user: null },
+        error: { message: "network error during auth check" },
+      });
+      mockGetUnsyncedProgress.mockResolvedValue([]);
+      mockGetUnsyncedSessions.mockResolvedValue([]);
+
+      const { syncUserProgress } = await import("@/services/progressSync");
+      const result = await syncUserProgress();
+
+      expect(mockUpsert).not.toHaveBeenCalled();
+      expect(result.progressSynced).toBe(0);
+      expect(result.sessionsSynced).toBe(0);
     });
 
     it("leaves row unsynced and records retry entry when Supabase upsert fails", async () => {
@@ -161,6 +197,7 @@ describe("Integration: Offline Sync Flow", () => {
 
       expect(mockMarkProgressSynced).not.toHaveBeenCalled();
       expect(result.progressSynced).toBe(0);
+      expect(result.sessionsSynced).toBe(0);
       expect(result.totalPending).toBe(1);
     });
   });
@@ -183,6 +220,7 @@ describe("Integration: Offline Sync Flow", () => {
 
       expect(result).not.toBeNull();
       expect(result?.progressSynced).toBe(0);
+      expect(result?.sessionsSynced).toBe(0);
     });
   });
 
