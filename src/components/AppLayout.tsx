@@ -38,25 +38,24 @@ export default function AppLayout({
   const { submitReport, isSubmitting, isSubmitted, submitError, reset } =
     useDiagnosticsBugReport({ feature: "App" });
 
-  const initialLoadDone = useRef(false);
+  // Track the last user ID we've synced so we only re-run when identity
+  // actually changes, not on every render where isLoading flips.
+  const syncedUserIdRef = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
-    if (isLoading || initialLoadDone.current) return;
-    initialLoadDone.current = true;
-    void loadProgress();
-  }, [isLoading, loadProgress]);
-
-  useEffect(() => {
+    // Wait for auth to finish initialising before touching the store.
     if (isLoading) return;
 
-    if (user) {
-      setUserId(user.id);
-    } else {
-      setUserId(null);
-    }
+    const incomingId = user?.id ?? null;
 
+    // Skip if we already synced this exact identity (covers both the initial
+    // mount and any re-renders that don't change the user).
+    if (syncedUserIdRef.current === incomingId) return;
+
+    syncedUserIdRef.current = incomingId;
+    setUserId(incomingId);
     void loadProgress();
-  }, [user, isLoading, loadProgress, setUserId]);
+  }, [isLoading, user?.id, setUserId, loadProgress]);
 
   useKeyboardShortcut(
     "D",

@@ -267,7 +267,9 @@ export default function LeaderboardPage() {
                           <span className={`font-black ${rankColor(idx + 1)}`}>#{idx + 1}</span>
                           <div className="min-w-0">
                             <p className="font-semibold text-gray-800 truncate">{entry.name}</p>
-                            <p className="text-xs text-gray-500 truncate">{entry.uid}</p>
+                            {user?.id === entry.uid && (
+                              <p className="text-xs text-gray-500">Your account</p>
+                            )}
                           </div>
                           <div className="text-right">
                             <p className="font-black text-orange-600">{entry.score}</p>

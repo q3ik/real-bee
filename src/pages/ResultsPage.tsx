@@ -13,8 +13,6 @@ export default function ResultsPage() {
     sessionCompleted,
   } = useGameStore();
 
-  const hasCompletedSession = sessionCompleted;
-
   const handlePlayAgain = async () => {
     try {
       await startSession();
@@ -29,7 +27,7 @@ export default function ResultsPage() {
     navigate("/");
   };
 
-  if (!hasCompletedSession) {
+  if (!sessionCompleted) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center space-y-6">
         <div className="p-6 bg-orange-100 rounded-full">
