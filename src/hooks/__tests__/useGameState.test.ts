@@ -55,6 +55,7 @@ vi.mock("../../lib/supabase", () => ({
 }));
 
 vi.mock("../../lib/db", () => ({
+  saveGameSession: vi.fn().mockResolvedValue(1),
   localDb: {
     progress: {
       put: vi.fn().mockResolvedValue(1),
