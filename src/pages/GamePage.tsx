@@ -21,7 +21,7 @@ import Settings from "../components/Settings";
  */
 export default function GamePage() {
   const navigate = useNavigate();
-  const { phase, currentWord } = useGameStore();
+  const { phase, currentWord, roundsPlayed, sessionBaseline } = useGameStore();
   const isOnline = useOnlineStatus();
   const { user } = useAuth();
 
@@ -32,16 +32,17 @@ export default function GamePage() {
   const { submitReport, isSubmitting, isSubmitted, submitError, reset } =
     useDiagnosticsBugReport({ feature: "GamePage" });
 
-  // Guard: if the session is idle and there is no current word the player
-  // navigated here directly without starting a session — send them home.
+  // Guard: if there is no active word while idle, route based on whether
+  // a session was actually completed in this run.
   const hasRedirected = useRef(false);
   useEffect(() => {
     if (hasRedirected.current) return;
     if (phase === "idle" && !currentWord) {
       hasRedirected.current = true;
-      void navigate("/", { replace: true });
+      const sessionCompleted = roundsPlayed > sessionBaseline.roundsPlayed;
+      void navigate(sessionCompleted ? "/results" : "/", { replace: true });
     }
-  }, [phase, currentWord, navigate]);
+  }, [phase, currentWord, roundsPlayed, sessionBaseline, navigate]);
 
   // Global Ctrl+Shift+D shortcut — toggles the hidden debug/bug-report panel.
   useKeyboardShortcut(
@@ -147,7 +148,9 @@ export default function GamePage() {
 
             {isSubmitted ? (
               <div className="text-center space-y-3 py-4">
-                <p className="text-green-600 font-bold text-lg">✅ Report sent!</p>
+                <p className="text-green-600 font-bold text-lg">
+                  ✅ Report sent!
+                </p>
                 <p className="text-gray-500 text-sm">
                   Diagnostics have been captured and forwarded.
                 </p>
@@ -161,9 +164,9 @@ export default function GamePage() {
             ) : (
               <>
                 <p className="text-gray-500 text-sm">
-                  Describe what went wrong (optional). A snapshot of the
-                  current session — score, streak, phase, difficulty — will be
-                  included with the report.
+                  Describe what went wrong (optional). A snapshot of the current
+                  session — score, streak, phase, difficulty — will be included
+                  with the report.
                 </p>
                 <textarea
                   value={debugDescription}
