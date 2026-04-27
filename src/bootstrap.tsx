@@ -1,5 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import App from "./App.tsx";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -12,9 +13,11 @@ import "./styles/mobile-modal-fixes.css";
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErrorBoundary>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </BrowserRouter>
     </ErrorBoundary>
   </StrictMode>,
 );
@@ -25,8 +28,8 @@ createRoot(document.getElementById("root")!).render(
 if (import.meta.env.PROD) {
   window.addEventListener("load", () => {
     if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
-      void import("./lib/serviceWorker").then(({ registerServiceWorker }) => {
-        void registerServiceWorker();
+      void import("./lib/serviceWorker").then(({ registerServiceWorker: reg }) => {
+        void reg();
       });
     }
   });
