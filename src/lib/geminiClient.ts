@@ -12,6 +12,8 @@
  *   const hint  = await gemini.hint({ word: 'elephant', type: 'definition' });
  */
 
+import { Sentry } from './sentry';
+
 const PROXY_URL = '/api/gemini';
 
 // ---------------------------------------------------------------------------
@@ -62,12 +64,36 @@ async function post<TReq, TRes>(
   action: 'tts' | 'stt' | 'hint',
   payload: TReq,
 ): Promise<TRes> {
-  const res = await fetch(PROXY_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, ...payload }),
-  });
+  let res: Response;
 
+  // -------------------------------------------------------------------------
+  // Network-level errors (offline / DNS failure / worker unreachable)
+  // fetch() rejects before we ever have a Response object.  These are the
+  // most common real-world failure mode and must be captured separately from
+  // the !res.ok branch below which handles HTTP 4xx/5xx responses.
+  // -------------------------------------------------------------------------
+  try {
+    res = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, ...payload }),
+    });
+  } catch (networkError) {
+    Sentry.captureException(networkError, {
+      level: 'warning',
+      tags: {
+        'gemini.action': action,
+        // status '0' mirrors the convention used in apiRequest and makes
+        // Sentry filters consistent across both clients.
+        'gemini.status': '0',
+      },
+    });
+    throw networkError;
+  }
+
+  // -------------------------------------------------------------------------
+  // HTTP error responses (4xx / 5xx)
+  // -------------------------------------------------------------------------
   if (!res.ok) {
     let message = `Gemini proxy error: ${res.status}`;
     try {
@@ -76,7 +102,13 @@ async function post<TReq, TRes>(
     } catch {
       // ignore parse failures — the status code is enough
     }
-    throw new Error(message);
+    const error = new Error(message);
+    // 4xx/5xx are genuine server/config errors — always use 'error' level.
+    Sentry.captureException(error, {
+      level: 'error',
+      tags: { 'gemini.action': action, 'gemini.status': String(res.status) },
+    });
+    throw error;
   }
 
   return res.json() as Promise<TRes>;

@@ -9,6 +9,7 @@ import {
 } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { Sentry } from '../lib/sentry';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -44,6 +45,23 @@ export interface AuthProviderProps {
 }
 
 /**
+ * Synchronise Sentry's user identity with the current Supabase session.
+ *
+ * Called whenever auth state changes so every subsequent Sentry event is
+ * tagged with the correct user id and email.
+ */
+function syncSentryUser(session: Session | null): void {
+  if (session?.user) {
+    Sentry.setUser({
+      id: session.user.id,
+      email: session.user.email,
+    });
+  } else {
+    Sentry.setUser(null);
+  }
+}
+
+/**
  * Auth context provider — wraps the app and manages Supabase auth state.
  *
  * Exposes user, session, isLoading, and sign-in/out methods via `useAuth()`.
@@ -75,9 +93,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (!cancelled) {
           setSession(initialSession);
           setUser(initialSession?.user ?? null);
+          syncSentryUser(initialSession);
         }
       } catch (error: unknown) {
         console.error('[Auth] Failed to retrieve initial session:', error);
+        Sentry.captureException(error, {
+          tags: { 'auth.action': 'getSession' },
+        });
       } finally {
         if (!cancelled) {
           setIsLoading(false);
@@ -93,6 +115,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setSession(newSession);
         setUser(newSession?.user ?? null);
         setIsLoading(false);
+        syncSentryUser(newSession);
       }
     });
 
@@ -120,6 +143,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
     } catch (error: unknown) {
       console.error('[Auth] Google Sign-In failed:', error);
+      Sentry.captureException(error, {
+        tags: { 'auth.action': 'signInWithGoogle' },
+      });
     }
   }, []);
 
@@ -129,6 +155,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await supabase.auth.signOut();
     } catch (error: unknown) {
       console.error('[Auth] Sign-out failed:', error);
+      Sentry.captureException(error, {
+        tags: { 'auth.action': 'signOut' },
+      });
     }
   }, []);
 

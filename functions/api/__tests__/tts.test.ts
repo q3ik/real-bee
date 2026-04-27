@@ -1,18 +1,21 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { onRequestPost } from '../tts.js';
-import type { Env, PagesContext } from '../../types.js';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { onRequestPost } from "../tts.js";
+import type { Env, PagesContext } from "../../types.js";
 
 const mockEnv: Env = {
   DB: {} as unknown as D1Database,
-  GEMINI_API_KEY: 'test-key',
-  ALLOWED_ORIGINS: 'http://localhost:5173',
+  GEMINI_API_KEY: "test-key",
+  ALLOWED_ORIGINS: "http://localhost:5173",
 };
 
-function makeContext(body: unknown, origin = 'http://localhost:5173'): PagesContext {
+function makeContext(
+  body: unknown,
+  origin = "http://localhost:5173",
+): PagesContext {
   return {
-    request: new Request('http://localhost/api/tts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', origin },
+    request: new Request("http://localhost/api/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", origin },
       body: JSON.stringify(body),
     }),
     env: mockEnv,
@@ -21,118 +24,196 @@ function makeContext(body: unknown, origin = 'http://localhost:5173'): PagesCont
   } as unknown as PagesContext;
 }
 
-describe('POST /api/tts', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+describe("POST /api/tts", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.unstubAllGlobals();
+  });
 
-  it('returns 400 for missing word', async () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("returns 400 for missing word", async () => {
     const res = await onRequestPost(makeContext({}));
     expect(res.status).toBe(400);
-    const body = await res.json() as { error: string };
+    const body = (await res.json()) as { error: string };
     expect(body.error).toMatch(/word/i);
   });
 
-  it('returns 400 for word exceeding 200 chars', async () => {
-    const res = await onRequestPost(makeContext({ word: 'a'.repeat(201) }));
+  it("returns 400 for word exceeding 500 chars", async () => {
+    const res = await onRequestPost(makeContext({ word: "a".repeat(501) }));
     expect(res.status).toBe(400);
-    const body = await res.json() as { error: string };
-    expect(body.error).toMatch(/200/);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toMatch(/500/);
   });
 
-  it('returns 400 for invalid voice', async () => {
-    const res = await onRequestPost(makeContext({ word: 'apple', voice: 'unknown-voice' }));
+  it("returns 400 for invalid voice (Gemini provider)", async () => {
+    const res = await onRequestPost(
+      makeContext({ word: "apple", voice: "unknown-voice" }),
+    );
     expect(res.status).toBe(400);
-    const body = await res.json() as { error: string };
+    const body = (await res.json()) as { error: string };
     expect(body.error).toMatch(/voice/i);
   });
 
-  it('returns 503 when GEMINI_API_KEY is missing', async () => {
-    const context = makeContext({ word: 'apple' });
-    (context as unknown as { env: Env }).env = { ...mockEnv, GEMINI_API_KEY: '' };
+  it("does not validate voice when ElevenLabs provider is selected", async () => {
+    // ElevenLabs doesn't use Gemini voices — invalid voice should not cause 400
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        arrayBuffer: async () => new ArrayBuffer(10),
+      }),
+    );
+
+    const context = makeContext({ word: "apple", voice: "not-a-gemini-voice" });
+    (context as unknown as { env: Env }).env = {
+      ...mockEnv,
+      TTS_PROVIDER: "elevenlabs",
+      ELEVENLABS_API_KEY: "eleven-key",
+    };
+
+    const res = await onRequestPost(context);
+    expect(res.status).toBe(200);
+    vi.unstubAllGlobals();
+  });
+
+  it("returns 503 when GEMINI_API_KEY is missing and Gemini is selected", async () => {
+    const context = makeContext({ word: "apple" });
+    (context as unknown as { env: Env }).env = {
+      ...mockEnv,
+      GEMINI_API_KEY: "",
+    };
     const res = await onRequestPost(context);
     expect(res.status).toBe(503);
   });
 
-  it('returns 403 for disallowed origin', async () => {
-    const res = await onRequestPost(makeContext({ word: 'apple' }, 'https://evil.com'));
+  it("returns 503 when ELEVENLABS_API_KEY is missing and ElevenLabs is selected", async () => {
+    const context = makeContext({ word: "apple" });
+    (context as unknown as { env: Env }).env = {
+      ...mockEnv,
+      TTS_PROVIDER: "elevenlabs",
+      ELEVENLABS_API_KEY: "",
+    };
+    const res = await onRequestPost(context);
+    expect(res.status).toBe(503);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toMatch(/ElevenLabs/i);
+  });
+
+  it("returns 403 for disallowed origin", async () => {
+    const res = await onRequestPost(
+      makeContext({ word: "apple" }, "https://evil.com"),
+    );
     expect(res.status).toBe(403);
   });
 
-  it('returns { audio, mimeType, sampleRate } for valid audio/pcm response', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        candidates: [{
-          content: { parts: [{ inlineData: { data: 'AAAA', mimeType: 'audio/pcm' } }] },
-        }],
+  it("returns { audio, mimeType, sampleRate } for valid audio/pcm response", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  { inlineData: { data: "AAAA", mimeType: "audio/pcm" } },
+                ],
+              },
+            },
+          ],
+        }),
       }),
-    }));
+    );
 
-    const res = await onRequestPost(makeContext({ word: 'apple' }));
+    const res = await onRequestPost(makeContext({ word: "apple" }));
     expect(res.status).toBe(200);
-    const body = await res.json() as { audio: string; mimeType: string; sampleRate: number };
-    expect(body.audio).toBe('AAAA');
-    expect(body.mimeType).toBe('audio/pcm');
+    const body = (await res.json()) as {
+      audio: string;
+      mimeType: string;
+      sampleRate: number;
+    };
+    expect(body.audio).toBe("AAAA");
+    expect(body.mimeType).toBe("audio/pcm");
     expect(body.sampleRate).toBe(24000);
 
     vi.unstubAllGlobals();
   });
 
-  it('returns 500 when Gemini returns a non-pcm mimeType', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        candidates: [{
-          content: { parts: [{ inlineData: { data: 'AAAA', mimeType: 'audio/wav' } }] },
-        }],
+  it("returns 500 when Gemini returns a non-pcm mimeType", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  { inlineData: { data: "AAAA", mimeType: "audio/wav" } },
+                ],
+              },
+            },
+          ],
+        }),
       }),
-    }));
+    );
 
-    const res = await onRequestPost(makeContext({ word: 'apple' }));
+    const res = await onRequestPost(makeContext({ word: "apple" }));
     expect(res.status).toBe(500);
 
     vi.unstubAllGlobals();
   });
 
-  it('returns 500 when Gemini API returns non-ok response', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: false,
-      status: 503,
-      text: async () => 'Service unavailable',
-    }));
+  it("returns 500 when Gemini API returns non-ok response", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 503,
+        text: async () => "Service unavailable",
+      }),
+    );
 
-    const res = await onRequestPost(makeContext({ word: 'apple' }));
+    const res = await onRequestPost(makeContext({ word: "apple" }));
     expect(res.status).toBe(500);
-
-    vi.unstubAllGlobals();
   });
 
-  it('returns 400 for word containing only whitespace', async () => {
-    const res = await onRequestPost(makeContext({ word: '   ' }));
+  it("returns 400 for word containing only whitespace", async () => {
+    const res = await onRequestPost(makeContext({ word: "   " }));
     expect(res.status).toBe(400);
-    const body = await res.json() as { error: string };
+    const body = (await res.json()) as { error: string };
     expect(body.error).toMatch(/word/i);
   });
 
-  it('returns 500 when Gemini response has no audio data', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        candidates: [{ content: { parts: [{}] } }],
+  it("returns 500 when Gemini response has no audio data", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          candidates: [{ content: { parts: [{}] } }],
+        }),
       }),
-    }));
+    );
 
-    const res = await onRequestPost(makeContext({ word: 'apple' }));
+    const res = await onRequestPost(makeContext({ word: "apple" }));
     expect(res.status).toBe(500);
 
     vi.unstubAllGlobals();
   });
 
-  it('returns 400 for invalid JSON body', async () => {
+  it("returns 400 for invalid JSON body", async () => {
     const context = {
-      request: new Request('http://localhost/api/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', origin: 'http://localhost:5173' },
-        body: 'not-json',
+      request: new Request("http://localhost/api/tts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          origin: "http://localhost:5173",
+        },
+        body: "not-json",
       }),
       env: mockEnv,
       next: vi.fn(),
@@ -140,5 +221,160 @@ describe('POST /api/tts', () => {
     } as unknown as PagesContext;
     const res = await onRequestPost(context);
     expect(res.status).toBe(400);
+  });
+
+  // ── ElevenLabs provider tests ─────────────────────────────────────────────
+
+  it("calls ElevenLabs endpoint with correct URL and xi-api-key header", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      arrayBuffer: async () => {
+        const buf = new ArrayBuffer(10);
+        new Uint8Array(buf).set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        return buf;
+      },
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const context = makeContext({ word: "hello" });
+    (context as unknown as { env: Env }).env = {
+      ...mockEnv,
+      TTS_PROVIDER: "elevenlabs",
+      ELEVENLABS_API_KEY: "test-elevenlabs-key",
+    };
+
+    const res = await onRequestPost(context);
+    expect(res.status).toBe(200);
+
+    const body = (await res.json()) as {
+      audio: string;
+      mimeType: string;
+      sampleRate: number;
+    };
+    expect(body.mimeType).toBe("audio/mpeg");
+    expect(body.sampleRate).toBe(44100);
+
+    // Assert correct ElevenLabs URL and header
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining("/v1/text-to-speech/"),
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          "xi-api-key": "test-elevenlabs-key",
+        }),
+      }),
+    );
+
+    vi.unstubAllGlobals();
+  });
+
+  it("uses eleven_flash_v2_5 model for ElevenLabs", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      arrayBuffer: async () => new ArrayBuffer(10),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const context = makeContext({ word: "test" });
+    (context as unknown as { env: Env }).env = {
+      ...mockEnv,
+      TTS_PROVIDER: "elevenlabs",
+      ELEVENLABS_API_KEY: "key",
+    };
+
+    await onRequestPost(context);
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        body: JSON.stringify({
+          text: "test",
+          model_id: "eleven_flash_v2_5",
+          output_format: "mp3_44100_128",
+        }),
+      }),
+    );
+
+    vi.unstubAllGlobals();
+  });
+
+  it("encodes large ElevenLabs buffer without RangeError (chunked base64)", async () => {
+    // Simulate a buffer larger than the 0x8000-byte chunk threshold.
+    // The spread-based encoder would throw RangeError; the chunked one must not.
+    const LARGE_SIZE = 0x8000 * 4; // 4 × chunk size = 131 072 bytes
+    const largeBuf = new ArrayBuffer(LARGE_SIZE);
+    new Uint8Array(largeBuf).fill(0xab); // non-zero fill to exercise encoding
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      arrayBuffer: async () => largeBuf,
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const context = makeContext({ word: "elephant" });
+    (context as unknown as { env: Env }).env = {
+      ...mockEnv,
+      TTS_PROVIDER: "elevenlabs",
+      ELEVENLABS_API_KEY: "key",
+    };
+
+    const res = await onRequestPost(context);
+    expect(res.status).toBe(200);
+
+    const body = (await res.json()) as { audio: string; mimeType: string };
+    // Result must be valid base64 (no padding errors, decodable)
+    expect(() => atob(body.audio)).not.toThrow();
+    expect(body.mimeType).toBe("audio/mpeg");
+
+    vi.unstubAllGlobals();
+  });
+
+  // ── env.TTS_PROVIDER validation tests ────────────────────────────────────
+
+  it("returns 503 when env.TTS_PROVIDER is set to an unrecognised value", async () => {
+    const context = makeContext({ word: "apple" });
+    (context as unknown as { env: Env }).env = {
+      ...mockEnv,
+      TTS_PROVIDER: "unknown-provider",
+    };
+    const res = await onRequestPost(context);
+    expect(res.status).toBe(503);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toMatch(/misconfiguration/i);
+    expect(body.error).toMatch(/TTS_PROVIDER/i);
+  });
+
+  it("falls through to client hint when env.TTS_PROVIDER is an empty string", async () => {
+    // Empty env value → treat as unset → client hint 'gemini' takes effect.
+    // GEMINI_API_KEY is present so the Gemini path will be exercised.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          candidates: [
+            {
+              content: {
+                parts: [{ inlineData: { data: "AAAA", mimeType: "audio/pcm" } }],
+              },
+            },
+          ],
+        }),
+      }),
+    );
+
+    const context = makeContext({ word: "apple", provider: "gemini" });
+    (context as unknown as { env: Env }).env = {
+      ...mockEnv,
+      TTS_PROVIDER: "", // empty — must be treated as unset
+      GEMINI_API_KEY: "test-key",
+    };
+
+    const res = await onRequestPost(context);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { mimeType: string };
+    expect(body.mimeType).toBe("audio/pcm");
+
+    vi.unstubAllGlobals();
   });
 });

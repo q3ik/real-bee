@@ -13,15 +13,14 @@
     "allowJs": true,
     "jsx": "react-jsx",
     "paths": {
-      "@/*": ["./src/*"],
+      "@/*": ["./src/*"]
     },
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
-    "noEmit": true,
+    "noEmit": true
   },
   "exclude": [
     "node_modules",
-    "dist",
-    "src/test/integration/offline-sync.test.ts",
-  ],
+    "dist"
+  ]
 }

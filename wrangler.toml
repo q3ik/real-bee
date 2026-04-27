@@ -10,10 +10,16 @@ binding = "DB"
 database_name = "real-bee-db"
 migrations_dir = "migrations/d1"
 
+# Cloudflare AI binding for Whisper STT
+[ai]
+binding = "AI"
+
 [vars]
 # Comma-separated allowed origins for CORS. Empty = use defaults.
 ALLOWED_ORIGINS = ""
 
 # Secrets (never in wrangler.toml — set via `wrangler secret put`):
 #   GEMINI_API_KEY
+#   ELEVENLABS_API_KEY
+#   DEEPGRAM_API_KEY
 #   SENTRY_DSN

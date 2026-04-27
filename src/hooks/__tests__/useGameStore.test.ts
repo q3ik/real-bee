@@ -32,8 +32,8 @@ vi.mock("../../lib/db", () => ({
   },
 }));
 
-vi.mock("../../lib/wordList", () => ({
-  getWordsForConfig: vi.fn().mockReturnValue([
+vi.mock("../../lib/wordLoader", () => ({
+  getWordsForConfigAsync: vi.fn().mockResolvedValue([
     {
       word: "cat",
       definition: "A small furry animal.",
@@ -49,7 +49,7 @@ vi.mock("../../lib/wordList", () => ({
       difficulty: "easy",
     },
   ]),
-  WORD_LIST: [
+  loadWordsForGrade: vi.fn().mockResolvedValue([
     {
       word: "cat",
       definition: "A small furry animal.",
@@ -64,7 +64,12 @@ vi.mock("../../lib/wordList", () => ({
       grade: 1,
       difficulty: "easy",
     },
-  ],
+  ]),
+  clearWordCache: vi.fn(),
+  isGradeLoaded: vi.fn().mockReturnValue(false),
+  getCachedGrades: vi.fn().mockReturnValue([]),
+  VALID_GRADES: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const,
+  WordLoaderError: class WordLoaderError extends Error {},
 }));
 
 describe("useGameStore", () => {
@@ -97,7 +102,7 @@ describe("useGameStore", () => {
     await store.loadProgress();
 
     // Start a session (mocked word list ensures we get words)
-    store.startSession();
+    await store.startSession();
     const currentState = useGameStore.getState();
     expect(currentState.currentWord).toBeDefined();
     expect(currentState.phase).toBe("playing");
@@ -117,7 +122,7 @@ describe("useGameStore", () => {
     const { useGameStore } = await import("../useGameStore");
     const store = useGameStore.getState();
 
-    store.startSession();
+    await store.startSession();
     const state = useGameStore.getState();
     expect(state.phase).toBe("playing");
     expect(state.currentWord).not.toBeNull();
@@ -127,7 +132,7 @@ describe("useGameStore", () => {
     const { useGameStore } = await import("../useGameStore");
     const store = useGameStore.getState();
 
-    store.startSession();
+    await store.startSession();
     store.restartGame();
     const state = useGameStore.getState();
 
@@ -141,7 +146,7 @@ describe("useGameStore", () => {
     const { useGameStore } = await import("../useGameStore");
     const store = useGameStore.getState();
 
-    store.startSession();
+    await store.startSession();
     const before = useGameStore.getState();
     expect(before.phase).toBe("playing");
 
