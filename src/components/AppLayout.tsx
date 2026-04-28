@@ -116,7 +116,7 @@ export default function AppLayout({
   return (
     <div className="min-h-screen bg-linear-to-br from-orange-50/50 to-white font-sans selection:bg-orange-200 selection:text-orange-900">
       {!isOnline && (
-        <div className="fixed top-0 left-0 right-0 z-100 bg-red-500 text-white text-center py-2 text-sm font-bold tracking-wide shadow-md">
+        <div className="fixed top-0 left-0 right-0 z-[100] bg-red-500 text-white text-center py-2 text-sm font-bold tracking-wide shadow-md">
           ⚠️ You&apos;re offline — game features may be limited
         </div>
       )}
