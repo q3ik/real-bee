@@ -1,29 +1,36 @@
+
+// TODO: Fix - POSSIBLY broken by merge conflict resolution
+
 import { useEffect, useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGameStore } from "../hooks/useGameStore";
 import { useOnlineStatus } from "../hooks/useOnlineStatus";
 import { useDiagnosticsBugReport } from "../hooks/useDiagnosticsBugReport";
 import { useKeyboardShortcut } from "../hooks/useKeyboardShortcut";
-import { useAuth } from "../contexts/AuthContext";
 import GameBoard from "../components/GameBoard";
 import MetricsBar from "../components/MetricsBar";
 import Settings from "../components/Settings";
+import DebugReportPanel from "../components/DebugReportPanel";
 
 /**
  * GamePage — active game session.
  *
- * Redirects to "/" if the store has no active session (phase === "idle" and
- * no currentWord), so that refreshing mid-game lands on the home screen
- * rather than a broken empty board.
+ * Redirects based on store phase:
+ *  - phase === 'completed' → /results (session just finished)
+ *  - phase === 'idle' with no currentWord → / (no session; e.g. page refresh)
  *
- * This page owns the MetricsBar, Settings panel, and debug overlay that were
- * previously inlined in App.tsx.
+ * Using phase as the redirect signal is race-condition-free compared to
+ * comparing roundsPlayed counters, which can be transiently wrong while
+ * sessionBaseline is being reset asynchronously.
+ *
+ * Note: `user` is intentionally not destructured from useAuth() here —
+ * GamePage does not gate on auth state; that is handled by RequireAuth in
+ * App.tsx for routes that need it.
  */
 export default function GamePage() {
   const navigate = useNavigate();
-  const { phase, currentWord, roundsPlayed, sessionBaseline } = useGameStore();
+  const { phase, currentWord } = useGameStore();
   const isOnline = useOnlineStatus();
-  const { user } = useAuth();
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isDebugOpen, setIsDebugOpen] = useState(false);
@@ -32,17 +39,22 @@ export default function GamePage() {
   const { submitReport, isSubmitting, isSubmitted, submitError, reset } =
     useDiagnosticsBugReport({ feature: "GamePage" });
 
-  // Guard: if there is no active word while idle, route based on whether
-  // a session was actually completed in this run.
+  // Guard: redirect based on terminal/absent session phase.
   const hasRedirected = useRef(false);
   useEffect(() => {
     if (hasRedirected.current) return;
+
+    if (phase === "completed") {
+      hasRedirected.current = true;
+      void navigate("/results", { replace: true });
+      return;
+    }
+
     if (phase === "idle" && !currentWord) {
       hasRedirected.current = true;
-      const sessionCompleted = roundsPlayed > sessionBaseline.roundsPlayed;
-      void navigate(sessionCompleted ? "/results" : "/", { replace: true });
+      void navigate("/", { replace: true });
     }
-  }, [phase, currentWord, roundsPlayed, sessionBaseline, navigate]);
+  }, [phase, currentWord, navigate]);
 
   // Global Ctrl+Shift+D shortcut — toggles the hidden debug/bug-report panel.
   useKeyboardShortcut(
@@ -102,7 +114,7 @@ export default function GamePage() {
   // Don't render the game board until we know whether to redirect.
   // phase is synchronously available from Zustand so this is a single-frame
   // no-op in practice — avoids a flash of empty board before redirect.
-  if (phase === "idle" && !currentWord) return null;
+  if ((phase === "idle" && !currentWord) || phase === "completed") return null;
 
   return (
     <div className="min-h-screen bg-linear-to-br from-orange-50/50 to-white font-sans selection:bg-orange-200 selection:text-orange-900">
@@ -124,80 +136,44 @@ export default function GamePage() {
         onClose={() => setIsSettingsOpen(false)}
       />
 
-      {/* Hidden debug / bug-report panel — toggle with Ctrl+Shift+D */}
-      {isDebugOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Debug bug report panel"
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm"
-        >
-          <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md mx-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-black text-gray-800">
-                🐛 Debug Report
-              </h2>
-              <button
-                onClick={handleDebugClose}
-                className="text-gray-400 hover:text-gray-600 text-xl leading-none"
-                aria-label="Close debug panel"
-              >
-                ✕
-              </button>
-            </div>
-
-            {isSubmitted ? (
-              <div className="text-center space-y-3 py-4">
-                <p className="text-green-600 font-bold text-lg">
-                  ✅ Report sent!
-                </p>
-                <p className="text-gray-500 text-sm">
-                  Diagnostics have been captured and forwarded.
-                </p>
-                <button
-                  onClick={handleDebugClose}
-                  className="px-6 py-3 bg-gray-800 text-white rounded-2xl font-bold"
-                >
-                  Close
-                </button>
-              </div>
-            ) : (
-              <>
-                <p className="text-gray-500 text-sm">
-                  Describe what went wrong (optional). A snapshot of the current
-                  session — score, streak, phase, difficulty — will be included
-                  with the report.
-                </p>
-                <textarea
-                  value={debugDescription}
-                  onChange={(e) => setDebugDescription(e.target.value)}
-                  placeholder="What were you doing when the issue occurred?"
-                  rows={3}
-                  className="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm resize-none focus:border-orange-400 outline-none"
-                />
-                {submitError && (
-                  <p className="text-red-500 text-xs">{submitError}</p>
-                )}
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleDebugSubmit}
-                    disabled={isSubmitting}
-                    className="flex-1 py-3 bg-orange-500 text-white rounded-2xl font-bold hover:bg-orange-600 disabled:opacity-50 transition-all"
-                  >
-                    {isSubmitting ? "Sending…" : "Send Report"}
-                  </button>
-                  <button
-                    onClick={handleDebugClose}
-                    className="px-6 py-3 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition-all"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+      <DebugReportPanel
+        isOpen={isDebugOpen}
+        description={debugDescription}
+        onDescriptionChange={setDebugDescription}
+        onSubmit={handleDebugSubmit}
+        onClose={handleDebugClose}
+        isSubmitting={isSubmitting}
+        isSubmitted={isSubmitted}
+        error={submitError}
+      />
     </div>
   );
+import { useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import GameBoard from "../components/GameBoard";
+import { useGameStore } from "../hooks/useGameStore";
+
+export default function GamePage() {
+  const navigate = useNavigate();
+
+  const phase = useGameStore((s) => s.phase);
+  const sessionCompleted = useGameStore((s) => s.sessionCompleted);
+
+  // Prevent duplicate redirects while staying on the same idle render cycle.
+  const hasRedirectedRef = useRef(false);
+
+  useEffect(() => {
+    if (phase !== "idle") {
+      hasRedirectedRef.current = false;
+    }
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase === "idle" && sessionCompleted && !hasRedirectedRef.current) {
+      hasRedirectedRef.current = true;
+      navigate("/results", { replace: true });
+    }
+  }, [phase, sessionCompleted, navigate]);
+
+  return <GameBoard />;
 }

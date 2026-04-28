@@ -10,3 +10,4 @@ firebase-applet-config.json
 .qwen/
 /test-results
 /logs
+.wrangler/

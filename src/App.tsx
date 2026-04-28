@@ -1,22 +1,21 @@
-import { lazy, Suspense, type ReactNode } from "react";
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
-  useLocation,
-} from "react-router-dom";
+import { lazy, Suspense } from "react";
+// TODO: Fix - Broken by merge conflict resolution (current)
+// <<<<<<< feat/issue-45-multi-page-routing
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
-import { useAuth } from "./contexts/AuthContext";
+import RequireAuth from "./components/RequireAuth";
 import AdminFeedback from "./pages/admin/Feedback";
 
-// Page-level route chunks
+// Page-level route chunks — imported lazily for code splitting.
+// IMPORTANT: Do NOT import these via src/pages/index.ts (the barrel) from
+// this file or any other route-level file. Static barrel imports defeat
+// React.lazy() code splitting and eagerly load all page chunks.
 const HomePage = lazy(() => import("./pages/HomePage"));
 const GamePage = lazy(() => import("./pages/GamePage"));
 const ResultsPage = lazy(() => import("./pages/ResultsPage"));
 const LeaderboardPage = lazy(() => import("./pages/LeaderboardPage"));
 
-function PageFallback() {
+export function PageFallback() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50/50 to-white">
       <div className="w-10 h-10 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin" />
@@ -24,34 +23,7 @@ function PageFallback() {
   );
 }
 
-function RequireAuth({ children }: { children: ReactNode }) {
-  const { user, isLoading } = useAuth();
-  const location = useLocation();
-
-  if (isLoading) return null;
-
-  if (!user) {
-    return (
-      <Navigate
-        to="/"
-        state={{ from: location, requireSignIn: true }}
-        replace
-      />
-    );
-  }
-
-  return <>{children}</>;
-}
-
 export default function App() {
-  // Preserve hash-based admin route handling (outside BrowserRouter routes)
-  if (
-    typeof window !== "undefined" &&
-    window.location.hash.startsWith("#/admin")
-  ) {
-    return <AdminFeedback />;
-  }
-
   return (
     <BrowserRouter>
       <Suspense fallback={<PageFallback />}>
@@ -67,11 +39,63 @@ export default function App() {
               </RequireAuth>
             }
           />
+          {/* Hash-based admin route preserved as a proper route inside the
+              router context so any future useNavigate/useLocation calls inside
+              AdminFeedback do not throw. Legacy #/admin links redirect here. */}
+          <Route path="/admin/*" element={<AdminFeedback />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
 
       <Toaster position="top-center" richColors closeButton />
+// TODO: Fix - Broken by merge conflict resolution (separator)
+// =======
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import AppLayout from "./components/AppLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
+import AdminFeedback from "./pages/admin/Feedback";
+
+const HomePage = lazy(() => import("./pages/HomePage.tsx"));
+const GamePage = lazy(() => import("./pages/GamePage.tsx"));
+const ResultsPage = lazy(() => import("./pages/ResultsPage.tsx"));
+const LeaderboardPage = lazy(() => import("./pages/LeaderboardPage.tsx"));
+
+export default function App() {
+  const isAdminRoute =
+    typeof window !== "undefined" && window.location.hash.startsWith("#/admin");
+
+  if (isAdminRoute) {
+    return <AdminFeedback />;
+  }
+
+  return (
+    <BrowserRouter>
+      <AppLayout>
+        <Suspense
+          fallback={
+            <div className="min-h-screen flex items-center justify-center">
+              Loading…
+            </div>
+          }
+        >
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/game" element={<GamePage />} />
+            <Route path="/results" element={<ResultsPage />} />
+            <Route
+              path="/leaderboard"
+              element={
+                <ProtectedRoute>
+                  <LeaderboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      </AppLayout>
+// TODO: Fix - Broken by merge conflict resolution (incoming)
+// >>>>>>> trunk
     </BrowserRouter>
   );
 }

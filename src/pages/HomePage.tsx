@@ -1,6 +1,7 @@
+// TODO: Fix - Broken by merge conflict resolution (current)
+// <<<<<<< feat/issue-45-multi-page-routing
 import { useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Toaster } from "sonner";
 import { useGameStore } from "../hooks/useGameStore";
 import { useOnlineStatus } from "../hooks/useOnlineStatus";
 import { useAuth } from "../contexts/AuthContext";
@@ -13,8 +14,11 @@ import PwaInstallPrompt from "../components/PwaInstallPrompt";
  * Responsibilities:
  *  - Render the Onboarding component (grade/difficulty selectors)
  *  - On "Start Playing", call startSession() then navigate to /game
- *  - Load user progress once auth initialisation completes
+ *  - Load user progress once auth initialisation completes (single effect
+ *    keyed on user?.id to prevent double-firing on mount)
  *  - Show the offline banner when the device has no network
+ *
+ * Note: <Toaster> lives in App.tsx (global). Do not add a second instance here.
  */
 export default function HomePage() {
   const navigate = useNavigate();
@@ -22,28 +26,26 @@ export default function HomePage() {
   const { user, isLoading } = useAuth();
   const isOnline = useOnlineStatus();
 
-  // Track whether the initial post-auth-init load has already fired so we
-  // only call loadProgress() once on mount, not on every re-render.
-  const initialLoadDone = useRef(false);
-
-  // Effect 1: Once auth initialisation completes, load progress once.
-  useEffect(() => {
-    if (isLoading || initialLoadDone.current) return;
-    initialLoadDone.current = true;
-    void loadProgress();
-  }, [isLoading, loadProgress]);
-
-  // Effect 2: Sync userId into the store whenever the authenticated identity
-  // changes after init, then reload progress under the correct identity.
+  // Single effect: fires once auth initialisation completes (isLoading → false),
+  // then re-fires only when the authenticated identity (user?.id) changes.
+  // This replaces the previous two-effect pattern that called loadProgress()
+  // twice on mount (once in Effect 1, once in Effect 2).
+  const prevUserIdRef = useRef<string | null | undefined>(undefined);
   useEffect(() => {
     if (isLoading) return;
-    if (user) {
-      setUserId(user.id);
-    } else {
-      setUserId(null);
+
+    const currentUserId = user?.id ?? null;
+
+    // Sync userId into the store unconditionally.
+    setUserId(currentUserId);
+
+    // Only reload progress when the identity has actually changed (including
+    // the first run where prevUserIdRef is undefined).
+    if (prevUserIdRef.current !== currentUserId) {
+      prevUserIdRef.current = currentUserId;
+      void loadProgress();
     }
-    void loadProgress();
-  }, [user, isLoading, loadProgress, setUserId]);
+  }, [isLoading, user?.id, loadProgress, setUserId]);
 
   const handleStart = useCallback(() => {
     void startSession()
@@ -69,8 +71,28 @@ export default function HomePage() {
       <main className="container mx-auto max-w-4xl">
         <Onboarding onStart={handleStart} />
       </main>
-
-      <Toaster position="top-center" richColors closeButton />
     </div>
   );
+// TODO: Fix - Broken by merge conflict resolution (separator)
+// =======
+import { useNavigate } from "react-router-dom";
+import Onboarding from "../components/Onboarding";
+import { useGameStore } from "../hooks/useGameStore";
+
+export default function HomePage() {
+  const navigate = useNavigate();
+  const { startSession } = useGameStore();
+
+  const handleStart = async () => {
+    try {
+      await startSession();
+      navigate("/game");
+    } catch (err: unknown) {
+      console.warn("[HomePage] handleStart: startSession failed", err);
+    }
+  };
+
+  return <Onboarding onStart={() => { void handleStart(); }} />;
+// TODO: Fix - Broken by merge conflict resolution (incoming)
+// >>>>>>> trunk
 }
