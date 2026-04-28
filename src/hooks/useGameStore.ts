@@ -73,6 +73,8 @@ interface GameState {
     roundsPlayed: number;
     correctAnswers: number;
   };
+  /** True only when a played session has naturally completed. */
+  sessionCompleted: boolean;
 
   // --- Used words (exposed for UI) ---
   usedWords: string[];
@@ -164,6 +166,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   sessionStartTime: null,
   sessionBestStreak: 0,
   sessionBaseline: { score: 0, roundsPlayed: 0, correctAnswers: 0 },
+  sessionCompleted: false,
   usedWords: [],
 
   // --- Config ---
@@ -199,6 +202,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       recentPerformance: [],
       difficultyEvolution: [],
       result: null,
+      sessionCompleted: false,
       usedWords: [],
       masteredWords: [],
       masteredCount: 0,
@@ -214,6 +218,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       sessionIndex,
       recentPerformance,
       masteredWords,
+      roundsPlayed,
+      sessionBaseline,
     } = get();
 
     if (!get().sessionStartTime) {
@@ -262,6 +268,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         sessionWords: [],
         sessionIndex: 0,
         usedWords: [...usedWordsSet],
+        sessionCompleted: roundsPlayed > sessionBaseline.roundsPlayed,
       });
       return;
     }
@@ -276,6 +283,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       sessionIndex: sessionIndex + 1,
       phase: "playing",
       result: null,
+      sessionCompleted: false,
       usedWords: [...usedWordsSet],
     });
   },
@@ -422,7 +430,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       .startNewRound()
       .catch((err: unknown) => {
         console.warn("[useGameStore] nextWord: startNewRound failed", err);
-        set({ phase: "idle", currentWord: null });
+        set({ phase: "idle", currentWord: null, sessionCompleted: false });
       });
   },
 
@@ -446,6 +454,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       sessionBestStreak: 0,
       phase: "idle",
       result: null,
+      sessionCompleted: false,
     });
   },
 
