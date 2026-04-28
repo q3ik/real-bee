@@ -1,13 +1,7 @@
-import { lazy, Suspense, type ReactNode } from "react";
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
-  useLocation,
-} from "react-router-dom";
+import { lazy, Suspense } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
-import { useAuth } from "./contexts/AuthContext";
+import RequireAuth from "./components/RequireAuth";
 import AdminFeedback from "./pages/admin/Feedback";
 
 // Page-level route chunks — imported lazily for code splitting.
@@ -25,23 +19,6 @@ export function PageFallback() {
       <div className="w-10 h-10 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin" />
     </div>
   );
-}
-
-function RequireAuth({ children }: { children: ReactNode }) {
-  const { user, isLoading } = useAuth();
-  const location = useLocation();
-
-  // Show spinner while auth state resolves — avoids a blank screen on slow
-  // connections.
-  if (isLoading) return <PageFallback />;
-
-  if (!user) {
-    // Redirect to home without requireSignIn state — nothing in HomePage
-    // currently consumes it, so omitting it prevents dead state confusion.
-    return <Navigate to="/" state={{ from: location }} replace />;
-  }
-
-  return <>{children}</>;
 }
 
 export default function App() {
