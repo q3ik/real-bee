@@ -27,9 +27,31 @@ import { onRequestPost as ttsHandler } from './tts.js';
 import { onRequestPost as sttHandler } from './stt.js';
 import { onRequestPost as hintHandler } from './hint.js';
 import type { PagesContext } from '../types.js';
+import { z } from 'zod';
 
 type GeminiAction = 'tts' | 'stt' | 'hint';
 const VALID_ACTIONS: GeminiAction[] = ['tts', 'stt', 'hint'];
+
+const ACTION_SCHEMAS: Record<GeminiAction, z.ZodTypeAny> = {
+  tts: z.object({
+    word: z.string().min(1),
+    voice: z.string().optional(),
+    provider: z.string().optional(),
+  }),
+  stt: z.object({
+    // Require non-empty strings — empty audio/mimeType would produce a
+    // meaningless Cloudflare AI / Deepgram call and an opaque downstream error.
+    audio: z.string().min(1),
+    mimeType: z.string().min(1),
+    provider: z.string().optional(),
+  }),
+  hint: z.object({
+    word: z.string().min(1),
+    type: z.string().min(1),
+  }),
+};
+
+export { ACTION_SCHEMAS };
 
 function json(body: unknown, status: number, origin: string): Response {
   return new Response(JSON.stringify(body), {
@@ -64,12 +86,23 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
     );
   }
 
+  // Validate the action-specific payload against its schema before forwarding.
+  const schema = ACTION_SCHEMAS[action as GeminiAction];
+  const parsed = schema.safeParse(rest);
+  if (!parsed.success) {
+    return json(
+      { error: 'Invalid request payload', details: parsed.error.format() },
+      400,
+      origin
+    );
+  }
+
   // Reconstruct request without the `action` field so each downstream
   // handler receives its normal payload shape unchanged.
   const newRequest = new Request(request.url, {
     method: request.method,
     headers: request.headers,
-    body: JSON.stringify(rest),
+    body: JSON.stringify(parsed.data),
   }) as PagesContext['request'];
 
   const newContext: PagesContext = { ...context, request: newRequest };

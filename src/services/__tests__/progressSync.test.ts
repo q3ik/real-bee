@@ -1,64 +1,98 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { syncUserProgress, getPendingCount, autoSyncOnSignIn } from '../progressSync';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock sync module
-vi.mock('@/lib/sync', () => ({
-  syncPending: vi.fn().mockResolvedValue(2),
+// Mock syncPending before importing progressSync so the module sees the mock.
+vi.mock('../../lib/sync', () => ({
+  syncPending: vi.fn(),
 }));
 
-// Mock storage module
-vi.mock('@/game-engine/storage', () => ({
-  getUnsyncedProgress: vi.fn().mockResolvedValue([
-    { uid: 'user-1', synced: false },
-    { uid: 'user-2', synced: false },
-  ]),
-  getUnsyncedSessions: vi.fn().mockResolvedValue([
-    { id: 1, uid: 'user-1', synced: false },
-  ]),
-  saveGameProgress: vi.fn().mockResolvedValue(undefined),
-  loadGameProgress: vi.fn().mockResolvedValue(null),
-  markProgressSynced: vi.fn().mockResolvedValue(undefined),
-  saveSession: vi.fn().mockResolvedValue(1),
-  markSessionsSynced: vi.fn().mockResolvedValue(undefined),
+vi.mock('../../game-engine/storage', () => ({
+  getUnsyncedProgress: vi.fn(),
+  getUnsyncedSessions: vi.fn(),
 }));
 
-describe('services/progressSync', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+import { syncUserProgress, autoSyncOnSignIn } from '../progressSync';
+import { syncPending } from '../../lib/sync';
+import { getUnsyncedProgress, getUnsyncedSessions } from '../../game-engine/storage';
+
+const mockSyncPending = vi.mocked(syncPending);
+const mockGetUnsyncedProgress = vi.mocked(getUnsyncedProgress);
+const mockGetUnsyncedSessions = vi.mocked(getUnsyncedSessions);
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockGetUnsyncedProgress.mockResolvedValue([]);
+  mockGetUnsyncedSessions.mockResolvedValue([]);
+});
+
+describe('syncUserProgress', () => {
+  it('returns a success result with correct counts on the happy path', async () => {
+    mockSyncPending.mockResolvedValue(3);
+
+    const result = await syncUserProgress();
+
+    expect(result.progressSynced).toBe(3);
+    expect(result.sessionsSynced).toBe(0);
+    expect(result.totalPending).toBe(0);
+    expect(result.error).toBeUndefined();
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
+  it('returns totalPending reflecting remaining unsynced records', async () => {
+    mockSyncPending.mockResolvedValue(2);
+    // Simulate 1 record still pending after sync
+    mockGetUnsyncedProgress.mockResolvedValue([{ id: 'a' }] as never);
+    mockGetUnsyncedSessions.mockResolvedValue([{ id: 'b' }, { id: 'c' }] as never);
+
+    const result = await syncUserProgress();
+
+    expect(result.totalPending).toBe(3);
+    expect(result.error).toBeUndefined();
   });
 
-  describe('syncUserProgress', () => {
-    it('syncs pending progress', async () => {
-      const result = await syncUserProgress();
+  it('does NOT throw when syncPending rejects — returns error field instead', async () => {
+    const boom = new Error('Network failure');
+    mockSyncPending.mockRejectedValue(boom);
 
-      expect(result).toBeDefined();
-      expect(result.progressSynced).toBe(2);
-    });
+    // Must not throw
+    const result = await expect(syncUserProgress()).resolves.toBeDefined();
   });
 
-  describe('getPendingCount', () => {
-    it('returns total unsynced records', async () => {
-      const count = await getPendingCount();
+  it('populates error field and returns zero counts when syncPending rejects', async () => {
+    const boom = new Error('500 from Supabase');
+    mockSyncPending.mockRejectedValue(boom);
 
-      expect(count).toBe(3); // 2 progress + 1 session
-    });
+    const result = await syncUserProgress();
+
+    expect(result.error).toBe(boom);
+    expect(result.progressSynced).toBe(0);
+    expect(result.sessionsSynced).toBe(0);
+    expect(result.totalPending).toBe(0);
   });
 
-  describe('autoSyncOnSignIn', () => {
-    it('returns null when userId is null', async () => {
-      const result = await autoSyncOnSignIn(null);
-      expect(result).toBeNull();
-    });
+  it('populates error field when getUnsyncedProgress rejects after a successful sync', async () => {
+    mockSyncPending.mockResolvedValue(1);
+    mockGetUnsyncedProgress.mockRejectedValue(new Error('IndexedDB unavailable'));
 
-    it('syncs when userId is provided', async () => {
-      const result = await autoSyncOnSignIn('test-user');
+    const result = await syncUserProgress();
 
-      expect(result).toBeDefined();
-      expect(result!.progressSynced).toBe(2);
-    });
+    expect(result.error).toBeInstanceOf(Error);
+    expect(result.progressSynced).toBe(0);
+  });
+});
+
+describe('autoSyncOnSignIn', () => {
+  it('returns null when userId is null', async () => {
+    const result = await autoSyncOnSignIn(null);
+    expect(result).toBeNull();
+    expect(mockSyncPending).not.toHaveBeenCalled();
+  });
+
+  it('calls syncUserProgress and returns a SyncResult when userId is provided', async () => {
+    mockSyncPending.mockResolvedValue(0);
+
+    const result = await autoSyncOnSignIn('user-123');
+
+    expect(result).not.toBeNull();
+    expect(result?.error).toBeUndefined();
+    expect(mockSyncPending).toHaveBeenCalledOnce();
   });
 });

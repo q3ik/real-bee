@@ -517,11 +517,9 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   loadProgress: async () => {
     // Resolve auth: prefer Supabase session, fall back to stable offline UID.
-    if (supabase) {
-      const { data } = await supabase.auth.getUser();
-      if (data.user) {
-        set({ userId: data.user.id });
-      }
+    const { data } = await supabase.auth.getUser();
+    if (data.user) {
+      set({ userId: data.user.id });
     }
 
     if (!get().userId) {

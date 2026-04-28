@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, memo } from "react";
 import confetti from "canvas-confetti";
 import {
   Volume2,
@@ -29,6 +29,48 @@ import {
   VISIBLE_MESSAGE_COUNT,
 } from "../constants/game";
 import HintSystem from "./HintSystem";
+
+interface SpellingInputProps {
+  onSubmit: (value: string) => void;
+  /** Changing this key forces the input to reset — pass currentWord.word */
+  resetKey: string;
+}
+
+const SpellingInput = memo(function SpellingInput({ onSubmit, resetKey }: SpellingInputProps) {
+  const [userInput, setUserInput] = useState("");
+
+  // Reset input whenever the word changes (timeout, voice answer, skip, etc.)
+  useEffect(() => {
+    setUserInput("");
+  }, [resetKey]);
+
+  const handleSubmit = () => {
+    if (userInput.trim()) {
+      onSubmit(userInput);
+      setUserInput("");
+    }
+  };
+
+  return (
+    <>
+      <input
+        type="text"
+        value={userInput}
+        onChange={(e) => setUserInput(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+        placeholder="Type spelling here..."
+        className="w-full p-6 rounded-3xl border-2 border-gray-100 focus:border-orange-500 outline-none font-black text-xl text-center uppercase tracking-widest"
+        autoFocus
+      />
+      <button
+        onClick={handleSubmit}
+        className="w-full py-4 bg-gray-800 text-white rounded-2xl font-bold hover:bg-gray-900 transition-all"
+      >
+        Submit Spelling
+      </button>
+    </>
+  );
+});
 
 export default function GameBoard() {
   const {
@@ -61,6 +103,11 @@ export default function GameBoard() {
       onError: (err) => console.warn("[TTS]", err),
     });
 
+  const isMountedRef = useRef(true);
+
+  // Track component mount state to guard async callbacks after unmount
+  useEffect(() => () => { isMountedRef.current = false; }, []);
+
   // Sync store audio settings to audioManager singleton
   useEffect(() => {
     audioManager.setMuted(isMuted);
@@ -72,7 +119,6 @@ export default function GameBoard() {
   // call speak() again after requestHint/addHint to avoid double-speaking.
   const { hints, addHint, clearHints } = useHints({ onSpeak: speak });
 
-  const [userInput, setUserInput] = useState("");
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [feedback, setFeedback] = useState<"correct" | "incorrect" | null>(
     null,
@@ -100,7 +146,6 @@ export default function GameBoard() {
       setTimeout(() => {
         setFeedback(null);
         nextWord();
-        setUserInput("");
       }, FEEDBACK_DELAY_MS);
     },
   });
@@ -146,7 +191,7 @@ export default function GameBoard() {
     ) {
       const speakAndListen = async () => {
         await speak(`Your word is: ${currentWord.word}`);
-        if (autoListen) {
+        if (isMountedRef.current && autoListen) {
           startListening();
         }
       };
@@ -184,7 +229,7 @@ export default function GameBoard() {
 
       if (isCorrect) {
         // Subtle confetti burst on correct answer
-        confetti(CONFETTI_CONFIG as unknown as confetti.Options);
+        confetti(CONFETTI_CONFIG);
 
         addMessage(
           "player",
@@ -195,7 +240,6 @@ export default function GameBoard() {
       setTimeout(() => {
         setFeedback(null);
         nextWord();
-        setUserInput("");
       }, FEEDBACK_DELAY_MS);
     },
     [phase, submitAnswer, addMessage, nextWord],
@@ -494,25 +538,10 @@ export default function GameBoard() {
               exit={{ height: 0, opacity: 0 }}
               className="space-y-3"
             >
-              <input
-                type="text"
-                value={userInput}
-                onChange={(e) => setUserInput(e.target.value)}
-                onKeyDown={(e) =>
-                  e.key === "Enter" &&
-                  userInput.trim() &&
-                  handleSubmission(userInput)
-                }
-                placeholder="Type spelling here..."
-                className="w-full p-6 rounded-3xl border-2 border-gray-100 focus:border-orange-500 outline-none font-black text-xl text-center uppercase tracking-widest"
-                autoFocus
+              <SpellingInput
+                onSubmit={handleSubmission}
+                resetKey={currentWord.word}
               />
-              <button
-                onClick={() => userInput.trim() && handleSubmission(userInput)}
-                className="w-full py-4 bg-gray-800 text-white rounded-2xl font-bold hover:bg-gray-900 transition-all"
-              >
-                Submit Spelling
-              </button>
             </motion.div>
           )}
         </AnimatePresence>

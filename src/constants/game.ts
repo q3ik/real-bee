@@ -3,6 +3,7 @@
  * Extracted from useGameStore.ts and GameBoard.tsx.
  */
 
+import type { Options as ConfettiOptions } from "canvas-confetti";
 import type { ListeningTimeout } from "../types";
 
 /**
@@ -38,14 +39,14 @@ export const ROUND_DURATION_MS = 30_000;
 /**
  * Confetti celebration configuration for correct answers.
  */
-export const CONFETTI_CONFIG = {
+export const CONFETTI_CONFIG: ConfettiOptions = {
   particleCount: 40,
   spread: 60,
   startVelocity: 25,
   origin: { y: 0.6 },
   colors: ["#f97316", "#fbbf24", "#34d399", "#60a5fa"],
   disableForReducedMotion: true,
-} as const;
+};
 
 /**
  * Voice recognition timeout durations mapped to user setting.
