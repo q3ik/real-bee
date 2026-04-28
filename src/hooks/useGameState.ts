@@ -145,6 +145,9 @@ export function useGameState(): UseGameStateReturn {
     null,
   );
 
+  // --- Track session ID to detect superseded sessions (async state leak fix) ---
+  const sessionIdRef = useRef(0);
+
   // --- Track the last word we announced to avoid stale announcements (fix #12) ---
   const lastAnnouncedWordRef = useRef<string | null>(null);
 
@@ -404,6 +407,8 @@ export function useGameState(): UseGameStateReturn {
   // loading or session initialisation fails (QA fix #3).
   const wrappedStartSession = useCallback(
     async (roundCount?: number) => {
+      const sessionId = ++sessionIdRef.current;
+
       // Set configurable round count
       if (roundCount && roundCount > 0) {
         totalRoundsRef.current = roundCount;
@@ -418,10 +423,15 @@ export function useGameState(): UseGameStateReturn {
         // Pre-load words for the configured grade level
         const grade = useGameStore.getState().gradeLevel;
         await loadWordsForGrade(grade);
+        if (sessionId !== sessionIdRef.current) return; // superseded
+
         await startSession();
+        if (sessionId !== sessionIdRef.current) return; // superseded
+
         // Only mark active after both operations succeed
         setGameStatus("active");
       } catch (err) {
+        if (sessionId !== sessionIdRef.current) return; // superseded
         console.warn(
           "[useGameState] wrappedStartSession: failed to start session",
           err,
