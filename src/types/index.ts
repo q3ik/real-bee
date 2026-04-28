@@ -67,7 +67,7 @@ export interface WordProgress {
 /**
  * Phase of the game finite state machine.
  */
-export type GamePhase = "idle" | "playing" | "round_end";
+export type GamePhase = "idle" | "playing" | "round_end" | "completed";
 
 /**
  * Result of a single spelling submission.
