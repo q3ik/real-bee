@@ -11,6 +11,40 @@ vi.mock("../components/ProtectedRoute", () => ({
   default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
+vi.mock("../contexts/AuthContext", () => ({
+  useAuth: () => ({
+    user: {
+      id: "test-user",
+      email: "test@example.com",
+      user_metadata: {},
+      app_metadata: {},
+      aud: "authenticated",
+      created_at: "2023-01-01T00:00:00Z",
+    },
+    session: {
+      access_token: "test-token",
+      refresh_token: "test-refresh-token",
+      expires_in: 3600,
+      token_type: "bearer",
+      user: {
+        id: "test-user",
+        email: "test@example.com",
+        user_metadata: {},
+        app_metadata: {},
+        aud: "authenticated",
+        created_at: "2023-01-01T00:00:00Z",
+      },
+    },
+    isLoading: false,
+    isConfigured: true,
+    signInWithGoogle: vi.fn(),
+    signOut: vi.fn(),
+  }),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
+}));
+
 vi.mock("../pages/admin/Feedback", () => ({
   default: () => <div data-testid="admin-feedback">Admin Feedback</div>,
 }));

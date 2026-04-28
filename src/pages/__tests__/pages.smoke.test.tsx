@@ -167,14 +167,20 @@ describe("GamePage", () => {
     expect(screen.getByTestId("game-board")).toBeInTheDocument();
   });
 
-  it("renders null (redirect) when phase is idle and no currentWord", async () => {
+  it("redirects to home when phase is idle and no currentWord", async () => {
     mockUseGameStore.mockReturnValue({
       phase: "idle",
       currentWord: null,
     } as unknown as ReturnType<typeof useGameStore>);
     const { default: GamePage } = await import("../GamePage");
-    const { container } = renderAtRoute("/game", <GamePage />);
-    expect(container.firstChild).toBeNull();
+    const mockNavigate = vi.fn();
+    vi.mock("react-router-dom", () => ({
+      useNavigate: () => mockNavigate,
+    }));
+    renderAtRoute("/game", <GamePage />);
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith("/", { replace: true });
+    });
   });
 });
 

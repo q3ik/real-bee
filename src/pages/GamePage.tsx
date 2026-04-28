@@ -1,4 +1,3 @@
-
 // TODO: Fix - POSSIBLY broken by merge conflict resolution
 
 import { useEffect, useCallback, useRef, useState } from "react";
@@ -42,6 +41,12 @@ export default function GamePage() {
   // Guard: redirect based on terminal/absent session phase.
   const hasRedirected = useRef(false);
   useEffect(() => {
+    // Reset the flag when phase changes away from redirecting states
+    if (phase !== "idle" && phase !== "completed") {
+      hasRedirected.current = false;
+      return;
+    }
+
     if (hasRedirected.current) return;
 
     if (phase === "completed") {

@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import RequireAuth from "./components/RequireAuth";
@@ -22,6 +22,17 @@ export function PageFallback() {
 }
 
 export default function App() {
+  // Legacy hash-based admin route redirect
+  useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      window.location.hash.startsWith("#/admin")
+    ) {
+      window.location.href =
+        "/admin" + window.location.hash.slice("#/admin".length);
+    }
+  }, []);
+
   return (
     <BrowserRouter>
       <Suspense fallback={<PageFallback />}>

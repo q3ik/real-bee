@@ -2,11 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import GamePage from "../GamePage";
 
-type Phase = "idle" | "playing" | "round_end";
+type Phase = "idle" | "playing" | "round_end" | "completed";
 
 interface MockGameStoreState {
   phase: Phase;
   sessionCompleted: boolean;
+  currentWord: string | null;
 }
 
 const mockNavigate = vi.fn();
@@ -14,6 +15,7 @@ const mockNavigate = vi.fn();
 let mockState: MockGameStoreState = {
   phase: "idle",
   sessionCompleted: false,
+  currentWord: null,
 };
 
 vi.mock("react-router-dom", () => ({
@@ -25,8 +27,13 @@ vi.mock("../../components/GameBoard", () => ({
 }));
 
 vi.mock("../../hooks/useGameStore", () => ({
-  useGameStore: (selector: (state: MockGameStoreState) => unknown) =>
-    selector(mockState),
+  useGameStore: (selector?: (state: MockGameStoreState) => unknown) => {
+    if (selector) {
+      return selector(mockState);
+    }
+    // Return the full state when used with destructuring
+    return mockState;
+  },
 }));
 
 describe("GamePage", () => {
@@ -35,17 +42,21 @@ describe("GamePage", () => {
     mockState = {
       phase: "idle",
       sessionCompleted: false,
+      currentWord: null,
     };
   });
 
-  it("renders the game board", () => {
+  it("renders the game board when phase is playing", () => {
+    mockState.phase = "playing";
+    mockState.currentWord = "test";
+
     render(<GamePage />);
     expect(screen.getByTestId("game-board")).toBeInTheDocument();
   });
 
-  it("does not redirect on initial idle state when session is not completed", async () => {
-    mockState.phase = "idle";
-    mockState.sessionCompleted = false;
+  it("does not redirect when phase is playing", async () => {
+    mockState.phase = "playing";
+    mockState.currentWord = "test";
 
     render(<GamePage />);
 
@@ -54,9 +65,32 @@ describe("GamePage", () => {
     });
   });
 
-  it("redirects to /results when phase is idle and session is completed", async () => {
+  it("does not redirect on initial idle state when currentWord is present", async () => {
     mockState.phase = "idle";
-    mockState.sessionCompleted = true;
+    mockState.currentWord = "test";
+
+    render(<GamePage />);
+
+    await waitFor(() => {
+      expect(mockNavigate).not.toHaveBeenCalled();
+    });
+  });
+
+  it("redirects to / when phase is idle and no currentWord", async () => {
+    mockState.phase = "idle";
+    mockState.currentWord = null;
+
+    render(<GamePage />);
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith("/", { replace: true });
+    });
+    expect(mockNavigate).toHaveBeenCalledTimes(1);
+  });
+
+  it("redirects to /results when phase is completed", async () => {
+    mockState.phase = "completed";
+    mockState.currentWord = null;
 
     render(<GamePage />);
 
@@ -66,43 +100,65 @@ describe("GamePage", () => {
     expect(mockNavigate).toHaveBeenCalledTimes(1);
   });
 
-  it("does not redirect repeatedly while remaining in the same idle completed state", async () => {
+  it("does not redirect repeatedly while remaining in the same idle state", async () => {
     mockState.phase = "idle";
-    mockState.sessionCompleted = true;
+    mockState.currentWord = null;
 
     const { rerender } = render(<GamePage />);
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledTimes(1);
+      expect(mockNavigate).toHaveBeenCalledWith("/", { replace: true });
     });
+    expect(mockNavigate).toHaveBeenCalledTimes(1);
 
+    // Re-render with same state — should not redirect again
     rerender(<GamePage />);
-
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledTimes(1);
+      expect(mockNavigate).toHaveBeenCalledTimes(1); // Still 1
     });
   });
 
-  it("allows a new redirect after leaving idle and returning to idle completed", async () => {
+  it("allows a new redirect after leaving idle and returning to idle", async () => {
     mockState.phase = "idle";
-    mockState.sessionCompleted = true;
+    mockState.currentWord = null;
 
     const { rerender } = render(<GamePage />);
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledTimes(1);
+      expect(mockNavigate).toHaveBeenCalledWith("/", { replace: true });
     });
+    expect(mockNavigate).toHaveBeenCalledTimes(1);
 
+    // Transition away from idle
     mockState.phase = "playing";
-    mockState.sessionCompleted = false;
+    rerender(<GamePage />);
+
+    // Return to idle — should redirect again
+    mockState.phase = "idle";
     rerender(<GamePage />);
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledTimes(1);
+      expect(mockNavigate).toHaveBeenCalledTimes(2);
     });
+  });
 
-    mockState.phase = "idle";
-    mockState.sessionCompleted = true;
+  it("allows redirect after leaving completed and returning to completed", async () => {
+    mockState.phase = "completed";
+    mockState.currentWord = null;
+
+    const { rerender } = render(<GamePage />);
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith("/results", { replace: true });
+    });
+    expect(mockNavigate).toHaveBeenCalledTimes(1);
+
+    // Transition away from completed
+    mockState.phase = "playing";
+    rerender(<GamePage />);
+
+    // Return to completed — should redirect again
+    mockState.phase = "completed";
     rerender(<GamePage />);
 
     await waitFor(() => {
