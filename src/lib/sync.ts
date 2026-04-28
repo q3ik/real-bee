@@ -83,8 +83,6 @@ function saveRetryQueue(queue: Map<string, RetryEntry>): void {
 async function uploadProgressToSupabase(
   progress: LocalUserProgress,
 ): Promise<boolean> {
-  if (!supabase) return false;
-
   const { error } = await supabase.from("user_progress").upsert(
     {
       id: progress.uid,
@@ -141,8 +139,6 @@ function getRetryDelay(retryCount: number): number {
  * @returns Number of successfully synced records.
  */
 export async function syncPending(): Promise<number> {
-  if (!supabase) return 0;
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -253,39 +249,37 @@ export async function loadProgressWithFallback(uid: string) {
   const local = await loadGameProgress(uid);
 
   // Try cloud in background
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("user_progress")
-      .select("*")
-      .eq("user_id", uid)
-      .eq("type", "progress")
-      .order("timestamp", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+  const { data, error } = await supabase
+    .from("user_progress")
+    .select("*")
+    .eq("user_id", uid)
+    .eq("type", "progress")
+    .order("timestamp", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
-    if (!error && data) {
-      try {
-        const parsed = JSON.parse(data.data as string) as Record<
-          string,
-          unknown
-        >;
-        const cloudProgress: LocalUserProgress = {
-          uid,
-          score: (parsed.score as number) ?? 0,
-          streak: (parsed.streak as number) ?? 0,
-          bestStreak: (parsed.bestStreak as number) ?? 0,
-          masteredCount: (parsed.masteredCount as number) ?? 0,
-          gradeLevel: (parsed.gradeLevel as string) ?? "all",
-          difficulty: (parsed.difficulty as string) ?? "all",
-          lastPlayed: data.timestamp,
-          synced: true,
-        };
-        // Merge cloud data into local DB
-        await saveGameProgress(cloudProgress);
-        return cloudProgress;
-      } catch {
-        // Parse error — fall back to local
-      }
+  if (!error && data) {
+    try {
+      const parsed = JSON.parse(data.data as string) as Record<
+        string,
+        unknown
+      >;
+      const cloudProgress: LocalUserProgress = {
+        uid,
+        score: (parsed.score as number) ?? 0,
+        streak: (parsed.streak as number) ?? 0,
+        bestStreak: (parsed.bestStreak as number) ?? 0,
+        masteredCount: (parsed.masteredCount as number) ?? 0,
+        gradeLevel: (parsed.gradeLevel as string) ?? "all",
+        difficulty: (parsed.difficulty as string) ?? "all",
+        lastPlayed: data.timestamp,
+        synced: true,
+      };
+      // Merge cloud data into local DB
+      await saveGameProgress(cloudProgress);
+      return cloudProgress;
+    } catch {
+      // Parse error — fall back to local
     }
   }
 
