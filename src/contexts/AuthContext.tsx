@@ -71,15 +71,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const isConfigured = supabase !== null;
+  const isConfigured = true;
 
   // Initialize auth state on mount
   useEffect(() => {
-    if (!supabase) {
-      setIsLoading(false);
-      return;
-    }
-
     // Guard against state updates after unmount
     let cancelled = false;
 
@@ -130,10 +125,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // -----------------------------------------------------------------------
 
   const signInWithGoogle = useCallback(async () => {
-    if (!supabase) {
-      console.error('[Auth] Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
-      return;
-    }
     try {
       await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -150,7 +141,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const signOut = useCallback(async () => {
-    if (!supabase) return;
     try {
       await supabase.auth.signOut();
     } catch (error: unknown) {

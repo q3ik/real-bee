@@ -17,6 +17,7 @@ export interface SyncResult {
   progressSynced: number;
   sessionsSynced: number;
   totalPending: number;
+  error?: unknown;
 }
 
 /**
@@ -28,22 +29,27 @@ export interface SyncResult {
  * @returns Sync summary
  */
 export async function syncUserProgress(): Promise<SyncResult> {
-  const progressSynced = await syncPending();
+  try {
+    const progressSynced = await syncPending();
 
-  // Sessions sync is a no-op for now — sessions are stored locally
-  // and will be synced when a dedicated endpoint is added.
-  const sessionsSynced = 0;
+    // Sessions sync is a no-op for now — sessions are stored locally
+    // and will be synced when a dedicated endpoint is added.
+    const sessionsSynced = 0;
 
-  const [progressAfter, sessionsAfter] = await Promise.all([
-    getUnsyncedProgress(),
-    getUnsyncedSessions(),
-  ]);
+    const [progressAfter, sessionsAfter] = await Promise.all([
+      getUnsyncedProgress(),
+      getUnsyncedSessions(),
+    ]);
 
-  return {
-    progressSynced,
-    sessionsSynced,
-    totalPending: progressAfter.length + sessionsAfter.length,
-  };
+    return {
+      progressSynced,
+      sessionsSynced,
+      totalPending: progressAfter.length + sessionsAfter.length,
+    };
+  } catch (err) {
+    console.warn('[progressSync] syncUserProgress failed:', err);
+    return { progressSynced: 0, sessionsSynced: 0, totalPending: 0, error: err };
+  }
 }
 
 /**
