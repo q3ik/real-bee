@@ -30,6 +30,7 @@ vi.mock("../../lib/db", () => ({
       }),
     },
   },
+  saveGameSession: vi.fn().mockResolvedValue(1),
 }));
 
 vi.mock("../../lib/wordLoader", () => ({

@@ -105,6 +105,7 @@ export function useGameState(): UseGameStateReturn {
   const correctAnswers = useGameStore((s) => s.correctAnswers);
   const difficultyEvolution = useGameStore((s) => s.difficultyEvolution);
   const sessionStartTime = useGameStore((s) => s.sessionStartTime);
+  const sessionBestStreak = useGameStore((s) => s.sessionBestStreak);
   const sessionBaseline = useGameStore((s) => s.sessionBaseline);
 
   const startSession = useGameStore((s) => s.startSession);
@@ -369,6 +370,8 @@ export function useGameState(): UseGameStateReturn {
           endTime: new Date().toISOString(),
           wordsSpelled: Math.max(0, sessionWords),
           correctCount: Math.max(0, sessionCorrect),
+          scoreChange: score - (sessionBaseline?.score ?? 0),
+          bestStreak: sessionBestStreak,
           difficultyEvolution: difficultyEvolution ?? [],
           synced: false,
         });
@@ -385,7 +388,9 @@ export function useGameState(): UseGameStateReturn {
     userId,
     roundsPlayed,
     correctAnswers,
+    score,
     sessionBaseline,
+    sessionBestStreak,
     sessionStartTime,
     difficultyEvolution,
     triggerMessage,

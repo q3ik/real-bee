@@ -55,6 +55,7 @@ vi.mock("../../lib/supabase", () => ({
 }));
 
 vi.mock("../../lib/db", () => ({
+  saveGameSession: vi.fn().mockResolvedValue(1),
   localDb: {
     progress: {
       put: vi.fn().mockResolvedValue(1),
@@ -158,6 +159,15 @@ vi.mock("sonner", () => ({
     error: vi.fn(),
     warning: vi.fn(),
     info: vi.fn(),
+  },
+}));
+
+vi.mock("../../lib/audioManager", () => ({
+  audioManager: {
+    speak: vi.fn().mockResolvedValue(undefined),
+    playEffect: vi.fn(),
+    setMuted: vi.fn(),
+    setVoiceQuality: vi.fn(),
   },
 }));
 

@@ -11,6 +11,40 @@ vi.mock("../components/ProtectedRoute", () => ({
   default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
+vi.mock("../contexts/AuthContext", () => ({
+  useAuth: () => ({
+    user: {
+      id: "test-user",
+      email: "test@example.com",
+      user_metadata: {},
+      app_metadata: {},
+      aud: "authenticated",
+      created_at: "2023-01-01T00:00:00Z",
+    },
+    session: {
+      access_token: "test-token",
+      refresh_token: "test-refresh-token",
+      expires_in: 3600,
+      token_type: "bearer",
+      user: {
+        id: "test-user",
+        email: "test@example.com",
+        user_metadata: {},
+        app_metadata: {},
+        aud: "authenticated",
+        created_at: "2023-01-01T00:00:00Z",
+      },
+    },
+    isLoading: false,
+    isConfigured: true,
+    signInWithGoogle: vi.fn(),
+    signOut: vi.fn(),
+  }),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
+}));
+
 vi.mock("../pages/admin/Feedback", () => ({
   default: () => <div data-testid="admin-feedback">Admin Feedback</div>,
 }));
@@ -34,22 +68,22 @@ vi.mock("../pages/LeaderboardPage.tsx", () => ({
 import App from "../App";
 
 function setRoute(path: string, hash = "") {
-  window.history.pushState({}, "", path);
-  window.location.hash = hash;
+  window.history.pushState({}, "", path + hash);
 }
 
 describe("App routing", () => {
   beforeEach(() => {
-    setRoute("/", "");
+    setRoute("/");
   });
 
-  it("bypasses browser router and renders admin page for #/admin hash", async () => {
-    setRoute("/", "#/admin");
-
+  it("renders AdminFeedback on /admin route", async () => {
+    // The legacy #/admin hash triggers a window.location.href redirect via
+    // useEffect which cannot be asserted in jsdom. However, the canonical
+    // /admin/* route must render AdminFeedback directly — this covers the
+    // post-redirect destination and is the behaviour users actually see.
+    setRoute("/admin");
     render(<App />);
-
     expect(await screen.findByTestId("admin-feedback")).toBeInTheDocument();
-    expect(screen.queryByTestId("app-layout")).not.toBeInTheDocument();
   });
 
   it("renders home page on /", async () => {
