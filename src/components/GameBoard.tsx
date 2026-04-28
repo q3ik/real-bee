@@ -4,7 +4,6 @@ import {
   Volume2,
   Mic,
   Keyboard,
-  RotateCcw,
   Check,
   X,
   AlertCircle,
@@ -30,7 +29,6 @@ import {
   VISIBLE_MESSAGE_COUNT,
 } from "../constants/game";
 import HintSystem from "./HintSystem";
-import ProgressionOverview from "./ProgressionOverview";
 
 export default function GameBoard() {
   const {
@@ -41,14 +39,11 @@ export default function GameBoard() {
     timeoutRound,
     nextWord,
     startSession,
-    restartGame,
     isMuted,
     voiceQuality,
     listeningTimeout,
-    difficultyEvolution,
     showLetterCount,
     autoListen,
-    sessionStats,
   } = useGameStore();
 
   // Mic permission — shown when permission is denied
@@ -293,54 +288,6 @@ export default function GameBoard() {
         >
           Try Again
         </button>
-      </div>
-    );
-  }
-
-  if (phase === "idle" && !currentWord) {
-    return (
-      <div className="flex flex-col items-center justify-center p-12 text-center space-y-8">
-        <div className="p-6 bg-orange-100 rounded-full">
-          <RotateCcw className="w-12 h-12 text-orange-500" />
-        </div>
-        <div>
-          <h2 className="text-2xl font-black text-gray-800 mb-2">
-            Session Complete!
-          </h2>
-          <p className="text-gray-500">Great job spelling those words!</p>
-        </div>
-
-        <div className="w-full max-w-md">
-          <ProgressionOverview evolution={difficultyEvolution} />
-        </div>
-
-        <div className="space-y-2 w-full max-w-md">
-          {sessionStats().map((stat) => (
-            <div key={stat.label} className="flex justify-between text-sm">
-              <span className="text-gray-500">{stat.label}</span>
-              <span className="font-bold text-gray-800">{stat.value}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex gap-3">
-          <button
-            onClick={() => {
-              void startSession().catch((err: unknown) => {
-                console.warn("[GameBoard] Play Again: startSession failed", err);
-              });
-            }}
-            className="px-8 py-4 bg-orange-500 text-white rounded-2xl font-bold shadow-lg hover:bg-orange-600 transition-all"
-          >
-            Play Again
-          </button>
-          <button
-            onClick={restartGame}
-            className="px-6 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition-all"
-          >
-            Reset
-          </button>
-        </div>
       </div>
     );
   }

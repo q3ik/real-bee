@@ -18,7 +18,7 @@
  * - `round_end` — The round has finished (correct answer, wrong answer, or timeout);
  *                 result overlay is visible before advancing to the next word.
  */
-export type GamePhase = "idle" | "playing" | "round_end";
+export type GamePhase = "idle" | "playing" | "round_end" | "completed";
 
 /**
  * Shape of a single FSM transition event.

@@ -35,6 +35,8 @@ export interface LocalSession {
   endTime?: string;
   wordsSpelled: number;
   correctCount: number;
+  scoreChange?: number;
+  bestStreak?: number;
   difficultyEvolution: number[];
   synced: boolean;
 }
