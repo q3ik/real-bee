@@ -1,5 +1,3 @@
-// TODO: Fix - POSSIBLY broken by merge conflict resolution
-
 import { useEffect, useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGameStore } from "../hooks/useGameStore";
@@ -153,6 +151,4 @@ export default function GamePage() {
       />
     </div>
   );
-
-  return <GameBoard />;
 }

@@ -76,8 +76,10 @@ export default function ResultsPage() {
     let cancelled = false;
     void (async () => {
       try {
+        // Order by startTime (ISO string, lexicographically sortable) rather
+        // than id to guarantee recency semantics regardless of insertion order.
         const sessions = await localDb.sessions
-          .orderBy("id")
+          .orderBy("startTime")
           .reverse()
           .limit(1)
           .toArray();

@@ -68,26 +68,22 @@ vi.mock("../pages/LeaderboardPage.tsx", () => ({
 import App from "../App";
 
 function setRoute(path: string, hash = "") {
-  window.history.pushState({}, "", path);
-  window.location.hash = hash;
+  window.history.pushState({}, "", path + hash);
 }
 
 describe("App routing", () => {
   beforeEach(() => {
-    setRoute("/", "");
+    setRoute("/");
   });
 
-  it("redirects hash-based admin routes to proper /admin route", async () => {
-    // Test the hash redirect by checking the actual behavior
-    // We can't easily mock window.location without type issues, so we'll
-    // test this functionality through integration tests or manually
-
-    // For now, just verify the component renders without throwing
-    setRoute("/admin", "#/admin");
+  it("renders AdminFeedback on /admin route", async () => {
+    // The legacy #/admin hash triggers a window.location.href redirect via
+    // useEffect which cannot be asserted in jsdom. However, the canonical
+    // /admin/* route must render AdminFeedback directly — this covers the
+    // post-redirect destination and is the behaviour users actually see.
+    setRoute("/admin");
     render(<App />);
-
-    // The redirect happens automatically via useEffect
-    expect(document.body).toBeTruthy();
+    expect(await screen.findByTestId("admin-feedback")).toBeInTheDocument();
   });
 
   it("renders home page on /", async () => {

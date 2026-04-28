@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import RequireAuth from "./components/RequireAuth";
+import PageFallback from "./components/PageFallback";
 import AdminFeedback from "./pages/admin/Feedback";
 
 // Page-level route chunks — imported lazily for code splitting.
@@ -12,14 +13,6 @@ const HomePage = lazy(() => import("./pages/HomePage"));
 const GamePage = lazy(() => import("./pages/GamePage"));
 const ResultsPage = lazy(() => import("./pages/ResultsPage"));
 const LeaderboardPage = lazy(() => import("./pages/LeaderboardPage"));
-
-export function PageFallback() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50/50 to-white">
-      <div className="w-10 h-10 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin" />
-    </div>
-  );
-}
 
 export default function App() {
   // Legacy hash-based admin route redirect
