@@ -105,6 +105,7 @@ export function useGameState(): UseGameStateReturn {
   const correctAnswers = useGameStore((s) => s.correctAnswers);
   const difficultyEvolution = useGameStore((s) => s.difficultyEvolution);
   const sessionStartTime = useGameStore((s) => s.sessionStartTime);
+  const sessionBestStreak = useGameStore((s) => s.sessionBestStreak);
   const sessionBaseline = useGameStore((s) => s.sessionBaseline);
 
   const startSession = useGameStore((s) => s.startSession);
