@@ -1,3 +1,5 @@
+// TODO: Fix - Broken by merge conflict resolution (current)
+// <<<<<<< feat/issue-45-multi-page-routing
 import { useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGameStore } from "../hooks/useGameStore";
@@ -71,4 +73,26 @@ export default function HomePage() {
       </main>
     </div>
   );
+// TODO: Fix - Broken by merge conflict resolution (separator)
+// =======
+import { useNavigate } from "react-router-dom";
+import Onboarding from "../components/Onboarding";
+import { useGameStore } from "../hooks/useGameStore";
+
+export default function HomePage() {
+  const navigate = useNavigate();
+  const { startSession } = useGameStore();
+
+  const handleStart = async () => {
+    try {
+      await startSession();
+      navigate("/game");
+    } catch (err: unknown) {
+      console.warn("[HomePage] handleStart: startSession failed", err);
+    }
+  };
+
+  return <Onboarding onStart={() => { void handleStart(); }} />;
+// TODO: Fix - Broken by merge conflict resolution (incoming)
+// >>>>>>> trunk
 }

@@ -1,4 +1,6 @@
 import { lazy, Suspense } from "react";
+// TODO: Fix - Broken by merge conflict resolution (current)
+// <<<<<<< feat/issue-45-multi-page-routing
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import RequireAuth from "./components/RequireAuth";
@@ -46,6 +48,54 @@ export default function App() {
       </Suspense>
 
       <Toaster position="top-center" richColors closeButton />
+// TODO: Fix - Broken by merge conflict resolution (separator)
+// =======
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import AppLayout from "./components/AppLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
+import AdminFeedback from "./pages/admin/Feedback";
+
+const HomePage = lazy(() => import("./pages/HomePage.tsx"));
+const GamePage = lazy(() => import("./pages/GamePage.tsx"));
+const ResultsPage = lazy(() => import("./pages/ResultsPage.tsx"));
+const LeaderboardPage = lazy(() => import("./pages/LeaderboardPage.tsx"));
+
+export default function App() {
+  const isAdminRoute =
+    typeof window !== "undefined" && window.location.hash.startsWith("#/admin");
+
+  if (isAdminRoute) {
+    return <AdminFeedback />;
+  }
+
+  return (
+    <BrowserRouter>
+      <AppLayout>
+        <Suspense
+          fallback={
+            <div className="min-h-screen flex items-center justify-center">
+              Loading…
+            </div>
+          }
+        >
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/game" element={<GamePage />} />
+            <Route path="/results" element={<ResultsPage />} />
+            <Route
+              path="/leaderboard"
+              element={
+                <ProtectedRoute>
+                  <LeaderboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      </AppLayout>
+// TODO: Fix - Broken by merge conflict resolution (incoming)
+// >>>>>>> trunk
     </BrowserRouter>
   );
 }
