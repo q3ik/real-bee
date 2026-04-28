@@ -162,6 +162,15 @@ vi.mock("sonner", () => ({
   },
 }));
 
+vi.mock("../../lib/audioManager", () => ({
+  audioManager: {
+    speak: vi.fn().mockResolvedValue(undefined),
+    playEffect: vi.fn(),
+    setMuted: vi.fn(),
+    setVoiceQuality: vi.fn(),
+  },
+}));
+
 vi.mock("../../game-engine/storage", () => ({
   saveSession: vi.fn().mockResolvedValue(1),
   saveGameProgress: vi.fn().mockResolvedValue(undefined),
