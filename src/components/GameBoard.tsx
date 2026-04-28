@@ -32,10 +32,17 @@ import HintSystem from "./HintSystem";
 
 interface SpellingInputProps {
   onSubmit: (value: string) => void;
+  /** Changing this key forces the input to reset — pass currentWord.word */
+  resetKey: string;
 }
 
-const SpellingInput = memo(function SpellingInput({ onSubmit }: SpellingInputProps) {
+const SpellingInput = memo(function SpellingInput({ onSubmit, resetKey }: SpellingInputProps) {
   const [userInput, setUserInput] = useState("");
+
+  // Reset input whenever the word changes (timeout, voice answer, skip, etc.)
+  useEffect(() => {
+    setUserInput("");
+  }, [resetKey]);
 
   const handleSubmit = () => {
     if (userInput.trim()) {
@@ -531,7 +538,10 @@ export default function GameBoard() {
               exit={{ height: 0, opacity: 0 }}
               className="space-y-3"
             >
-              <SpellingInput onSubmit={handleSubmission} />
+              <SpellingInput
+                onSubmit={handleSubmission}
+                resetKey={currentWord.word}
+              />
             </motion.div>
           )}
         </AnimatePresence>

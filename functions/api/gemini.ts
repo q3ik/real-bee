@@ -34,20 +34,24 @@ const VALID_ACTIONS: GeminiAction[] = ['tts', 'stt', 'hint'];
 
 const ACTION_SCHEMAS: Record<GeminiAction, z.ZodTypeAny> = {
   tts: z.object({
-    word: z.string(),
+    word: z.string().min(1),
     voice: z.string().optional(),
     provider: z.string().optional(),
   }),
   stt: z.object({
-    audio: z.string(),
-    mimeType: z.string(),
+    // Require non-empty strings — empty audio/mimeType would produce a
+    // meaningless Cloudflare AI / Deepgram call and an opaque downstream error.
+    audio: z.string().min(1),
+    mimeType: z.string().min(1),
     provider: z.string().optional(),
   }),
   hint: z.object({
-    word: z.string(),
-    type: z.string(),
+    word: z.string().min(1),
+    type: z.string().min(1),
   }),
 };
+
+export { ACTION_SCHEMAS };
 
 function json(body: unknown, status: number, origin: string): Response {
   return new Response(JSON.stringify(body), {
