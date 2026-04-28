@@ -7,6 +7,39 @@ import { localDb } from "../lib/db";
 import type { LocalSession } from "../lib/db";
 import ProgressionOverview from "../components/ProgressionOverview";
 
+function getPersistedSessionStats(session: LocalSession) {
+  const accuracy =
+    session.wordsSpelled > 0
+      ? Math.round((session.correctCount / session.wordsSpelled) * 100)
+      : 0;
+  const durationMinutes =
+    session.endTime != null
+      ? Math.max(
+          1,
+          Math.round(
+            (new Date(session.endTime).getTime() -
+              new Date(session.startTime).getTime()) /
+              60000,
+          ),
+        )
+      : 0;
+  const scoreChange = session.scoreChange ?? 0;
+
+  return [
+    { label: "Rounds", value: session.wordsSpelled },
+    { label: "Accuracy", value: `${accuracy}%` },
+    { label: "Best streak", value: session.bestStreak ?? 0 },
+    {
+      label: "Score change",
+      value: scoreChange >= 0 ? `+${scoreChange}` : `${scoreChange}`,
+    },
+    {
+      label: "Time played",
+      value: durationMinutes > 0 ? `${durationMinutes}m` : "—",
+    },
+  ];
+}
+
 /**
  * ResultsPage — session summary.
  *
@@ -24,19 +57,22 @@ export default function ResultsPage() {
   const {
     startSession,
     restartGame,
+    sessionCompleted,
     difficultyEvolution,
     sessionStats,
-    score,
-    correctAnswers,
-    roundsPlayed,
   } = useGameStore();
 
   const [lastSession, setLastSession] = useState<LocalSession | null>(null);
   const [loadingSession, setLoadingSession] = useState(true);
   const [isStarting, setIsStarting] = useState(false);
 
-  // Load the most recently completed session from IndexedDB.
   useEffect(() => {
+    if (sessionCompleted) {
+      setLastSession(null);
+      setLoadingSession(false);
+      return;
+    }
+
     let cancelled = false;
     void (async () => {
       try {
@@ -55,15 +91,7 @@ export default function ResultsPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
-
-  const stats = sessionStats();
-
-  // hasSession: true if the in-memory store has data OR IndexedDB has a
-  // persisted session. This prevents a false "No session yet" empty state
-  // when the user navigates directly to /results after a page refresh.
-  const storeHasSession = roundsPlayed > 0 || correctAnswers > 0 || score > 0;
-  const hasSession = storeHasSession || lastSession !== null;
+  }, [sessionCompleted]);
 
   // Guard against double-tap: disable "Play Again" while startSession() is
   // in-flight to prevent concurrent calls.
@@ -83,7 +111,18 @@ export default function ResultsPage() {
     void navigate("/");
   }, [restartGame, navigate]);
 
-  if (!hasSession && !loadingSession) {
+  if (!sessionCompleted && loadingSession) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-12 text-center space-y-4 bg-gradient-to-br from-orange-50 to-white">
+        <div className="w-12 h-12 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin" />
+        <p className="text-sm font-semibold tracking-wide text-gray-500 uppercase">
+          Loading results
+        </p>
+      </div>
+    );
+  }
+
+  if (!sessionCompleted && !lastSession) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-12 text-center space-y-6 bg-gradient-to-br from-orange-50 to-white">
         <div className="p-6 bg-orange-100 rounded-full">
@@ -95,18 +134,21 @@ export default function ResultsPage() {
           onClick={() => void navigate("/")}
           className="px-8 py-4 bg-orange-500 text-white rounded-2xl font-bold shadow-lg hover:bg-orange-600 transition-all"
         >
-          Go Home
+          Back Home
         </button>
       </div>
     );
   }
 
-  // Fall back to lastSession.difficultyEvolution when the in-memory store
-  // evolution array is empty (covers page-refresh scenario).
-  const evolution =
-    Array.isArray(difficultyEvolution) && difficultyEvolution.length > 0
-      ? difficultyEvolution
-      : (lastSession?.difficultyEvolution ?? []);
+  const persistedSession = sessionCompleted ? null : lastSession;
+  const stats = sessionCompleted
+    ? sessionStats()
+    : persistedSession
+      ? getPersistedSessionStats(persistedSession)
+      : [];
+  const evolution = sessionCompleted
+    ? difficultyEvolution
+    : (persistedSession?.difficultyEvolution ?? []);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-br from-orange-50 to-white">
@@ -123,11 +165,11 @@ export default function ResultsPage() {
           <p className="text-gray-500">Great job spelling those words!</p>
         </div>
 
-        {lastSession && (
+        {persistedSession && (
           <div className="text-xs text-center text-gray-400 font-medium">
-            {new Date(lastSession.startTime).toLocaleString()}
-            {lastSession.endTime && (
-              <span> — {new Date(lastSession.endTime).toLocaleString()}</span>
+            {new Date(persistedSession.startTime).toLocaleString()}
+            {persistedSession.endTime && (
+              <span> — {new Date(persistedSession.endTime).toLocaleString()}</span>
             )}
           </div>
         )}

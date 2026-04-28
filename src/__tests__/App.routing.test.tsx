@@ -77,13 +77,24 @@ describe("App routing", () => {
     setRoute("/", "");
   });
 
-  it("bypasses browser router and renders admin page for #/admin hash", async () => {
+  it("redirects hash-based admin routes to proper /admin route", async () => {
+    // Mock window.location assignment to prevent actual navigation
+    const originalLocation = window.location;
+    delete window.location;
+    window.location = { ...originalLocation, href: "" };
+
     setRoute("/", "#/admin");
 
     render(<App />);
 
-    expect(await screen.findByTestId("admin-feedback")).toBeInTheDocument();
-    expect(screen.queryByTestId("app-layout")).not.toBeInTheDocument();
+    // Wait a bit for the useEffect to run
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Should have attempted to redirect to /admin
+    expect(window.location.href).toContain("/admin");
+
+    // Restore original location
+    window.location = originalLocation;
   });
 
   it("renders home page on /", async () => {

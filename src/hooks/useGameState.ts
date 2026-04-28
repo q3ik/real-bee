@@ -369,6 +369,8 @@ export function useGameState(): UseGameStateReturn {
           endTime: new Date().toISOString(),
           wordsSpelled: Math.max(0, sessionWords),
           correctCount: Math.max(0, sessionCorrect),
+          scoreChange: score - (sessionBaseline?.score ?? 0),
+          bestStreak: sessionBestStreak,
           difficultyEvolution: difficultyEvolution ?? [],
           synced: false,
         });
@@ -385,7 +387,9 @@ export function useGameState(): UseGameStateReturn {
     userId,
     roundsPlayed,
     correctAnswers,
+    score,
     sessionBaseline,
+    sessionBestStreak,
     sessionStartTime,
     difficultyEvolution,
     triggerMessage,
