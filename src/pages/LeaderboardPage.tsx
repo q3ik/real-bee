@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Trophy, ArrowLeft, LogIn } from "lucide-react";
+import { Trophy, ArrowLeft } from "lucide-react";
 import { motion } from "motion/react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
@@ -17,8 +17,8 @@ interface LeaderboardEntry {
  * LeaderboardPage — top scores from Supabase.
  *
  * Auth-gated: the route is wrapped in <RequireAuth> in App.tsx so this
- * component always renders with a non-null user. The guard here is a
- * secondary safety net for direct imports in tests.
+ * component always renders with a non-null user. The secondary useEffect
+ * guard below is belt-and-suspenders for direct imports in tests.
  *
  * Data is fetched from the `leaderboard` view in Supabase (public, read-only).
  * If the view does not exist yet, the empty-state is shown gracefully.
@@ -66,7 +66,10 @@ export default function LeaderboardPage() {
     return () => { cancelled = true; };
   }, [user]);
 
-  if (authLoading || (!user && !authLoading)) return null;
+  // Only block render while auth is still resolving. Once auth is done,
+  // RequireAuth in App.tsx guarantees user is non-null, so we never reach
+  // this component unauthenticated in normal flow.
+  if (authLoading) return null;
 
   return (
     <div className="min-h-screen flex flex-col items-center p-6 bg-gradient-to-br from-orange-50 to-white">
@@ -74,7 +77,11 @@ export default function LeaderboardPage() {
         {/* Header */}
         <div className="flex items-center gap-4 pt-6">
           <button
-            onClick={() => void navigate(-1)}
+            onClick={() =>
+              window.history.length > 1
+                ? void navigate(-1)
+                : void navigate("/")
+            }
             className="p-2 rounded-xl bg-white border border-gray-100 text-gray-400 hover:text-gray-600 transition-colors shadow-sm"
             aria-label="Go back"
           >
@@ -168,16 +175,6 @@ export default function LeaderboardPage() {
               </motion.li>
             ))}
           </motion.ol>
-        )}
-
-        {/* Sign-in nudge for unauthenticated edge case */}
-        {!user && !authLoading && (
-          <div className="flex flex-col items-center gap-3 py-8 text-center">
-            <LogIn className="w-8 h-8 text-gray-300" />
-            <p className="text-gray-500 text-sm">
-              Sign in to see the leaderboard
-            </p>
-          </div>
         )}
       </div>
     </div>

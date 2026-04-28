@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { RotateCcw, Trophy, Home } from "lucide-react";
+import { Trophy, Home } from "lucide-react";
 import { motion } from "motion/react";
 import { useGameStore } from "../hooks/useGameStore";
 import { localDb } from "../lib/db";
@@ -10,13 +10,14 @@ import ProgressionOverview from "../components/ProgressionOverview";
 /**
  * ResultsPage — session summary.
  *
- * Displays the last completed session's score, streak, and word stats sourced
- * from the Zustand store (synchronous, always fresh after a round) and
- * augmented with the most recently persisted LocalSession from IndexedDB.
+ * Stats sourced from Zustand store (always fresh after a round) with IndexedDB
+ * as fallback for page-refresh scenarios where the store has been reset.
  *
- * If the user navigates here without having played a session (e.g. direct URL
- * entry), the store's sessionStats() will return zeros — a graceful empty
- * state is shown with a "Go Home" CTA.
+ * Empty-state handling:
+ *  - If store has no session data AND IndexedDB has no last session, show
+ *    a "No session yet" empty state with a Go Home CTA.
+ *  - If store is empty but IndexedDB has data (direct /results navigation
+ *    after refresh), show IndexedDB data.
  */
 export default function ResultsPage() {
   const navigate = useNavigate();
@@ -32,9 +33,9 @@ export default function ResultsPage() {
 
   const [lastSession, setLastSession] = useState<LocalSession | null>(null);
   const [loadingSession, setLoadingSession] = useState(true);
+  const [isStarting, setIsStarting] = useState(false);
 
-  // Load the most recently completed session from IndexedDB for supplementary
-  // detail (e.g. exact start/end times). The primary stats come from the store.
+  // Load the most recently completed session from IndexedDB.
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -57,20 +58,30 @@ export default function ResultsPage() {
   }, []);
 
   const stats = sessionStats();
-  const hasSession = roundsPlayed > 0 || correctAnswers > 0 || score > 0;
 
-  const handlePlayAgain = () => {
+  // hasSession: true if the in-memory store has data OR IndexedDB has a
+  // persisted session. This prevents a false "No session yet" empty state
+  // when the user navigates directly to /results after a page refresh.
+  const storeHasSession = roundsPlayed > 0 || correctAnswers > 0 || score > 0;
+  const hasSession = storeHasSession || lastSession !== null;
+
+  // Guard against double-tap: disable "Play Again" while startSession() is
+  // in-flight to prevent concurrent calls.
+  const handlePlayAgain = useCallback(() => {
+    if (isStarting) return;
+    setIsStarting(true);
     void startSession()
       .then(() => void navigate("/game"))
       .catch((err: unknown) => {
         console.warn("[ResultsPage] startSession failed", err);
+        setIsStarting(false);
       });
-  };
+  }, [isStarting, startSession, navigate]);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     restartGame();
     void navigate("/");
-  };
+  }, [restartGame, navigate]);
 
   if (!hasSession && !loadingSession) {
     return (
@@ -89,6 +100,13 @@ export default function ResultsPage() {
       </div>
     );
   }
+
+  // Fall back to lastSession.difficultyEvolution when the in-memory store
+  // evolution array is empty (covers page-refresh scenario).
+  const evolution =
+    Array.isArray(difficultyEvolution) && difficultyEvolution.length > 0
+      ? difficultyEvolution
+      : (lastSession?.difficultyEvolution ?? []);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-br from-orange-50 to-white">
@@ -114,7 +132,7 @@ export default function ResultsPage() {
           </div>
         )}
 
-        <ProgressionOverview evolution={difficultyEvolution} />
+        <ProgressionOverview evolution={evolution} />
 
         <div className="space-y-2">
           {stats.map((stat) => (
@@ -128,9 +146,10 @@ export default function ResultsPage() {
         <div className="flex gap-3">
           <button
             onClick={handlePlayAgain}
-            className="flex-1 px-6 py-4 bg-orange-500 text-white rounded-2xl font-bold shadow-lg hover:bg-orange-600 transition-all"
+            disabled={isStarting}
+            className="flex-1 px-6 py-4 bg-orange-500 text-white rounded-2xl font-bold shadow-lg hover:bg-orange-600 disabled:opacity-50 transition-all"
           >
-            Play Again
+            {isStarting ? "Starting…" : "Play Again"}
           </button>
           <button
             onClick={handleReset}
@@ -144,7 +163,8 @@ export default function ResultsPage() {
             className="p-4 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition-all"
             aria-label="View leaderboard"
           >
-            <RotateCcw className="w-5 h-5" />
+            {/* Trophy icon — RotateCcw was incorrect (looked like replay) */}
+            <Trophy className="w-5 h-5" />
           </button>
         </div>
       </motion.div>
