@@ -3,6 +3,11 @@ import { renderHook, act } from "@testing-library/react";
 import { useCountdown } from "../useCountdown";
 
 describe("useCountdown", () => {
+  // Ensure real timers are restored after each test to prevent leakage
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   describe("initialization", () => {
     it("initializes with maxDuration", () => {
       const { result } = renderHook(() => useCountdown(5000));
@@ -18,8 +23,11 @@ describe("useCountdown", () => {
   });
 
   describe("start", () => {
-    it("starts the countdown", async () => {
+    beforeEach(() => {
       vi.useFakeTimers();
+    });
+
+    it("starts the countdown", async () => {
       const { result } = renderHook(() => useCountdown(5000));
 
       act(() => {
@@ -33,14 +41,15 @@ describe("useCountdown", () => {
 
       expect(result.current.remaining).toBeLessThan(5000);
       expect(result.current.percent).toBeLessThan(100);
-
-      vi.useRealTimers();
     });
   });
 
   describe("stop", () => {
-    it("stops the countdown", async () => {
+    beforeEach(() => {
       vi.useFakeTimers();
+    });
+
+    it("stops the countdown", async () => {
       const { result } = renderHook(() => useCountdown(5000));
 
       act(() => {
@@ -62,14 +71,15 @@ describe("useCountdown", () => {
       });
 
       expect(result.current.remaining).toBe(remainingAfter500ms);
-
-      vi.useRealTimers();
     });
   });
 
   describe("reset", () => {
-    it("resets countdown to initial maxDuration", async () => {
+    beforeEach(() => {
       vi.useFakeTimers();
+    });
+
+    it("resets countdown to initial maxDuration", async () => {
       const { result } = renderHook(() => useCountdown(5000));
 
       act(() => {
@@ -86,12 +96,9 @@ describe("useCountdown", () => {
 
       expect(result.current.remaining).toBe(5000);
       expect(result.current.percent).toBe(100);
-
-      vi.useRealTimers();
     });
 
     it("stops the countdown when resetting", async () => {
-      vi.useFakeTimers();
       const onComplete = vi.fn();
       const { result } = renderHook(() => useCountdown(5000, { onComplete }));
 
@@ -116,14 +123,15 @@ describe("useCountdown", () => {
       // The timer was stopped, so remaining should stay at maxDuration
       expect(result.current.remaining).toBe(5000);
       expect(onComplete).not.toHaveBeenCalled();
-
-      vi.useRealTimers();
     });
   });
 
   describe("onComplete callback", () => {
-    it("calls onComplete when countdown reaches zero", async () => {
+    beforeEach(() => {
       vi.useFakeTimers();
+    });
+
+    it("calls onComplete when countdown reaches zero", async () => {
       const onComplete = vi.fn();
       const { result } = renderHook(() => useCountdown(1000, { onComplete }));
 
@@ -136,11 +144,9 @@ describe("useCountdown", () => {
       });
 
       expect(onComplete).toHaveBeenCalledTimes(1);
-      vi.useRealTimers();
     });
 
     it("does not call onComplete when stopped manually", async () => {
-      vi.useFakeTimers();
       const onComplete = vi.fn();
       const { result } = renderHook(() => useCountdown(1000, { onComplete }));
 
@@ -161,13 +167,15 @@ describe("useCountdown", () => {
       });
 
       expect(onComplete).not.toHaveBeenCalled();
-      vi.useRealTimers();
     });
   });
 
   describe("percent calculation", () => {
-    it("calculates correct percent when half time is remaining", async () => {
+    beforeEach(() => {
       vi.useFakeTimers();
+    });
+
+    it("calculates correct percent when half time is remaining", async () => {
       const { result } = renderHook(() => useCountdown(10000));
 
       act(() => {
@@ -181,12 +189,9 @@ describe("useCountdown", () => {
       // Allow for slight timing variance
       expect(result.current.percent).toBeLessThanOrEqual(50);
       expect(result.current.percent).toBeGreaterThan(48);
-
-      vi.useRealTimers();
     });
 
     it("never returns negative percent", async () => {
-      vi.useFakeTimers();
       const { result } = renderHook(() => useCountdown(1000));
 
       act(() => {
@@ -198,14 +203,15 @@ describe("useCountdown", () => {
       });
 
       expect(result.current.percent).toBeGreaterThanOrEqual(0);
-
-      vi.useRealTimers();
     });
   });
 
   describe("cleanup on unmount", () => {
-    it("stops timer on unmount", () => {
+    beforeEach(() => {
       vi.useFakeTimers();
+    });
+
+    it("stops timer on unmount", () => {
       const onComplete = vi.fn();
       const { result, unmount } = renderHook(() => useCountdown(1000, { onComplete }));
 
@@ -220,7 +226,6 @@ describe("useCountdown", () => {
       });
 
       expect(onComplete).not.toHaveBeenCalled();
-      vi.useRealTimers();
     });
   });
 });
